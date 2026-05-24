@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARKET BRIEF - 2026-04-08</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Noto Sans SC', 'Inter', -apple-system, sans-serif;
+  background: #f7f3ef; color: #1a1a1a; line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== 顶部导航栏 (Bloomberg 风格) ===== */
+.top-bar {
+  background: #111; color: #fff; padding: 0;
+  border-bottom: 3px solid #c0392b;
+}
+.top-bar-inner {
+  max-width: 860px; margin: 0 auto; padding: 12px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.brand {
+  font-family: 'Playfair Display', 'Noto Serif SC', Georgia, serif;
+  font-size: 22px; font-weight: 900; letter-spacing: 1px; color: #fff;
+}
+.brand span { color: #c0392b; }
+.top-meta {
+  font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px;
+  text-align: right; line-height: 1.5;
+}
+
+/* ===== Ticker 行情条 ===== */
+.ticker-strip {
+  background: #1a1a1a; border-bottom: 1px solid #333;
+  overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
+}
+.ticker-strip::-webkit-scrollbar { height: 0; }
+.ticker-inner {
+  max-width: 860px; margin: 0 auto; padding: 10px 20px;
+  display: flex; gap: 0;
+}
+.ticker {
+  flex: 0 0 auto; padding: 6px 16px; text-align: center;
+  border-right: 1px solid #333; min-width: 110px;
+}
+.ticker:last-child { border-right: none; }
+.ticker-name {
+  font-size: 10px; color: #888; letter-spacing: 1.5px;
+  text-transform: uppercase; font-weight: 600; margin-bottom: 2px;
+}
+.ticker-price {
+  font-family: 'Inter', monospace; font-size: 17px; font-weight: 700;
+  color: #fff; font-variant-numeric: tabular-nums;
+}
+.ticker-change {
+  font-family: 'Inter', monospace; font-size: 12px; font-weight: 600;
+  margin-top: 1px;
+}
+.ticker.up .ticker-change { color: #e74c3c; }
+.ticker.down .ticker-change { color: #27ae60; }
+.ticker.flat .ticker-change { color: #888; }
+
+/* ===== 主标题区 (WSJ 社论风格) ===== */
+.masthead {
+  max-width: 860px; margin: 0 auto; padding: 36px 20px 24px;
+  border-bottom: 2px solid #1a1a1a; text-align: center;
+}
+.masthead-date {
+  font-size: 12px; color: #888; letter-spacing: 2px;
+  text-transform: uppercase; font-weight: 500; margin-bottom: 10px;
+}
+.masthead h1 {
+  font-family: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
+  font-size: 38px; font-weight: 900; color: #1a1a1a;
+  letter-spacing: 2px; line-height: 1.3; margin-bottom: 10px;
+}
+.masthead-sub {
+  font-size: 15px; color: #666; font-weight: 300;
+  font-family: 'Noto Sans SC', 'Inter', sans-serif;
+}
+.masthead-tags {
+  margin-top: 16px; display: flex; justify-content: center; gap: 10px;
+  flex-wrap: wrap;
+}
+.mtag {
+  font-size: 11px; font-weight: 600; letter-spacing: 1px;
+  padding: 4px 14px; border-radius: 2px;
+  text-transform: uppercase;
+}
+.mtag-a { background: #fdecea; color: #c0392b; }
+.mtag-us { background: #eaf0fb; color: #2c5aa0; }
+.mtag-hk { background: #fef9e7; color: #b7950b; }
+
+/* ===== 内容容器 ===== */
+.content { max-width: 860px; margin: 0 auto; padding: 0 20px 40px; }
+
+/* ===== 区块标题 ===== */
+.sec-header {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: #c0392b;
+  padding: 20px 0 10px; margin-top: 28px;
+  border-top: 3px solid #1a1a1a;
+}
+
+/* ===== 走势图区 ===== */
+.charts-row {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+  margin-top: 16px;
+}
+.chart-cell {
+  background: #fff; border: 1px solid #e0dcd5;
+}
+.chart-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: #666; text-align: center;
+  padding: 10px 0 4px; border-bottom: 1px solid #f0ece6;
+}
+.chart-cell img { width: 100%; display: block; }
+
+/* ===== AI 分析报告 ===== */
+.report-body { margin-top: 16px; }
+
+.rpt-section { margin-bottom: 28px; }
+.rpt-section:last-child { margin-bottom: 0; }
+
+.rpt-heading {
+  font-family: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
+  font-size: 20px; font-weight: 700; color: #1a1a1a;
+  padding-bottom: 8px; margin-bottom: 14px;
+  border-bottom: 1px solid #d5d0c8;
+}
+
+.rpt-news-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 18px; margin: 10px 0;
+  background: #fff; border: 1px solid #e8e4dc;
+  border-left: 3px solid #c0392b;
+  transition: box-shadow 0.2s;
+}
+.rpt-news-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.rpt-num {
+  flex-shrink: 0; width: 24px; height: 24px; line-height: 24px;
+  text-align: center; font-family: 'Playfair Display', serif;
+  font-size: 14px; font-weight: 900; color: #c0392b;
+  border: 2px solid #c0392b; border-radius: 50%;
+}
+.rpt-news-text {
+  font-size: 14.5px; line-height: 1.8; color: #2a2a2a;
+}
+.rpt-news-text strong { color: #c0392b; font-weight: 700; }
+
+.rpt-bullet {
+  padding: 6px 18px 6px 32px; margin: 4px 0;
+  position: relative;
+}
+.rpt-bullet::before {
+  content: ''; position: absolute; left: 18px; top: 15px;
+  width: 5px; height: 5px; background: #c0392b;
+}
+.rpt-bullet-text {
+  font-size: 14.5px; line-height: 1.8; color: #2a2a2a;
+}
+.rpt-bullet-text strong { color: #c0392b; }
+
+.rpt-para {
+  font-size: 15px; line-height: 1.9; color: #333;
+  margin: 10px 0; text-align: justify;
+}
+.rpt-para strong { color: #c0392b; }
+
+/* ===== 页脚 ===== */
+.site-footer {
+  max-width: 860px; margin: 0 auto; padding: 30px 20px 50px;
+  border-top: 3px solid #1a1a1a; text-align: center;
+}
+.footer-brand {
+  font-family: 'Playfair Display', 'Noto Serif SC', serif;
+  font-size: 15px; font-weight: 700; color: #1a1a1a;
+  letter-spacing: 1px; margin-bottom: 8px;
+}
+.footer-info {
+  font-size: 11px; color: #999; line-height: 2; letter-spacing: 0.3px;
+}
+.footer-disclaimer {
+  font-size: 10px; color: #bbb; margin-top: 12px;
+  padding-top: 12px; border-top: 1px solid #e0dcd5;
+  line-height: 1.8;
+}
+.online-link {
+  display: inline-block; margin-top: 14px;
+  padding: 10px 28px; background: #c0392b; color: #fff;
+  font-size: 13px; font-weight: 600; letter-spacing: 1px;
+  text-decoration: none; border-radius: 3px;
+  transition: background 0.2s;
+}
+.online-link:hover { background: #a93226; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 600px) {
+  .masthead h1 { font-size: 28px; }
+  .top-bar-inner { flex-direction: column; gap: 4px; text-align: center; }
+  .top-meta { text-align: center; }
+  .ticker-inner { padding: 8px 12px; }
+  .ticker { min-width: 90px; padding: 6px 10px; }
+  .ticker-price { font-size: 15px; }
+  .charts-row { grid-template-columns: 1fr; }
+  .content { padding: 0 14px 30px; }
+  .rpt-heading { font-size: 18px; }
+  .rpt-news-item { padding: 10px 12px; }
+  .masthead { padding: 24px 14px 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="top-bar">
+  <div class="top-bar-inner">
+    <div class="brand">MARKET<span>BRIEF</span></div>
+    <div class="top-meta">Wednesday, April 08, 2026<br>08:43 CST</div>
+  </div>
+</div>
+
+<!-- 行情条 -->
+<div class="ticker-strip">
+  <div class="ticker-inner"><div class="ticker up"><div class="ticker-name">上证指数</div><div class="ticker-price">3995.00</div><div class="ticker-change">&#9650; +2.69%</div></div><div class="ticker up"><div class="ticker-name">深证成指</div><div class="ticker-price">14042.50</div><div class="ticker-change">&#9650; +4.79%</div></div><div class="ticker up"><div class="ticker-name">创业板指</div><div class="ticker-price">3347.61</div><div class="ticker-change">&#9650; +5.91%</div></div><div class="ticker up"><div class="ticker-name">恒生指数</div><div class="ticker-price">25843.46</div><div class="ticker-change">&#9650; +0.00%</div></div><div class="ticker up"><div class="ticker-name">道琼斯</div><div class="ticker-price">46247.29</div><div class="ticker-change">&#9650; +0.00%</div></div><div class="ticker up"><div class="ticker-name">纳斯达克</div><div class="ticker-price">22484.07</div><div class="ticker-change">&#9650; +0.00%</div></div><div class="ticker up"><div class="ticker-name">标普500</div><div class="ticker-price">6643.70</div><div class="ticker-change">&#9650; +0.00%</div></div></div>
+</div>
+
+<!-- 标题区 -->
+<div class="masthead">
+  <div class="masthead-date">2026-04-08 星期三</div>
+  <h1>每日股市简报</h1>
+  <div class="masthead-sub">AI-Powered Daily Market Intelligence</div>
+  <div class="masthead-tags">
+    <span class="mtag mtag-a">A股 30 条</span>
+    <span class="mtag mtag-us">美股 30 条</span>
+    <span class="mtag mtag-hk">港股 16 条</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- 走势图 -->
+  <div class="sec-header">INTRADAY CHARTS</div>
+  <div class="charts-row"><div class="chart-cell"><div class="chart-label">上证指数</div><img src="https://image.sinajs.cn/newchart/min/n/sh000001.gif" alt="上证指数" onerror="this.parentElement.style.display='none'"></div><div class="chart-cell"><div class="chart-label">深证成指</div><img src="https://image.sinajs.cn/newchart/min/n/sz399001.gif" alt="深证成指" onerror="this.parentElement.style.display='none'"></div><div class="chart-cell"><div class="chart-label">恒生指数</div><img src="https://image.sinajs.cn/newchart/min/n/int_hangseng.gif" alt="恒生指数" onerror="this.parentElement.style.display='none'"></div><div class="chart-cell"><div class="chart-label">纳斯达克</div><img src="https://image.sinajs.cn/newchart/min/n/int_nasdaq.gif" alt="纳斯达克" onerror="this.parentElement.style.display='none'"></div></div>
+
+  <!-- AI 报告 -->
+  <div class="sec-header">MARKET ANALYSIS</div>
+  <div class="report-body"><div class="rpt-section">
+<p class="rpt-para">```markdown</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">每日股市简报</h3>
+<p class="rpt-para"><strong>日期：2026年4月8日</strong></p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">市场总览</h3>
+<p class="rpt-para">今日A股受中东局势紧张及部分行业业绩公告影响，整体震荡偏弱；美股因中东局势缓和及科技股强劲表现，延续强势上涨；港股在恒生指数与恒生科技指数双涨的带动下，大幅上扬，显示出较强的市场情绪。</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">重要新闻TOP5</h3>
+<div class="rpt-news-item"><span class="rpt-num">1</span><div class="rpt-news-text"><strong>伊朗炼油厂爆炸事件引发地缘风险担忧</strong></div></div>
+<p class="rpt-para">伊朗拉万炼油厂发生爆炸，原因尚不明确，加剧市场对中东局势的担忧，可能推升能源价格并影响全球供应链。</p>
+<div class="rpt-news-item"><span class="rpt-num">2</span><div class="rpt-news-text"><strong>美伊停火协议生效，地缘紧张局势有所缓解</strong></div></div>
+<p class="rpt-para">美伊临时停火正式生效，虽未彻底解决冲突，但短期内降低了市场对战争升级的预期，提振了全球市场情绪。</p>
+<div class="rpt-news-item"><span class="rpt-num">3</span><div class="rpt-news-text"><strong>恒生指数大涨3.09%，恒生科技指数飙升5.22%</strong></div></div>
+<p class="rpt-para">港股在科技板块领涨下强势反弹，显示投资者对科技股及中国资产的信心增强。</p>
+<div class="rpt-news-item"><span class="rpt-num">4</span><div class="rpt-news-text"><strong>日本投资者3月净买入140亿美元海外股票，创近一年新高</strong></div></div>
+<p class="rpt-para">日本资本持续流入海外市场，反映出全球资产配置偏好转向更具增长潜力的市场。</p>
+<div class="rpt-news-item"><span class="rpt-num">5</span><div class="rpt-news-text"><strong>福斯特2025年净利润同比大降41.14%</strong></div></div>
+<p class="rpt-para">公司业绩下滑反映行业竞争加剧及需求疲软，可能对相关产业链形成压力。</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">个股聚焦</h3>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>华新环保（301265.SZ）</strong>：一季度净利预增192.94%-211.25%，受益于贵金属资源再生及飞灰废盐资源化利用等产业升级业务，展现较强成长性。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>天合光能（605077.SH）</strong>：联合成立新能源科技公司，布局光伏设备及储能技术，长期看好其在新能源领域的拓展能力。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>华虹半导体（01672.HK）</strong>：涨幅超14%，受益于半导体行业景气度回升及国产替代逻辑，短期或继续受到资金关注。</div></div>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">市场情绪</h3>
+<p class="rpt-para"><strong>情绪判断：乐观</strong></p>
+<p class="rpt-para">尽管中东局势仍存在不确定性，但美伊停火协议的达成以及港股科技股的强势表现，表明市场对风险资产的偏好上升。同时，部分企业业绩改善及外资持续流入也增强了市场信心。</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">明日展望</h3>
+<p class="rpt-para">预计明日市场将延续乐观基调，港股科技股或继续领跑，A股有望在政策利好与外资流入的双重支撑下震荡上行。需关注美伊谈判进展及美联储3月会议纪要内容，以判断后续流动性预期变化。</p>
+<p class="rpt-para">```</p>
+</div></div>
+
+</div>
+
+<div class="site-footer">
+  <div class="footer-brand">MARKET BRIEF</div>
+  <a class="online-link" href="https://ivyxiashengjie.github.io/stock-daily-report/report_20260408.html">查看在线版本</a>
+  <div class="footer-info">
+    Data: CLS / East Money / Sina Finance<br>
+    AI Analysis by Tongyi Qwen
+  </div>
+  <div class="footer-disclaimer">
+    本报告由 AI 自动生成，仅供参考，不构成任何投资建议。<br>
+    市场有风险，投资需谨慎。
+  </div>
+</div>
+
+</body>
+</html>

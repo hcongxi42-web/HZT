@@ -1,0 +1,18 @@
+# 新闻抓取服务 - 与 Dify 共享网络
+# 启动: docker compose up -d
+version: "3"
+
+services:
+  news-fetcher:
+    build: .
+    container_name: stock-news-fetcher
+    ports:
+      - "8766:8766"
+    networks:
+      - dify-network
+    restart: unless-stopped
+
+networks:
+  dify-network:
+    external: true
+    name: docker_default  # Dify 默认的 Docker 网络名

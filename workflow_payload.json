@@ -1,0 +1,180 @@
+{
+  "graph": {
+    "nodes": [
+      {
+        "id": "start-node",
+        "position": {"x": 80, "y": 282},
+        "data": {
+          "type": "start",
+          "title": "开始",
+          "variables": [
+            {
+              "type": "text-input",
+              "variable": "market",
+              "label": "市场",
+              "required": false,
+              "max_length": 48,
+              "default": "all"
+            }
+          ]
+        }
+      },
+      {
+        "id": "http-node",
+        "position": {"x": 380, "y": 282},
+        "data": {
+          "type": "http-request",
+          "title": "抓取股市新闻",
+          "desc": "从新闻服务抓取A股、美股、港股新闻",
+          "variables": [],
+          "method": "get",
+          "url": "http://host.docker.internal:8766/news?market={{#start-node.market#}}",
+          "headers": "",
+          "params": "",
+          "body": {"type": "none"},
+          "authorization": {"type": "no-auth"},
+          "timeout": {
+            "connect": 30,
+            "read": 60,
+            "write": 30,
+            "max_connect_timeout": 300,
+            "max_read_timeout": 600,
+            "max_write_timeout": 600
+          },
+          "retry_config": {
+            "retry_enabled": false,
+            "max_retries": 3,
+            "retry_interval": 100
+          }
+        }
+      },
+      {
+        "id": "code-node",
+        "position": {"x": 680, "y": 282},
+        "data": {
+          "type": "code",
+          "title": "整理新闻",
+          "desc": "将原始JSON新闻数据按市场分组整理为文本格式",
+          "variables": [
+            {
+              "variable": "raw_response",
+              "value_selector": ["http-node", "body"]
+            }
+          ],
+          "code_language": "python3",
+          "code": "import json\n\ndef main(raw_response: str) -> dict:\n    try:\n        data = json.loads(raw_response)\n    except Exception:\n        return {\"result\": \"新闻数据解析失败\", \"count\": \"0\"}\n\n    news_list = data.get(\"news\", [])\n    date = data.get(\"date\", \"\")\n\n    markets = {\"A股\": [], \"美股\": [], \"港股\": []}\n    for item in news_list:\n        if \"error\" in item:\n            continue\n        market = item.get(\"market\", \"其他\")\n        if market in markets:\n            markets[market].append(item)\n\n    lines = [f\"日期: {date}\", f\"共抓取 {len(news_list)} 条新闻\\n\"]\n\n    for market_name, articles in markets.items():\n        if not articles:\n            continue\n        lines.append(f\"\\n## {market_name} ({len(articles)}条)\")\n        for i, a in enumerate(articles[:15], 1):\n            lines.append(f\"{i}. [{a.get('time','')}] {a.get('title','')}\")\n            summary = a.get('summary', '')\n            if summary and summary != a.get('title', ''):\n                lines.append(f\"   {summary[:120]}\")\n\n    result = \"\\n\".join(lines)\n    count = str(len(news_list))\n    return {\"result\": result, \"count\": count}",
+          "outputs": {
+            "result": {"type": "string", "children": null},
+            "count": {"type": "string", "children": null}
+          }
+        }
+      },
+      {
+        "id": "llm-node",
+        "position": {"x": 980, "y": 282},
+        "data": {
+          "type": "llm",
+          "title": "生成股市日报",
+          "desc": "使用LLM分析新闻并生成每日市场简报",
+          "model": {
+            "provider": "langgenius/tongyi/tongyi",
+            "name": "qwen-turbo",
+            "mode": "chat",
+            "completion_params": {
+              "temperature": 0.5,
+              "max_tokens": 4096
+            }
+          },
+          "prompt_template": [
+            {
+              "id": "sys-prompt",
+              "role": "system",
+              "text": "你是一位资深金融分析师，擅长解读股市新闻并生成专业的每日市场简报。你的分析客观、专业、简洁。"
+            },
+            {
+              "id": "user-prompt",
+              "role": "user",
+              "text": "请根据以下今日股市新闻，生成一份专业的《每日股市简报》。\n\n要求：\n1. **市场总览**：用2-3句话概括今日A股、美股、港股的整体动向\n2. **重要新闻TOP5**：提取最重要的5条新闻，简要说明其影响\n3. **个股聚焦**：如有值得关注的个股动态，列出并简析\n4. **市场情绪**：基于新闻判断当前市场情绪（乐观/中性/悲观），说明理由\n5. **明日展望**：基于今日消息面，简要预判明日可能走向\n\n格式：Markdown，结构清晰，语言专业简洁。\n\n---\n今日新闻数据：\n\n{{#code-node.result#}}"
+            }
+          ],
+          "memory": null,
+          "context": {"enabled": false, "variable_selector": []},
+          "vision": {"enabled": false}
+        }
+      },
+      {
+        "id": "end-node",
+        "position": {"x": 1280, "y": 282},
+        "data": {
+          "type": "end",
+          "title": "结束",
+          "outputs": [
+            {
+              "variable": "report",
+              "value_selector": ["llm-node", "text"]
+            }
+          ]
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-start-http",
+        "source": "start-node",
+        "target": "http-node",
+        "sourceHandle": "source",
+        "targetHandle": "target"
+      },
+      {
+        "id": "edge-http-code",
+        "source": "http-node",
+        "target": "code-node",
+        "sourceHandle": "source",
+        "targetHandle": "target"
+      },
+      {
+        "id": "edge-code-llm",
+        "source": "code-node",
+        "target": "llm-node",
+        "sourceHandle": "source",
+        "targetHandle": "target"
+      },
+      {
+        "id": "edge-llm-end",
+        "source": "llm-node",
+        "target": "end-node",
+        "sourceHandle": "source",
+        "targetHandle": "target"
+      }
+    ],
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1
+    }
+  },
+  "features": {
+    "file_upload": {
+      "image": {
+        "enabled": false
+      }
+    },
+    "opening_statement": "",
+    "suggested_questions": [],
+    "suggested_questions_after_answer": {
+      "enabled": false
+    },
+    "text_to_speech": {
+      "enabled": false
+    },
+    "speech_to_text": {
+      "enabled": false
+    },
+    "retriever_resource": {
+      "enabled": false
+    },
+    "annotation_reply": {
+      "enabled": false
+    }
+  }
+}
