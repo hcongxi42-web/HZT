@@ -21,10 +21,6 @@ def fetch_index_quotes():
         "sh000001": "上证指数",
         "sz399001": "深证成指",
         "sz399006": "创业板指",
-        "int_hangseng": "恒生指数",
-        "int_dji": "道琼斯",
-        "int_nasdaq": "纳斯达克",
-        "int_sp500": "标普500",
     }
     results = []
     for code, name in symbols.items():
@@ -146,26 +142,14 @@ def fetch_all_news():
     news = []
     news.extend(fetch_cls_news(market_filter="A"))
     news.extend(fetch_eastmoney_news())
-    news.extend(fetch_sina_us_stock())
-    news.extend(fetch_eastmoney_kuaixun(type_id="111", market="美股"))
-    news.extend(fetch_cls_news(market_filter="HK"))
-    news.extend(fetch_eastmoney_hk())
     return news
 
 
 def format_news(news_list):
-    markets = {"A股": [], "美股": [], "港股": []}
-    for item in news_list:
-        if "error" in item:
-            continue
-        market = item.get("market", "其他")
-        if market in markets:
-            markets[market].append(item)
     lines = [f"日期: {datetime.now().strftime('%Y-%m-%d %H:%M')}", f"共抓取 {len(news_list)} 条新闻\n"]
-    for market_name, articles in markets.items():
-        if not articles:
-            continue
-        lines.append(f"\n## {market_name} ({len(articles)}条)")
+    articles = [n for n in news_list if "error" not in n]
+    if articles:
+        lines.append(f"\n## A股 ({len(articles)}条)")
         for i, a in enumerate(articles[:15], 1):
             lines.append(f"{i}. [{a.get('time','')}] {a.get('title','')}")
             summary = a.get("summary", "")
@@ -181,7 +165,7 @@ SYSTEM_PROMPT = "你是一位资深金融分析师，擅长解读股市新闻并
 USER_PROMPT_TEMPLATE = """请根据以下今日股市新闻，生成一份专业的《每日股市简报》。
 
 要求：
-1. **市场总览**：用2-3句话概括今日A股、美股、港股的整体动向
+1. **市场总览**：用2-3句话概括今日A股的整体动向
 2. **重要新闻TOP5**：提取最重要的5条新闻，简要说明其影响
 3. **个股聚焦**：如有值得关注的个股动态，列出并简析
 4. **市场情绪**：基于新闻判断当前市场情绪（乐观/中性/悲观），说明理由
@@ -367,8 +351,6 @@ def generate_html_report(report, quotes, news_list, page_url=""):
     chart_images = [
         ("上证指数", "sh000001", "https://image.sinajs.cn/newchart/min/n/sh000001.gif"),
         ("深证成指", "sz399001", "https://image.sinajs.cn/newchart/min/n/sz399001.gif"),
-        ("恒生指数", "hsi", "https://image.sinajs.cn/newchart/min/n/int_hangseng.gif"),
-        ("纳斯达克", "nasdaq", "https://image.sinajs.cn/newchart/min/n/int_nasdaq.gif"),
     ]
     chart_html = ""
     for name, code, img_url in chart_images:
@@ -376,9 +358,7 @@ def generate_html_report(report, quotes, news_list, page_url=""):
 
     # 新闻统计
     valid_news = [n for n in news_list if "error" not in n]
-    a_count = sum(1 for n in valid_news if n.get("market") == "A股")
-    us_count = sum(1 for n in valid_news if n.get("market") == "美股")
-    hk_count = sum(1 for n in valid_news if n.get("market") == "港股")
+    a_count = len(valid_news)
 
     report_html = markdown_to_html(report)
 
@@ -622,8 +602,6 @@ body {{
   <div class="masthead-sub">AI-Powered Daily Market Intelligence</div>
   <div class="masthead-tags">
     <span class="mtag mtag-a">A股 {a_count} 条</span>
-    <span class="mtag mtag-us">美股 {us_count} 条</span>
-    <span class="mtag mtag-hk">港股 {hk_count} 条</span>
   </div>
 </div>
 
