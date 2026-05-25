@@ -829,7 +829,10 @@ def main():
             f.write(f"report_file={report_file}\n")
             f.write(f"page_url={page_url}\n")
 
-    # 7. 推送 Webhook
+    # 7. 推送微信
+    send_wechat(report, quotes, page_url)
+
+    # 8. 推送 Webhook
     send_webhook(report)
 
     print(f"\n[{datetime.now()}] 完成")
