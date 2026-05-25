@@ -195,6 +195,74 @@ USER_PROMPT_TEMPLATE = """请根据以下今日股市新闻，生成一份专业
 {news_text}"""
 
 
+# ============ AI 选股部分 ============
+
+STOCK_PICKER_SYSTEM_PROMPT = (
+    "你是一位资深量化选股分析师，擅长从海量财经新闻中系统性挖掘具有短期或中期交易机会的个股。"
+    "你需要全面扫描所有新闻，不遗漏任何被明确提及的股票。"
+    "输出必须结构化、量化、可执行，对每只股票的判断必须有新闻依据，严禁编造。"
+)
+
+STOCK_PICKER_TEMPLATE = """请基于以下今日股市新闻，执行系统性选股分析。
+
+任务要求：
+1. **全面扫描**：仔细阅读每一条新闻，找出所有被明确提及的股票（包括股票名称、代码）。
+2. **分类标记**：
+   - 🔥 强势利好：业绩大增、重大合同、政策扶持、技术突破、并购重组
+   - ⚡ 事件驱动：行业会议、产品发布、订单公告、获机构调研
+   - ⚠️ 利空风险：业绩下滑、监管处罚、减持、安全事故、诉讼
+3. **量化评分**：对每只利好股给出机会强度（⭐1-5星）和关注周期（短线/中线/长线）
+4. **输出格式**：
+   - 先输出 "📈 精选个股" 板块，用 Markdown 表格：股票名称代码 | 利好类型 | 核心催化因素 | 强度 | 周期 | 风险提示
+   - 再输出 "⚠️ 今日避雷" 板块，同样用表格列出有明显利空的股票
+
+注意：
+- 即使某只股票只被提及一次，只要逻辑成立也应列出
+- 不要编造没有新闻支撑的股票
+- 精选个股数量不少于 5 只，不多于 12 只
+
+---
+今日新闻数据：
+
+{news_text}"""
+
+
+def call_stock_picker(news_text):
+    """调用 LLM 执行系统性 AI 选股分析"""
+    api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+    if not api_key:
+        return ""
+    url = "https://api.deepseek.com/v1/chat/completions"
+    payload = json.dumps({
+        "model": "deepseek-v4-pro",
+        "messages": [
+            {"role": "system", "content": STOCK_PICKER_SYSTEM_PROMPT},
+            {"role": "user", "content": STOCK_PICKER_TEMPLATE.format(news_text=news_text)},
+        ],
+        "temperature": 0.3,
+        "max_tokens": 4096,
+    }).encode("utf-8")
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+    req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode())
+        return data["choices"][0]["message"]["content"]
+    except Exception:
+        return ""
+
+
+def format_stock_picks(picks_md):
+    """将选股结果格式化为日报独立板块"""
+    if not picks_md or not picks_md.strip():
+        return ""
+    return (
+        "\n\n---\n\n"
+        "## 📌 每日精选个股（AI 选股）\n\n"
+        f"{picks_md}\n"
+    )
+
+
 def call_llm(news_text):
     api_key = os.environ.get("DEEPSEEK_API_KEY", "")
     if not api_key:
@@ -789,6 +857,13 @@ def main():
     news_text = format_news(news)
     print("正在生成分析报告...")
     report = call_llm(news_text)
+
+    # 3.5 AI 选股分析
+    print("正在执行 AI 选股...")
+    stock_picks = call_stock_picker(news_text)
+    if stock_picks:
+        report += format_stock_picks(stock_picks)
+        print("AI 选股完成")
 
     print("\n" + "=" * 60)
     print(report)
