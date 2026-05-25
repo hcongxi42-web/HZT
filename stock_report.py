@@ -706,8 +706,6 @@ def send_wechat(report, quotes, page_url):
     lines.append("## 📈 大盘走势\n")
     lines.append("![上证指数](https://image.sinajs.cn/newchart/min/n/sh000001.gif)")
     lines.append("")
-    lines.append("![恒生指数](https://image.sinajs.cn/newchart/min/n/int_hangseng.gif)")
-    lines.append("")
 
     # 分隔线
     lines.append("---\n")
