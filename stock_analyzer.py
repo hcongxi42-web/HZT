@@ -236,18 +236,27 @@ def parse_stock_picks(picks_md):
         return []
 
     results = []
-    # 匹配表格行或列表项中的股票信息
-    # 尝试匹配: | 寒武纪 688256.SH | ... | ⭐⭐⭐⭐⭐ | ...
     lines = picks_md.split("\n")
     for line in lines:
-        # 找股票代码格式
-        code_match = re.search(r"(\d{6}\.(?:SH|SZ|BJ))", line, re.IGNORECASE)
+        # 找股票代码：支持 000001.SH、000001、（000001）等格式
+        code_match = re.search(r"(\d{6})(?:\.(?:SH|SZ|BJ))?", line, re.IGNORECASE)
         if not code_match:
             continue
-        code = code_match.group(1).upper()
+        num = code_match.group(1)
+        # 根据首位判断市场，添加后缀
+        if num.startswith("6"):
+            code = f"{num}.SH"
+        elif num.startswith("0") or num.startswith("3"):
+            code = f"{num}.SZ"
+        elif num.startswith("8") or num.startswith("4"):
+            code = f"{num}.BJ"
+        else:
+            continue
+
         # 找股票名称（代码前面的中文）
-        name_match = re.search(r"([^|\d\s][^|\d]*?)\s*\d{6}\.", line)
+        name_match = re.search(r"([^|\d\s][^|\d(]*?)\s*[\(（]?\d{6}", line)
         name = name_match.group(1).strip() if name_match else ""
+
         # 找星级
         stars = line.count("⭐")
         if stars == 0:
@@ -262,6 +271,8 @@ def parse_stock_picks(picks_md):
         if item[1] not in seen:
             seen.add(item[1])
             unique.append(item)
+
+    print(f"[StockPicker] 解析到 {len(unique)} 只高评分股票: {[r[1] for r in unique]}")
     return unique[:8]  # 最多分析 8 只
 
 

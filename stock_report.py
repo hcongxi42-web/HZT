@@ -869,6 +869,7 @@ def main():
 
     # 对 5-4 星股票生成技术分析图表
     if stock_picks and stock_analyzer:
+        print("  正在解析高评分股票...")
         stock_list = stock_analyzer.parse_stock_picks(stock_picks)
         if stock_list:
             print(f"  发现 {len(stock_list)} 只高评分股票，正在生成技术分析图...")
@@ -882,6 +883,12 @@ def main():
                     chart_md += f"![{name} 技术分析]({url})\n\n"
                 stock_picks += chart_md
                 print(f"  已生成 {len(chart_urls)} 张技术分析图")
+            else:
+                print("  未能生成任何图表")
+        else:
+            print("  未解析到高评分股票（可能是代码格式不匹配）")
+    elif not stock_analyzer:
+        print("  stock_analyzer 模块未加载")
 
     if stock_picks:
         report += format_stock_picks(stock_picks)
