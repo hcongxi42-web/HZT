@@ -12,6 +12,12 @@ import urllib.request
 import urllib.error
 from datetime import datetime
 
+# 股票技术分析模块（可选依赖）
+try:
+    import stock_analyzer
+except ImportError:
+    stock_analyzer = None
+
 
 # ============ 指数行情抓取 ============
 
@@ -187,23 +193,34 @@ STOCK_PICKER_SYSTEM_PROMPT = (
     "输出必须结构化、量化、可执行，对每只股票的判断必须有新闻依据，严禁编造。"
 )
 
-STOCK_PICKER_TEMPLATE = """请基于以下今日股市新闻，执行系统性选股分析。
+STOCK_PICKER_TEMPLATE = """请基于以下今日股市新闻，执行深度供应链选股分析。
 
 任务要求：
 1. **全面扫描**：仔细阅读每一条新闻，找出所有被明确提及的股票（包括股票名称、代码）。
-2. **分类标记**：
+2. **供应链推理**：对每条重大新闻中的核心公司，进一步推理其供应商、客户、竞争对手、产业链上下游是否也间接受益或受损。例如：
+   - 若某机器人公司IPO利好 → 分析其减速器/伺服电机/传感器供应商
+   - 若某芯片公司技术突破 → 分析其设备商、材料商、封测厂
+   - 若某新能源车销量大增 → 分析其电池、电机、零部件供应商
+3. **分类标记**：
    - 🔥 强势利好：业绩大增、重大合同、政策扶持、技术突破、并购重组
    - ⚡ 事件驱动：行业会议、产品发布、订单公告、获机构调研
    - ⚠️ 利空风险：业绩下滑、监管处罚、减持、安全事故、诉讼
-3. **量化评分**：对每只利好股给出机会强度（⭐1-5星）和关注周期（短线/中线/长线）
-4. **输出格式**：
-   - 先输出 "📈 精选个股" 板块，用 Markdown 表格：股票名称代码 | 利好类型 | 核心催化因素 | 强度 | 周期 | 风险提示
-   - 再输出 "⚠️ 今日避雷" 板块，同样用表格列出有明显利空的股票
+4. **量化评分**（⭐1-5星）：
+   - ⭐⭐⭐⭐⭐（5星）：核心龙头，直接受益，逻辑最硬
+   - ⭐⭐⭐⭐（4星）：关联受益，供应链或竞争关系明确
+   - ⭐⭐⭐（3星）：间接关联，受益程度一般
+   - ⭐⭐（2星）：边缘关联，受益不确定
+   - ⭐（1星）：仅概念沾边
+5. **输出格式**：
+   - 每条重大新闻作为二级标题（### 新闻标题）
+   - 该新闻下用 Markdown 表格列出关联股票：股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期
+   - 所有 ⭐⭐⭐⭐⭐ 和 ⭐⭐⭐⭐ 的股票必须出现在表格中
+   - 3星及以下股票在每条新闻最后只列名字和代码，不展开分析
 
 注意：
-- 即使某只股票只被提及一次，只要逻辑成立也应列出
 - 不要编造没有新闻支撑的股票
-- 精选个股数量不少于 5 只，不多于 12 只
+- 同一只股票在不同新闻下可重复列出，但关联逻辑要不同
+- 每条新闻至少推理出 2-3 只关联股票
 
 ---
 今日新闻数据：
@@ -839,6 +856,33 @@ def main():
     # 3.5 AI 选股分析
     print("正在执行 AI 选股...")
     stock_picks = call_stock_picker(news_text)
+
+    # 预先构造 GitHub Pages 基础 URL（用于图表嵌入）
+    today_str = datetime.now().strftime("%Y%m%d")
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if repo:
+        owner = repo.split("/")[0].lower()
+        repo_name = repo.split("/")[1]
+        page_base_url = f"https://{owner}.github.io/{repo_name}/"
+    else:
+        page_base_url = "https://ivyxiashengjie.github.io/stock-daily-report/"
+
+    # 对 5-4 星股票生成技术分析图表
+    if stock_picks and stock_analyzer:
+        stock_list = stock_analyzer.parse_stock_picks(stock_picks)
+        if stock_list:
+            print(f"  发现 {len(stock_list)} 只高评分股票，正在生成技术分析图...")
+            charts_dir = os.path.join("docs", "charts")
+            chart_urls = stock_analyzer.analyze_stocks(stock_list, charts_dir, page_base_url)
+            if chart_urls:
+                # 在 stock_picks 末尾追加图表链接
+                chart_md = "\n\n### 📊 技术分析图\n\n"
+                for name, code, stars, url in chart_urls:
+                    chart_md += f"**{name} {code}**（{'⭐' * stars}）\n\n"
+                    chart_md += f"![{name} 技术分析]({url})\n\n"
+                stock_picks += chart_md
+                print(f"  已生成 {len(chart_urls)} 张技术分析图")
+
     if stock_picks:
         report += format_stock_picks(stock_picks)
         print("AI 选股完成")
@@ -849,15 +893,7 @@ def main():
 
     # 4. 生成 HTML 详情页
     print("\n正在生成详情页...")
-    # 预先构造 GitHub Pages URL，嵌入 HTML/PDF 中
-    today_str = datetime.now().strftime("%Y%m%d")
-    repo = os.environ.get("GITHUB_REPOSITORY", "")
-    if repo:
-        owner = repo.split("/")[0].lower()
-        repo_name = repo.split("/")[1]
-        page_url = f"https://{owner}.github.io/{repo_name}/report_{today_str}.html"
-    else:
-        page_url = "https://ivyxiashengjie.github.io/stock-daily-report/"
+    page_url = f"{page_base_url}report_{today_str}.html"
     html = generate_html_report(report, quotes, news, page_url)
     page_url = deploy_github_pages(html)
 

@@ -25,6 +25,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install dependencies
+        run: |
+          pip install baostock matplotlib pandas
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk
+
       - name: Generate Stock Report
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
@@ -39,6 +45,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull origin main --rebase || true
           git add docs/ || true
+          git add stock_analyzer.py || true
           git diff --cached --quiet || git commit -m "update: 股市日报 $(date +%Y-%m-%d)"
           git push || true
 
