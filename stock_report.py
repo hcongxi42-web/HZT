@@ -10,7 +10,7 @@ import re
 import urllib.parse
 import urllib.request
 import urllib.error
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 股票技术分析模块（可选依赖）
 try:
@@ -344,7 +344,7 @@ def markdown_to_html(md):
     return "\n".join(html_parts)
 
 
-def generate_html_report(report, quotes, news_list, page_url=""):
+def generate_html_report(report, quotes, news_list, page_url="", page_base_url=""):
     """生成 Bloomberg/WSJ 风格 HTML 详情页"""
     today = datetime.now().strftime("%Y-%m-%d")
     today_en = datetime.now().strftime("%B %d, %Y")
@@ -353,6 +353,15 @@ def generate_html_report(report, quotes, news_list, page_url=""):
     weekday_cn = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
     weekday = weekday_names[datetime.now().weekday()]
     wk_cn = weekday_cn[datetime.now().weekday()]
+
+    # 历史简报导航链接
+    history_links_html = ""
+    if page_base_url:
+        for i in range(1, 6):
+            d = datetime.now() - timedelta(days=i)
+            d_str = d.strftime("%Y%m%d")
+            label = d.strftime("%m月%d日")
+            history_links_html += f'<a class="history-link" href="{page_base_url}report_{d_str}.html">{label}</a>'
 
     # 指数行情行
     quote_rows = ""
@@ -449,6 +458,32 @@ body {{
 .masthead {{
   max-width: 860px; margin: 0 auto; padding: 36px 20px 24px;
   border-bottom: 2px solid #1a1a1a; text-align: center;
+}}
+
+/* ===== 历史简报导航条 ===== */
+.history-nav {{
+  max-width: 860px; margin: 0 auto; padding: 14px 20px;
+  border-bottom: 1px solid #e0dcd5;
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; background: #faf8f5;
+}}
+.history-label {{
+  font-size: 12px; font-weight: 700; color: #888;
+  letter-spacing: 1px; text-transform: uppercase;
+  margin-right: 6px;
+}}
+.history-link {{
+  font-size: 12px; font-weight: 600; color: #c0392b;
+  padding: 5px 12px; border-radius: 3px;
+  background: #fff; border: 1px solid #e8e4dc;
+  text-decoration: none; transition: all 0.2s;
+}}
+.history-link:hover {{
+  background: #c0392b; color: #fff; border-color: #c0392b;
+}}
+.history-current {{
+  background: #c0392b; color: #fff; border-color: #c0392b;
+  cursor: default;
 }}
 .masthead-date {{
   font-size: 12px; color: #888; letter-spacing: 2px;
@@ -610,6 +645,12 @@ body {{
 <!-- 行情条 -->
 <div class="ticker-strip">
   <div class="ticker-inner">{quote_rows}</div>
+</div>
+
+<!-- 历史简报导航 -->
+<div class="history-nav">
+  <span class="history-label">📅 历史简报</span>
+  {history_links_html}
 </div>
 
 <!-- 标题区 -->
@@ -901,7 +942,7 @@ def main():
     # 4. 生成 HTML 详情页
     print("\n正在生成详情页...")
     page_url = f"{page_base_url}report_{today_str}.html"
-    html = generate_html_report(report, quotes, news, page_url)
+    html = generate_html_report(report, quotes, news, page_url, page_base_url)
     page_url = deploy_github_pages(html)
 
     # 4.5 生成 PDF
