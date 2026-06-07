@@ -1,7 +1,7 @@
 """
 独立版股市日报生成器 - 用于 GitHub Actions 定时运行
-直接抓取新闻 + 调用通义千问 API 生成报告
-支持微信推送（Server酱）+ GitHub Pages 详情页
+多市场新闻聚合 + DeepSeek AI 分析 + 技术图表 + GitHub Pages 部署
+支持微信推送（Server酱）+ 多平台 Webhook
 """
 
 import json
@@ -18,18 +18,22 @@ try:
 except ImportError:
     stock_analyzer = None
 
-# 共享爬取函数（避免与 news_fetcher.py 重复维护）
-from news_fetcher import fetch_cls_news, fetch_eastmoney_news
+# 共享新闻 & 资金面抓取模块
+from news_fetcher import fetch_all_news_flat
 
 
-# ============ 指数行情抓取 ============
+# ============================================================
+#  指数行情抓取
+# ============================================================
 
 def fetch_index_quotes():
-    """从新浪财经抓取主要指数实时行情"""
+    """从新浪财经抓取 A 股主要指数 + 恒生 + 纳斯达克 实时行情。"""
     symbols = {
         "sh000001": "上证指数",
         "sz399001": "深证成指",
         "sz399006": "创业板指",
+        "int_hangseng": "恒生指数",
+        "int_nasdaq": "纳斯达克",
     }
     results = []
     for code, name in symbols.items():
@@ -45,233 +49,232 @@ def fetch_index_quotes():
             if code.startswith("sh") or code.startswith("sz"):
                 price = float(parts[3])
                 prev_close = float(parts[2])
+                high = float(parts[4])
+                low = float(parts[5])
                 change_pct = (price - prev_close) / prev_close * 100 if prev_close else 0
-                results.append({"name": name, "code": code, "price": f"{price:.2f}", "change": f"{change_pct:+.2f}%"})
+                results.append({
+                    "name": name, "code": code,
+                    "price": f"{price:.2f}",
+                    "change": f"{change_pct:+.2f}%",
+                    "high": f"{high:.2f}", "low": f"{low:.2f}",
+                })
             elif code.startswith("int_"):
                 price = float(parts[1])
-                change = float(parts[4]) if len(parts) > 4 else 0
                 change_pct = float(parts[5].replace("%", "")) if len(parts) > 5 else 0
-                results.append({"name": name, "code": code, "price": f"{price:.2f}", "change": f"{change_pct:+.2f}%"})
+                results.append({
+                    "name": name, "code": code,
+                    "price": f"{price:.2f}",
+                    "change": f"{change_pct:+.2f}%",
+                    "high": "--", "low": "--",
+                })
         except Exception:
-            results.append({"name": name, "code": code, "price": "--", "change": "--"})
+            results.append({"name": name, "code": code, "price": "--", "change": "--", "high": "--", "low": "--"})
     return results
 
 
-# ============ 新闻抓取部分 ============
-# fetch_cls_news / fetch_eastmoney_news 统一从 news_fetcher.py 导入，避免重复维护
-
+# ============================================================
+#  新闻抓取 & 格式化
+# ============================================================
 
 def fetch_all_news():
-    """抓取 A 股新闻（财联社 + 东方财富）"""
-    news = []
-    news.extend(fetch_cls_news(market_filter="A"))
-    news.extend(fetch_eastmoney_news())
-    return news
+    """抓取全市场新闻 + 资金面数据（已通过 news_fetcher 聚合）。"""
+    articles, errors, northbound, fund_flow = fetch_all_news_flat("all")
+    for err in errors:
+        print(f"  [WARN] {err.get('error', str(err))}")
+    return articles, northbound, fund_flow
 
 
-def format_news(news_list):
-    lines = [f"日期: {datetime.now().strftime('%Y-%m-%d %H:%M')}", f"共抓取 {len(news_list)} 条新闻\n"]
-    articles = [n for n in news_list if "error" not in n]
-    if articles:
-        lines.append(f"\n## A股 ({len(articles)}条)")
-        for i, a in enumerate(articles[:15], 1):
-            lines.append(f"{i}. [{a.get('time','')}] {a.get('title','')}")
+def format_news(news_list, northbound=None, fund_flow=None):
+    """将多市场新闻和资金面数据格式化为 LLM 可读文本。"""
+    today_str = datetime.now().strftime("%Y-%m-%d")
+
+    lines = [
+        f"日期: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        f"今日 {today_str} 是交易日，以下为当日多市场资讯汇总。",
+        "",
+    ]
+
+    # ---- 资金面概览 ----
+    if fund_flow:
+        lines.append("## 资金面 · 大盘主力资金流向（近5日）")
+        lines.append("")
+        for row in fund_flow:
+            direction = "净流入" if row["net_flow"] >= 0 else "净流出"
+            lines.append(
+                f"- {row['date']}  主力{direction} {abs(row['net_flow']):.2f} 亿元  "
+                f"(流入 {row['main_in']:.2f} 亿 / 流出 {row['main_out']:.2f} 亿)"
+            )
+        lines.append("")
+
+    if northbound:
+        lines.append("## 资金面 · 北向资金（近5日）")
+        lines.append("")
+        for row in northbound:
+            direction = "净流入" if row.get("net_buy_total", 0) >= 0 else "净流出"
+            lines.append(
+                f"- {row['date']}  北向{direction} {abs(row['net_buy_total']):.2f} 亿元  "
+                f"(沪股通 {row['net_buy_sh']:+.2f} 亿 / 深股通 {row['net_buy_sz']:+.2f} 亿)"
+            )
+        lines.append("")
+
+    # ---- 新闻正文 ----
+    lines.append(f"共抓取 {len(news_list)} 条新闻")
+    lines.append("")
+
+    # 按市场分组
+    markets = {"A股": [], "美股": [], "港股": []}
+    for a in news_list:
+        mkt = a.get("market", "其他")
+        if mkt in markets:
+            markets[mkt].append(a)
+        else:
+            markets.setdefault("其他", []).append(a)
+
+    for mkt_name, articles in markets.items():
+        if not articles:
+            continue
+        lines.append(f"\n## {mkt_name} ({len(articles)}条)")
+        # 按来源分组
+        sources = {}
+        for a in articles:
+            src = a.get("source", "?")
+            sources.setdefault(src, []).append(a)
+
+        for i, a in enumerate(articles[:30], 1):
+            title = a.get("title", "")
             summary = a.get("summary", "")
-            if summary and summary != a.get("title", ""):
-                lines.append(f"   {summary[:120]}")
+            time_str = a.get("time", "")
+            src = a.get("source", "")
+            news_type = a.get("type", "")
+
+            line = f"{i}. [{time_str}] [{src}] {title}"
+            lines.append(line)
+            # 摘要（如果与标题不同且有内容）
+            if summary and summary != title and len(summary) > 10:
+                lines.append(f"   {summary[:200]}")
+
     return "\n".join(lines)
 
 
-# ============ LLM 分析部分 ============
+def format_news_brief(news_list):
+    """轻量版新闻摘要——用于微信推送等短场景。"""
+    lines = [f">>> {datetime.now().strftime('%Y-%m-%d')} 多市场资讯 <<<"]
+    markets = {"A股": [], "美股": [], "港股": []}
+    for a in news_list:
+        mkt = a.get("market", "")
+        if mkt in markets:
+            markets[mkt].append(a)
 
-SYSTEM_PROMPT = "你是一位资深金融分析师，擅长解读股市新闻并生成专业的每日市场简报。你的分析客观、专业、简洁。"
-
-USER_PROMPT_TEMPLATE = """请根据以下今日股市新闻，生成一份专业的《每日股市简报》。
-
-要求：
-1. **市场总览**：用2-3句话概括今日A股的整体动向
-2. **重要新闻TOP5**：提取最重要的5条新闻，简要说明其影响
-3. **个股聚焦**：如有值得关注的个股动态，列出并简析
-4. **市场情绪**：基于新闻判断当前市场情绪（乐观/中性/悲观），说明理由
-5. **明日展望**：基于今日消息面，简要预判明日可能走向
-
-格式：Markdown，结构清晰，语言专业简洁。
-
----
-今日新闻数据：
-
-{news_text}"""
+    for mkt, articles in markets.items():
+        if articles:
+            lines.append(f"\n【{mkt} TOP 8】")
+            for i, a in enumerate(articles[:8], 1):
+                lines.append(f"{i}. {a.get('title','')[:60]}")
+    return "\n".join(lines)
 
 
-# ============ AI 选股部分 ============
+# ============================================================
+#  LLM 分析 — 提示词
+# ============================================================
 
-STOCK_PICKER_SYSTEM_PROMPT = (
-    "你是一位资深量化选股分析师，擅长从海量财经新闻中系统性挖掘具有短期或中期交易机会的个股。"
-    "你需要全面扫描所有新闻，不遗漏任何被明确提及的股票。"
-    "输出必须结构化、量化、可执行，对每只股票的判断必须有新闻依据，严禁编造。"
+SYSTEM_PROMPT = (
+    "你是一位顶级对冲基金策略分析师，拥有 20 年全球宏观与多资产配置经验。"
+    "你擅长从海量信息中提炼关键信号，用简洁犀利的语言呈现市场判断。"
+    "你的读者是专业投资者，不需要科普，需要的是洞察和可操作的观点。"
 )
 
-STOCK_PICKER_TEMPLATE = """请基于以下今日股市新闻，执行深度供应链选股分析。
+USER_PROMPT_TEMPLATE = """请基于以下今日多市场资讯和资金面数据，生成一份机构级《每日市场情报》。
 
-任务要求：
-1. **全面扫描**：仔细阅读每一条新闻，找出所有被明确提及的股票（包括股票名称、代码）。
-2. **供应链推理**：对每条重大新闻中的核心公司，进一步推理其供应商、客户、竞争对手、产业链上下游是否也间接受益或受损。例如：
-   - 若某机器人公司IPO利好 → 分析其减速器/伺服电机/传感器供应商
-   - 若某芯片公司技术突破 → 分析其设备商、材料商、封测厂
-   - 若某新能源车销量大增 → 分析其电池、电机、零部件供应商
-3. **分类标记**：
-   - 🔥 强势利好：业绩大增、重大合同、政策扶持、技术突破、并购重组
-   - ⚡ 事件驱动：行业会议、产品发布、订单公告、获机构调研
-   - ⚠️ 利空风险：业绩下滑、监管处罚、减持、安全事故、诉讼
-4. **量化评分**（⭐1-5星）：
-   - ⭐⭐⭐⭐⭐（5星）：核心龙头，直接受益，逻辑最硬
-   - ⭐⭐⭐⭐（4星）：关联受益，供应链或竞争关系明确
-   - ⭐⭐⭐（3星）：间接关联，受益程度一般
-   - ⭐⭐（2星）：边缘关联，受益不确定
-   - ⭐（1星）：仅概念沾边
-5. **输出格式**：
-   - 每条重大新闻作为二级标题（### 新闻标题）
-   - 该新闻下用 Markdown 表格列出关联股票：股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期
-   - 所有 ⭐⭐⭐⭐⭐ 和 ⭐⭐⭐⭐ 的股票必须出现在表格中
-   - 3星及以下股票在每条新闻最后只列名字和代码，不展开分析
+要求：
+1. **资金面信号**：基于主力资金流向和北向资金数据，判断当前资金态度（进攻/防守/观望），1-2句话点出关键信号
+2. **A股主线扫描**：识别今日 A 股最核心的 3 条主线，每条说明驱动逻辑和可持续性判断
+3. **跨市场联动**：美股、港股的异动对 A 股可能产生的映射和传导
+4. **重要舆情 TOP 8**：提取最重要的 8 条新闻，简述影响，标注利好/利空/中性
+5. **情绪温度计**：综合资金面+新闻面，给出市场情绪评级（🔥热/😊偏暖/😐中性/😟谨慎/❄️冰点），说明理由
+6. **明日推演**：基于今日盘面和消息面，推演明日最可能的 2-3 个情景
 
-注意：
-- 不要编造没有新闻支撑的股票
-- 同一只股票在不同新闻下可重复列出，但关联逻辑要不同
-- 每条新闻至少推理出 2-3 只关联股票
+风格要求：
+- 语言犀利直接，避免废话
+- 每部分 3-5 句即可，不要长篇大论
+- 用「」标记关键术语和股票名称
 
 ---
-今日新闻数据：
+数据：
 
 {news_text}"""
 
 
-def call_stock_picker(news_text):
-    """调用 LLM 执行系统性 AI 选股分析"""
-    api_key = os.environ.get("DEEPSEEK_API_KEY", "")
-    if not api_key:
-        return ""
-    url = "https://api.deepseek.com/v1/chat/completions"
-    payload = json.dumps({
-        "model": "deepseek-v4-pro",
-        "messages": [
-            {"role": "system", "content": STOCK_PICKER_SYSTEM_PROMPT},
-            {"role": "user", "content": STOCK_PICKER_TEMPLATE.format(news_text=news_text)},
-        ],
-        "temperature": 0.3,
-        "max_tokens": 4096,
-    }).encode("utf-8")
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-    req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            data = json.loads(resp.read().decode())
-        return data["choices"][0]["message"]["content"]
-    except Exception:
-        return ""
+# ============================================================
+#  AI 选股 — 提示词
+# ============================================================
+
+STOCK_PICKER_SYSTEM_PROMPT = (
+    "你是一位以产业链逻辑见长的量化选股专家，"
+    "擅长从新闻事件中推导出整个产业链的受益/受损传导链，"
+    "精准锁定具有交易价值的个股。"
+    "你对每只股票的判断必须有清晰的新闻依据或产业链逻辑，绝不编造。"
+)
+
+STOCK_PICKER_TEMPLATE = """请基于以下今日多市场资讯和资金面数据，执行系统性选股分析。
+
+步骤：
+
+1. **新闻扫描**：逐条扫描所有新闻，找出被明确提及的所有股票
+2. **产业链扩展**：对每条重大新闻，推导其上游供应商、下游客户、竞争对标、产业链替代标的
+   - 例：「某操作系统获政策支持」→ 核心软件商 → 适配芯片商 → 服务器/PC 整机商 → 行业应用商
+   - 例：「某公司签署大单」→ 该公司上游设备/材料商 → 同行业竞争对手（分流）
+3. **资金面过滤**：结合主力资金流向，优先关注资金持续流入的板块/方向
+4. **分级标注**：
+   - 🔥🔥🔥 核心标的：直接受益/受损，逻辑清晰，短期可见催化
+   - 🔥🔥 关联标的：产业链传导，间接受益
+   - 🔥 观察标的：概念沾边，逻辑较长
+5. **输出结构**：
+   - 每条重大新闻作为 ### 三级标题
+   - 该新闻后用表格列出关联股票：| 股票名称代码 | 关联逻辑 | 方向 | 确定性 |
+   - 🔥🔥🔥（核心）和 🔥🔥（关联）必须放入表格
+   - 🔥（观察）股票在每条新闻末尾列表形式简要提及
+6. **避雷区**：用 ### ⚠️ 避雷 列出今日出现明确利空的个股（减持/业绩暴雷/监管处罚/安全事故）
+
+注意：
+- 不要编造新闻中不存在的股票
+- 每个表格至少要有 3-5 行（显示出产业链推理深度）
+- 如果某条新闻极其重要，可以单独用一整个 ### 板块来深度展开
+
+---
+数据：
+
+{news_text}"""
 
 
-def format_stock_picks(picks_md):
-    """将选股结果格式化为日报独立板块"""
-    if not picks_md or not picks_md.strip():
-        return ""
-    return (
-        "\n\n---\n\n"
-        "## 📌 每日精选个股（AI 选股）\n\n"
-        f"{picks_md}\n"
-    )
+# ============================================================
+#  LLM 调用
+# ============================================================
 
-
-def insert_charts_into_picks(stock_picks, chart_urls):
-    """将技术分析图插入到对应的股票下方。
-
-    策略：保持 AI 生成的表格完整不拆分，在表格结束后的
-    第一个空行处按表格出现顺序插入对应股票的 K 线图。
-    未匹配的图表追加在最末尾。
-    """
-    if not chart_urls:
-        return stock_picks
-
-    # 移除旧版独立「技术分析图」板块（兼容历史数据）
-    stock_picks = re.sub(r'\n*###\s*📊\s*技术分析图\s*\n(?:\*\*.*?\*\*[^\n]*\n|!\[.*?\]\(.*?\)\n|\n)*',
-                         '', stock_picks)
-
-    # 按在 stock_picks 中出现的顺序重排 chart_urls
-    def _appearance_order(name, code, _stars, _url):
-        num_match = re.search(r'(\d{6})', code)
-        if not num_match:
-            return 9999
-        idx = stock_picks.find(num_match.group(1))
-        return idx if idx >= 0 else 9999
-
-    # 拆分成「表格前 / 表格体 / 表格后」三段
-    lines = stock_picks.split('\n')
-
-    # 找到表格结束位置：连续 |...| 行之后第一个非 |...| 非空行
-    table_start = None
-    table_end = None
-    in_table = False
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        is_table_row = bool(re.match(r'^\|.+\|$', stripped))
-        if is_table_row and not in_table:
-            table_start = i
-            in_table = True
-        elif not is_table_row and in_table:
-            table_end = i
-            break
-    # 修正：表格结束后可能是空行，找下一个非空行
-    if table_end is not None:
-        while table_end < len(lines) and lines[table_end].strip() == '':
-            table_end += 1
-
-    # 确定插入点：紧接表格体之后（表格末行后一个空行）
-    if table_end is not None:
-        insert_at = table_end - 1  # 表格最后一个数据行
-        # 回溯到最后一个表格行
-        while insert_at >= 0 and not re.match(r'^\|.+\|$', lines[insert_at].strip()):
-            insert_at -= 1
-        insert_at += 1  # 紧接表格末行之后
-    else:
-        # 找不到表格，追加在末尾
-        insert_at = len(lines)
-
-    # 按表格中出现顺序排列图表
-    ordered = sorted(chart_urls, key=lambda x: _appearance_order(*x))
-    chart_lines = []
-    for name, code, _stars, url in ordered:
-        chart_lines.append('')
-        chart_lines.append(f'![{name} {code}]({url})')
-        chart_lines.append('')
-
-    # 插入（先插入一个空行作为分隔）
-    result = lines[:insert_at]
-    if result and result[-1].strip() != '':
-        result.append('')
-    result.extend(chart_lines)
-    result.extend(lines[insert_at:])
-
-    return '\n'.join(result)
-
-
-def call_llm(news_text):
+def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096):
+    """通用 DeepSeek API 调用。"""
     api_key = os.environ.get("DEEPSEEK_API_KEY", "")
     if not api_key:
         return "错误：未设置 DEEPSEEK_API_KEY 环境变量"
+
     url = "https://api.deepseek.com/v1/chat/completions"
     payload = json.dumps({
         "model": "deepseek-v4-pro",
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": USER_PROMPT_TEMPLATE.format(news_text=news_text)},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
         ],
-        "temperature": 0.5,
-        "max_tokens": 4096,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
     }).encode("utf-8")
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-    req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=180) as resp:
             data = json.loads(resp.read().decode())
         return data["choices"][0]["message"]["content"]
     except urllib.error.HTTPError as e:
@@ -281,32 +284,113 @@ def call_llm(news_text):
         return f"API 调用失败: {str(e)}"
 
 
-# ============ HTML 详情页生成 ============
+def call_llm(news_text):
+    """调用 LLM 生成市场分析报告。"""
+    return _call_deepseek(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
+                          temperature=0.5, max_tokens=4096)
+
+
+def call_stock_picker(news_text):
+    """调用 LLM 执行产业链选股分析。"""
+    return _call_deepseek(STOCK_PICKER_SYSTEM_PROMPT, STOCK_PICKER_TEMPLATE.format(news_text=news_text),
+                          temperature=0.3, max_tokens=6144)
+
+
+def format_stock_picks(picks_md):
+    """将选股结果封装为日报板块。"""
+    if not picks_md or not picks_md.strip():
+        return ""
+    return (
+        "\n\n---\n\n"
+        "## 📌 产业链选股（AI 驱动）\n\n"
+        f"{picks_md}\n"
+    )
+
+
+# ============================================================
+#  图表嵌入
+# ============================================================
+
+def insert_charts_into_picks(stock_picks, chart_urls):
+    """将技术分析图插入选股文本：保持表格完整，在表格后追加 K 线图。"""
+    if not chart_urls:
+        return stock_picks
+
+    # 移除旧版独立「技术分析图」板块
+    stock_picks = re.sub(
+        r'\n*###\s*📊\s*技术分析图\s*\n(?:\*\*.*?\*\*[^\n]*\n|!\[.*?\]\(.*?\)\n|\n)*',
+        '', stock_picks
+    )
+
+    def _appearance_order(_name, code, _stars, _url):
+        num_match = re.search(r'(\d{6})', code)
+        if not num_match:
+            return 9999
+        idx = stock_picks.find(num_match.group(1))
+        return idx if idx >= 0 else 9999
+
+    lines = stock_picks.split('\n')
+
+    # 定位表格结束
+    in_table = False
+    table_end = None
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        is_table_row = bool(re.match(r'^\|.+\|$', stripped))
+        if is_table_row and not in_table:
+            in_table = True
+        elif not is_table_row and in_table:
+            table_end = i
+            break
+
+    if table_end is not None:
+        while table_end < len(lines) and lines[table_end].strip() == '':
+            table_end += 1
+
+    if table_end is not None:
+        insert_at = table_end - 1
+        while insert_at >= 0 and not re.match(r'^\|.+\|$', lines[insert_at].strip()):
+            insert_at -= 1
+        insert_at += 1
+    else:
+        insert_at = len(lines)
+
+    ordered = sorted(chart_urls, key=lambda x: _appearance_order(*x))
+    chart_lines = []
+    for name, code, _stars, url in ordered:
+        chart_lines.append('')
+        chart_lines.append(f'![{name} {code}]({url})')
+        chart_lines.append('')
+
+    result = lines[:insert_at]
+    if result and result[-1].strip() != '':
+        result.append('')
+    result.extend(chart_lines)
+    result.extend(lines[insert_at:])
+
+    return '\n'.join(result)
+
+
+# ============================================================
+#  Markdown → HTML（Bloomberg Terminal 风格）
+# ============================================================
 
 def markdown_to_html(md):
-    """将 Markdown 转为结构化 HTML（Bloomberg/WSJ 风格），支持表格。
+    """两阶段 Markdown→HTML 转换，支持表格和图片。"""
 
-    采用两阶段处理：
-      1. 预扫描 — 将 Markdown 表格块转为 HTML，用占位符替换
-      2. 标准处理 — 段落、标题、列表等，占位符直接插入原始 HTML
-    """
-
-    # ---- 阶段 1：提取表格 ----
-    tables = []          # 存放生成的 HTML 表格
+    # ---- Phase 1: 表格提取 ----
+    tables = []
     lines = md.split("\n")
-    processed_lines = []  # 替换占位符后的行序列
+    processed_lines = []
     i = 0
     while i < len(lines):
         raw = lines[i]
         stripped = raw.strip()
         if re.match(r"^\|.+\|$", stripped):
-            # 检查下一行是否为分隔行 |---|:---:|...|
             if i + 1 < len(lines) and re.match(r"^\|(?:[\s\-:]+\|)+$", lines[i + 1].strip()):
-                # ---------- 解析表头 ----------
                 header_cells = [c.strip() for c in stripped.split("|")[1:-1]]
                 sep_cells = [c.strip() for c in lines[i + 1].strip().split("|")[1:-1]]
 
-                # 对齐方式
                 aligns = []
                 for sep in sep_cells:
                     if sep.startswith(":") and sep.endswith(":"):
@@ -318,15 +402,12 @@ def markdown_to_html(md):
                 while len(aligns) < len(header_cells):
                     aligns.append("left")
 
-                # 构建表头 HTML
-                html = '<div class="rpt-table-wrapper"><table class="rpt-table"><thead><tr>'
+                html = '<div class="tbl-wrap"><table class="tbl"><thead><tr>'
                 for j, cell in enumerate(header_cells):
-                    al = aligns[j]
-                    html += f'<th style="text-align:{al}">{cell}</th>'
+                    html += f'<th style="text-align:{aligns[j]}">{cell}</th>'
                 html += "</tr></thead><tbody>"
 
-                # ---------- 解析数据行 ----------
-                i += 2  # 跳到表体第一行
+                i += 2
                 while i < len(lines) and re.match(r"^\|.+\|$", lines[i].strip()):
                     row_line = lines[i].strip()
                     cells = [c.strip() for c in row_line.split("|")[1:-1]]
@@ -338,18 +419,15 @@ def markdown_to_html(md):
                     i += 1
 
                 html += "</tbody></table></div>"
-
                 token = f"%%TABLE_{len(tables)}%%"
                 tables.append(html)
                 processed_lines.append(token)
-                continue  # i 已被内层 while 推进到表尾之后
-
+                continue
         processed_lines.append(raw)
         i += 1
 
-    # ---- 阶段 2：标准解析（含表格占位符） ----
+    # ---- Phase 2: 标准解析 ----
     md_clean = "\n".join(processed_lines)
-
     sections = []
     current_section = {"title": "", "content": []}
 
@@ -358,7 +436,7 @@ def markdown_to_html(md):
         if not line:
             continue
 
-        # 表格占位符 → 直接注入 HTML
+        # 表格占位符
         tbl_match = re.match(r"^%%TABLE_(\d+)%%$", line)
         if tbl_match:
             idx = int(tbl_match.group(1))
@@ -366,6 +444,7 @@ def markdown_to_html(md):
                 current_section["content"].append(("raw_html", tables[idx]))
             continue
 
+        # 标题
         h_match = re.match(r"^#{1,3}\s+(.+)$", line)
         if h_match:
             if current_section["title"] or current_section["content"]:
@@ -373,59 +452,79 @@ def markdown_to_html(md):
             current_section = {"title": h_match.group(1), "content": []}
             continue
 
-        # Markdown 图片: ![alt](url)
+        # 图片
         img_match = re.match(r"^!\[(.+)\]\((.+)\)$", line)
         if img_match:
             alt = img_match.group(1)
             url = img_match.group(2)
-            # 处理 alt 文本中的 **bold** 标记
             alt = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", alt)
             current_section["content"].append(("img", alt, url))
             continue
 
+        # Bold
         line = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", line)
+
+        # 有序列表
         ol_match = re.match(r"^(\d+)\.\s+(.+)$", line)
         if ol_match:
             current_section["content"].append(("ol", ol_match.group(1), ol_match.group(2)))
             continue
+
+        # 无序列表
         ul_match = re.match(r"^[-*]\s+(.+)$", line)
         if ul_match:
             current_section["content"].append(("ul", ul_match.group(1)))
             continue
+
         if line == "---":
             continue
+
         current_section["content"].append(("p", line))
 
     if current_section["title"] or current_section["content"]:
         sections.append(current_section)
 
+    # 渲染
     html_parts = []
     for sec in sections:
-        html_parts.append('<div class="rpt-section">')
+        html_parts.append('<div class="sec">')
         if sec["title"]:
             clean_title = re.sub(r"^[一二三四五六七八九十]+[、．.]?\s*", "", sec["title"])
-            html_parts.append(f'<h3 class="rpt-heading">{clean_title}</h3>')
+            # 移除 emoji 前缀做样式
+            html_parts.append(f'<h3 class="sec-h">{clean_title}</h3>')
         for item in sec["content"]:
             typ = item[0]
             if typ == "ol":
-                num, text = item[1], item[2]
-                html_parts.append(f'<div class="rpt-news-item"><span class="rpt-num">{num}</span><div class="rpt-news-text">{text}</div></div>')
+                html_parts.append(
+                    f'<div class="ni"><span class="ni-num">{item[1]}</span>'
+                    f'<div class="ni-text">{item[2]}</div></div>'
+                )
             elif typ == "ul":
-                html_parts.append(f'<div class="rpt-bullet"><div class="rpt-bullet-text">{item[1]}</div></div>')
+                html_parts.append(f'<div class="bi">{item[1]}</div>')
             elif typ == "raw_html":
-                html_parts.append(item[1])  # 直接注入 HTML，不加任何包装
+                html_parts.append(item[1])
             elif typ == "img":
                 alt, url = item[1], item[2]
-                html_parts.append(f'<div class="rpt-chart"><img src="{url}" alt="{alt}" loading="lazy" onerror="this.parentElement.style.display=\'none\'"></div>')
+                html_parts.append(
+                    f'<div class="chart-img">'
+                    f'<img src="{url}" alt="{alt}" loading="lazy" '
+                    f'onerror="this.parentElement.style.display=\'none\'">'
+                    f'</div>'
+                )
             else:
-                html_parts.append(f'<p class="rpt-para">{item[1]}</p>')
+                html_parts.append(f'<p class="para">{item[1]}</p>')
         html_parts.append("</div>")
 
     return "\n".join(html_parts)
 
 
-def generate_html_report(report, quotes, news_list, page_url="", page_base_url=""):
-    """生成 Bloomberg/WSJ 风格 HTML 详情页"""
+# ============================================================
+#  HTML 报告生成 —  Bloomberg Terminal Dark 审美
+# ============================================================
+
+def generate_html_report(report, quotes, news_list, page_url="", page_base_url="",
+                         northbound=None, fund_flow=None):
+    """生成暗色 Bloomberg Terminal 风格 HTML 详情页。"""
     today = datetime.now().strftime("%Y-%m-%d")
     today_en = datetime.now().strftime("%B %d, %Y")
     now_str = datetime.now().strftime("%H:%M")
@@ -434,380 +533,505 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     weekday = weekday_names[datetime.now().weekday()]
     wk_cn = weekday_cn[datetime.now().weekday()]
 
-    # 历史简报导航链接
+    # ---- 历史简报导航 ----
     history_links_html = ""
     if page_base_url:
         for i in range(1, 6):
             d = datetime.now() - timedelta(days=i)
-            d_str = d.strftime("%Y%m%d")
             label = d.strftime("%m月%d日")
-            history_links_html += f'<a class="history-link" href="{page_base_url}report_{d_str}.html">{label}</a>'
+            history_links_html += (
+                f'<a class="hl" href="{page_base_url}report_{d.strftime("%Y%m%d")}.html">'
+                f'{label}</a>'
+            )
 
-    # 指数行情行
-    quote_rows = ""
+    # ---- 行情条 ----
+    quote_cells = ""
     for q in quotes:
         change_str = q["change"]
         is_up = change_str.startswith("+")
         is_down = change_str.startswith("-") and change_str != "--"
-        cls = "up" if is_up else ("down" if is_down else "flat")
-        arrow = "&#9650;" if is_up else ("&#9660;" if is_down else "")
-        quote_rows += f'<div class="ticker {cls}"><div class="ticker-name">{q["name"]}</div><div class="ticker-price">{q["price"]}</div><div class="ticker-change">{arrow} {change_str}</div></div>'
+        direction = "up" if is_up else ("dn" if is_down else "")
+        arrow = "▲" if is_up else ("▼" if is_down else "─")
+        quote_cells += (
+            f'<div class="tkr {direction}">'
+            f'<span class="tkr-n">{q["name"]}</span>'
+            f'<span class="tkr-p">{q["price"]}</span>'
+            f'<span class="tkr-c">{arrow} {change_str}</span>'
+            f'</div>'
+        )
 
-    # 分时图
+    # ---- 资金面面板 ----
+    fund_panel = ""
+    if fund_flow:
+        fund_panel += '<div class="fp"><div class="fp-h">主力资金流向（近5日 · 亿元）</div><div class="fp-bars">'
+        max_val = max(abs(r["net_flow"]) for r in fund_flow) if fund_flow else 1
+        for row in fund_flow:
+            net = row["net_flow"]
+            is_pos = net >= 0
+            pct = min(abs(net) / max_val * 100, 100) if max_val else 0
+            color = "#00c853" if is_pos else "#ff1744"
+            fund_panel += (
+                f'<div class="fp-bar-row">'
+                f'<span class="fp-date">{row["date"][-5:]}</span>'
+                f'<span class="fp-bar-bg"><span class="fp-bar-fill" style="width:{pct}%;background:{color}"></span></span>'
+                f'<span class="fp-val" style="color:{color}">{net:+.1f}</span>'
+                f'</div>'
+            )
+        fund_panel += '</div></div>'
+
+    if northbound:
+        fund_panel += '<div class="fp"><div class="fp-h">北向资金（近5日 · 亿元）</div><div class="fp-bars">'
+        max_val = max(abs(r.get("net_buy_total", 0)) for r in northbound) if northbound else 1
+        if max_val > 0:
+            for row in northbound:
+                net = row.get("net_buy_total", 0)
+                is_pos = net >= 0
+                pct = min(abs(net) / max_val * 100, 100) if max_val else 0
+                color = "#00c853" if is_pos else "#ff1744"
+                fund_panel += (
+                    f'<div class="fp-bar-row">'
+                    f'<span class="fp-date">{row["date"][-5:]}</span>'
+                    f'<span class="fp-bar-bg"><span class="fp-bar-fill" style="width:{pct}%;background:{color}"></span></span>'
+                    f'<span class="fp-val" style="color:{color}">{net:+.1f}</span>'
+                    f'</div>'
+                )
+        else:
+            fund_panel += '<div class="fp-empty">今日非交易日，暂无北向资金数据</div>'
+        fund_panel += '</div></div>'
+
+    # ---- 市场统计 ----
+    valid_news = [n for n in news_list if "error" not in n]
+    a_count = sum(1 for n in valid_news if n.get("market") == "A股")
+    us_count = sum(1 for n in valid_news if n.get("market") == "美股")
+    hk_count = sum(1 for n in valid_news if n.get("market") == "港股")
+
+    # ---- 分时图 ----
     chart_images = [
-        ("上证指数", "sh000001", "https://image.sinajs.cn/newchart/min/n/sh000001.gif"),
-        ("深证成指", "sz399001", "https://image.sinajs.cn/newchart/min/n/sz399001.gif"),
+        ("上证指数", "https://image.sinajs.cn/newchart/min/n/sh000001.gif"),
+        ("深证成指", "https://image.sinajs.cn/newchart/min/n/sz399001.gif"),
     ]
     chart_html = ""
-    for name, code, img_url in chart_images:
-        chart_html += f'<div class="chart-cell"><div class="chart-label">{name}</div><img src="{img_url}" alt="{name}" onerror="this.parentElement.style.display=\'none\'"></div>'
+    for name, img_url in chart_images:
+        chart_html += (
+            f'<div class="ch-cell">'
+            f'<div class="ch-label">{name}</div>'
+            f'<img src="{img_url}" alt="{name}" loading="lazy" '
+            f'onerror="this.parentElement.style.display=\'none\'">'
+            f'</div>'
+        )
 
-    # 新闻统计
-    valid_news = [n for n in news_list if "error" not in n]
-    a_count = len(valid_news)
-
+    # ---- 报告正文 ----
     report_html = markdown_to_html(report)
 
+    # ---- 组装 ----
     html = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MARKET BRIEF - {today}</title>
+<title>MARKET BRIEF · {today}</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+/* ============================================================
+   Bloomberg Terminal Dark — Professional Market Intelligence
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
 
-* {{ margin: 0; padding: 0; box-sizing: border-box; }}
+:root {{
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-elevated: #1c2333;
+  --border: #21262d;
+  --border-light: #30363d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+  --accent: #ff6b35;
+  --accent-blue: #58a6ff;
+  --green: #3fb950;
+  --red: #f85149;
+  --amber: #d2991d;
+  --purple: #a371f7;
+}}
+
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+
 body {{
-  font-family: 'Noto Sans SC', 'Inter', -apple-system, sans-serif;
-  background: #f7f3ef; color: #1a1a1a; line-height: 1.7;
+  font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
 }}
 
-/* ===== 顶部导航栏 (Bloomberg 风格) ===== */
-.top-bar {{
-  background: #111; color: #fff; padding: 0;
-  border-bottom: 3px solid #c0392b;
+/* ===== TOP BAR ===== */
+.topbar {{
+  background: #000;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
 }}
-.top-bar-inner {{
-  max-width: 860px; margin: 0 auto; padding: 12px 20px;
-  display: flex; align-items: center; justify-content: space-between;
+.topbar-inner {{
+  max-width: 960px; margin:0 auto; padding: 10px 24px;
+  display:flex; align-items:center; justify-content:space-between;
 }}
-.brand {{
-  font-family: 'Playfair Display', 'Noto Serif SC', Georgia, serif;
-  font-size: 22px; font-weight: 900; letter-spacing: 1px; color: #fff;
+.logo {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px; font-weight: 700;
+  letter-spacing: 2px; color: var(--text-primary);
 }}
-.brand span {{ color: #c0392b; }}
-.top-meta {{
-  font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px;
+.logo em {{ color: var(--accent); font-style: normal; }}
+.topbar-meta {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text-muted);
   text-align: right; line-height: 1.5;
 }}
 
-/* ===== Ticker 行情条 ===== */
+/* ===== TICKER STRIP ===== */
 .ticker-strip {{
-  background: #1a1a1a; border-bottom: 1px solid #333;
-  overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
+  background: #000; border-bottom: 1px solid var(--border);
+  overflow-x: auto; white-space: nowrap;
 }}
-.ticker-strip::-webkit-scrollbar {{ height: 0; }}
+.ticker-strip::-webkit-scrollbar {{ height:0; }}
 .ticker-inner {{
-  max-width: 860px; margin: 0 auto; padding: 10px 20px;
-  display: flex; gap: 0;
+  max-width: 960px; margin:0 auto; padding: 8px 24px;
+  display:flex; gap:0;
 }}
-.ticker {{
-  flex: 0 0 auto; padding: 6px 16px; text-align: center;
-  border-right: 1px solid #333; min-width: 110px;
+.tkr {{
+  flex:0 0 auto; padding: 6px 18px; text-align:center;
+  border-right: 1px solid var(--border); min-width: 120px;
 }}
-.ticker:last-child {{ border-right: none; }}
-.ticker-name {{
-  font-size: 10px; color: #888; letter-spacing: 1.5px;
-  text-transform: uppercase; font-weight: 600; margin-bottom: 2px;
+.tkr:last-child {{ border-right:none; }}
+.tkr-n {{
+  display:block; font-size:10px; color: var(--text-muted);
+  letter-spacing: 1px; font-weight: 600;
+  text-transform: uppercase; margin-bottom: 3px;
 }}
-.ticker-price {{
-  font-family: 'Inter', monospace; font-size: 17px; font-weight: 700;
-  color: #fff; font-variant-numeric: tabular-nums;
+.tkr-p {{
+  display:block; font-family: 'JetBrains Mono', monospace;
+  font-size: 16px; font-weight: 700; color: var(--text-primary);
 }}
-.ticker-change {{
-  font-family: 'Inter', monospace; font-size: 12px; font-weight: 600;
-  margin-top: 1px;
+.tkr-c {{
+  display:block; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600; margin-top: 2px;
 }}
-.ticker.up .ticker-change {{ color: #e74c3c; }}
-.ticker.down .ticker-change {{ color: #27ae60; }}
-.ticker.flat .ticker-change {{ color: #888; }}
+.tkr.up .tkr-c {{ color: var(--red); }}
+.tkr.dn .tkr-c {{ color: var(--green); }}
 
-/* ===== 主标题区 (WSJ 社论风格) ===== */
+/* ===== HISTORY NAV ===== */
+.hnav {{
+  max-width:960px; margin:0 auto; padding: 10px 24px;
+  border-bottom: 1px solid var(--border);
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  background: var(--bg-card);
+}}
+.hnav-label {{
+  font-size:11px; font-weight:700; color: var(--text-muted);
+  letter-spacing:1.5px; text-transform:uppercase; margin-right:6px;
+}}
+.hl {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:600; color: var(--text-secondary);
+  padding:4px 10px; border-radius:2px;
+  background: var(--bg); border:1px solid var(--border);
+  text-decoration:none; transition: all 0.15s;
+}}
+.hl:hover {{ color: var(--accent); border-color: var(--accent); }}
+
+/* ===== MASTHEAD ===== */
 .masthead {{
-  max-width: 860px; margin: 0 auto; padding: 36px 20px 24px;
-  border-bottom: 2px solid #1a1a1a; text-align: center;
-}}
-
-/* ===== 历史简报导航条 ===== */
-.history-nav {{
-  max-width: 860px; margin: 0 auto; padding: 14px 20px;
-  border-bottom: 1px solid #e0dcd5;
-  display: flex; align-items: center; gap: 8px;
-  flex-wrap: wrap; background: #faf8f5;
-}}
-.history-label {{
-  font-size: 12px; font-weight: 700; color: #888;
-  letter-spacing: 1px; text-transform: uppercase;
-  margin-right: 6px;
-}}
-.history-link {{
-  font-size: 12px; font-weight: 600; color: #c0392b;
-  padding: 5px 12px; border-radius: 3px;
-  background: #fff; border: 1px solid #e8e4dc;
-  text-decoration: none; transition: all 0.2s;
-}}
-.history-link:hover {{
-  background: #c0392b; color: #fff; border-color: #c0392b;
-}}
-.history-current {{
-  background: #c0392b; color: #fff; border-color: #c0392b;
-  cursor: default;
+  max-width:960px; margin:0 auto; padding: 40px 24px 28px;
+  text-align:center; border-bottom: 2px solid var(--border);
 }}
 .masthead-date {{
-  font-size: 12px; color: #888; letter-spacing: 2px;
-  text-transform: uppercase; font-weight: 500; margin-bottom: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size:12px; color: var(--text-muted);
+  letter-spacing:3px; text-transform:uppercase;
+  font-weight:500; margin-bottom:12px;
 }}
 .masthead h1 {{
-  font-family: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
-  font-size: 38px; font-weight: 900; color: #1a1a1a;
-  letter-spacing: 2px; line-height: 1.3; margin-bottom: 10px;
-}}
-.masthead-sub {{
-  font-size: 15px; color: #666; font-weight: 300;
-  font-family: 'Noto Sans SC', 'Inter', sans-serif;
-}}
-.masthead-tags {{
-  margin-top: 16px; display: flex; justify-content: center; gap: 10px;
-  flex-wrap: wrap;
-}}
-.mtag {{
-  font-size: 11px; font-weight: 600; letter-spacing: 1px;
-  padding: 4px 14px; border-radius: 2px;
-  text-transform: uppercase;
-}}
-.mtag-a {{ background: #fdecea; color: #c0392b; }}
-.mtag-us {{ background: #eaf0fb; color: #2c5aa0; }}
-.mtag-hk {{ background: #fef9e7; color: #b7950b; }}
-
-/* ===== 内容容器 ===== */
-.content {{ max-width: 860px; margin: 0 auto; padding: 0 20px 40px; }}
-
-/* ===== 区块标题 ===== */
-.sec-header {{
   font-family: 'Inter', 'Noto Sans SC', sans-serif;
-  font-size: 11px; font-weight: 700; letter-spacing: 3px;
-  text-transform: uppercase; color: #c0392b;
-  padding: 20px 0 10px; margin-top: 28px;
-  border-top: 3px solid #1a1a1a;
-}}
-
-/* ===== 走势图区 ===== */
-.charts-row {{
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
-  margin-top: 16px;
-}}
-.chart-cell {{
-  background: #fff; border: 1px solid #e0dcd5;
-}}
-.chart-label {{
-  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; color: #666; text-align: center;
-  padding: 10px 0 4px; border-bottom: 1px solid #f0ece6;
-}}
-.chart-cell img {{ width: 100%; display: block; }}
-
-/* 技术分析图（嵌入在选股列表中的 K 线图） */
-.rpt-chart {{
-  margin: 12px 0 20px 0; text-align: left;
-  background: #fff; border: 1px solid #e0dcd5;
-  display: inline-block; max-width: 100%;
-}}
-.rpt-chart img {{
-  max-width: 620px; width: 100%; height: auto; display: block;
-}}
-@media (max-width: 680px) {{
-  .rpt-chart img {{ max-width: 100%; }}
-}}
-
-/* ===== AI 分析报告 ===== */
-.report-body {{ margin-top: 16px; }}
-
-.rpt-section {{ margin-bottom: 28px; }}
-.rpt-section:last-child {{ margin-bottom: 0; }}
-
-.rpt-heading {{
-  font-family: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
-  font-size: 20px; font-weight: 700; color: #1a1a1a;
-  padding-bottom: 8px; margin-bottom: 14px;
-  border-bottom: 1px solid #d5d0c8;
-}}
-
-.rpt-news-item {{
-  display: flex; align-items: flex-start; gap: 14px;
-  padding: 14px 18px; margin: 10px 0;
-  background: #fff; border: 1px solid #e8e4dc;
-  border-left: 3px solid #c0392b;
-  transition: box-shadow 0.2s;
-}}
-.rpt-news-item:hover {{ box-shadow: 0 2px 8px rgba(0,0,0,0.06); }}
-.rpt-num {{
-  flex-shrink: 0; width: 24px; height: 24px; line-height: 24px;
-  text-align: center; font-family: 'Playfair Display', serif;
-  font-size: 14px; font-weight: 900; color: #c0392b;
-  border: 2px solid #c0392b; border-radius: 50%;
-}}
-.rpt-news-text {{
-  font-size: 14.5px; line-height: 1.8; color: #2a2a2a;
-}}
-.rpt-news-text strong {{ color: #c0392b; font-weight: 700; }}
-
-.rpt-bullet {{
-  padding: 6px 18px 6px 32px; margin: 4px 0;
-  position: relative;
-}}
-.rpt-bullet::before {{
-  content: ''; position: absolute; left: 18px; top: 15px;
-  width: 5px; height: 5px; background: #c0392b;
-}}
-.rpt-bullet-text {{
-  font-size: 14.5px; line-height: 1.8; color: #2a2a2a;
-}}
-.rpt-bullet-text strong {{ color: #c0392b; }}
-
-.rpt-para {{
-  font-size: 15px; line-height: 1.9; color: #333;
-  margin: 10px 0; text-align: justify;
-}}
-.rpt-para strong {{ color: #c0392b; }}
-
-/* ===== 表格（AI 选股 / 数据）===== */
-.rpt-table-wrapper {{
-  overflow-x: auto; margin: 16px 0;
-  -webkit-overflow-scrolling: touch;
-}}
-.rpt-table {{
-  width: 100%; border-collapse: collapse;
-  font-size: 13.5px; line-height: 1.7;
-  background: #fff; border: 1px solid #e0dcd5;
-}}
-.rpt-table thead {{
-  background: #1a1a1a; color: #fff;
-}}
-.rpt-table th {{
-  padding: 10px 12px; font-size: 12px; font-weight: 600;
-  letter-spacing: 0.5px; text-transform: uppercase;
-  border-bottom: 2px solid #c0392b;
-}}
-.rpt-table td {{
-  padding: 8px 12px; border-bottom: 1px solid #ece8e1;
-  color: #2a2a2a;
-}}
-.rpt-table tbody tr:nth-child(even) {{
-  background: #faf8f6;
-}}
-.rpt-table tbody tr:hover {{
-  background: #fdf0ee;
-}}
-.rpt-table td strong {{ color: #c0392b; font-weight: 700; }}
-
-/* ===== 页脚 ===== */
-.site-footer {{
-  max-width: 860px; margin: 0 auto; padding: 30px 20px 50px;
-  border-top: 3px solid #1a1a1a; text-align: center;
-}}
-.footer-brand {{
-  font-family: 'Playfair Display', 'Noto Serif SC', serif;
-  font-size: 15px; font-weight: 700; color: #1a1a1a;
+  font-size:36px; font-weight:900; color: var(--text-primary);
   letter-spacing: 1px; margin-bottom: 8px;
 }}
+.masthead-sub {{
+  font-size:14px; color: var(--text-secondary);
+  font-weight:400; font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+}}
+.masthead-tags {{
+  margin-top:18px; display:flex; justify-content:center; gap:8px; flex-wrap:wrap;
+}}
+.mtag {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; font-weight:600; letter-spacing:1.5px;
+  padding:4px 12px; border-radius:2px; text-transform:uppercase;
+}}
+.mtag-a {{ background: rgba(255,107,53,0.12); color: var(--accent); border: 1px solid rgba(255,107,53,0.25); }}
+.mtag-us {{ background: rgba(88,166,255,0.10); color: var(--accent-blue); border: 1px solid rgba(88,166,255,0.20); }}
+.mtag-hk {{ background: rgba(210,153,29,0.10); color: var(--amber); border: 1px solid rgba(210,153,29,0.20); }}
+
+/* ===== CONTENT ===== */
+.content {{ max-width:960px; margin:0 auto; padding: 0 24px 40px; }}
+
+/* ===== SECTION HEADER ===== */
+.sec-hdr {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; font-weight:700; letter-spacing:4px;
+  text-transform:uppercase; color: var(--accent);
+  padding:24px 0 12px; margin-top:28px;
+  border-top: 2px solid var(--border-light);
+}}
+
+/* ===== FUND PANEL ===== */
+.fp-grid {{
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap:16px; margin-top:16px;
+}}
+.fp {{
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+}}
+.fp-h {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:600; color: var(--text-secondary);
+  letter-spacing:1px; margin-bottom:14px;
+  text-transform:uppercase;
+}}
+.fp-bars {{ display:flex; flex-direction:column; gap:6px; }}
+.fp-bar-row {{
+  display:flex; align-items:center; gap:10px;
+}}
+.fp-date {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; color: var(--text-muted); width:40px; flex-shrink:0;
+}}
+.fp-bar-bg {{
+  flex:1; height:6px; background: var(--bg);
+  border-radius: 3px; overflow:hidden;
+}}
+.fp-bar-fill {{
+  display:block; height:100%; border-radius:3px;
+  transition: width 0.6s ease;
+}}
+.fp-val {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:12px; font-weight:700; width:55px; text-align:right; flex-shrink:0;
+}}
+.fp-empty {{
+  font-size:12px; color: var(--text-muted);
+  padding: 8px 0;
+}}
+
+/* ===== CHARTS ROW ===== */
+.charts-row {{
+  display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;
+  margin-top:14px;
+}}
+.ch-cell {{
+  background: var(--bg-card); border: 1px solid var(--border);
+}}
+.ch-label {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; font-weight:700; letter-spacing:1px;
+  color: var(--text-secondary); text-align:center;
+  padding: 8px 0 4px; border-bottom: 1px solid var(--border);
+  text-transform:uppercase;
+}}
+.ch-cell img {{ width:100%; display:block; filter: brightness(0.9); }}
+
+/* ===== REPORT BODY ===== */
+.report-body {{ margin-top:18px; }}
+
+.sec {{ margin-bottom:24px; }}
+.sec:last-child {{ margin-bottom:0; }}
+
+.sec-h {{
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size:18px; font-weight:700; color: var(--text-primary);
+  padding-bottom: 8px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--border-light);
+}}
+
+/* ---- News items ---- */
+.ni {{
+  display:flex; align-items:flex-start; gap:12px;
+  padding:12px 16px; margin:8px 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  transition: border-color 0.2s;
+}}
+.ni:hover {{ border-left-color: var(--accent-blue); }}
+.ni-num {{
+  flex-shrink:0; width:22px; height:22px; line-height:22px;
+  text-align:center; font-family: 'JetBrains Mono', monospace;
+  font-size:12px; font-weight:700; color: var(--accent);
+  border: 1px solid var(--border-light); border-radius:2px;
+}}
+.ni-text {{ font-size:14px; line-height:1.7; color: var(--text-primary); }}
+.ni-text strong {{ color: var(--accent); font-weight:700; }}
+
+/* ---- Bullets ---- */
+.bi {{
+  padding:5px 18px 5px 28px; margin:3px 0; position:relative;
+  font-size:14px; line-height:1.7; color: var(--text-secondary);
+}}
+.bi::before {{
+  content:''; position:absolute; left:16px; top:13px;
+  width:4px; height:4px; background: var(--accent); opacity:0.7;
+}}
+.bi strong {{ color: var(--accent-blue); }}
+
+/* ---- Paragraphs ---- */
+.para {{
+  font-size:14.5px; line-height:1.8; color: var(--text-secondary);
+  margin:8px 0;
+}}
+.para strong {{ color: var(--text-primary); }}
+
+/* ---- Tables ---- */
+.tbl-wrap {{
+  overflow-x:auto; margin:14px 0;
+  border: 1px solid var(--border);
+}}
+.tbl {{
+  width:100%; border-collapse:collapse;
+  font-size:13px; line-height:1.6;
+  background: var(--bg-card);
+}}
+.tbl thead {{
+  background: var(--bg-elevated);
+}}
+.tbl th {{
+  padding: 10px 12px; font-family: 'JetBrains Mono', 'Inter', sans-serif;
+  font-size:11px; font-weight:700; letter-spacing:0.5px;
+  color: var(--text-secondary); text-transform:uppercase;
+  border-bottom: 1px solid var(--border-light);
+  white-space:nowrap;
+}}
+.tbl td {{
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}}
+.tbl tbody tr:hover {{
+  background: rgba(255,107,53,0.04);
+}}
+.tbl td strong {{ color: var(--accent); font-weight:700; }}
+
+/* ---- Chart images ---- */
+.chart-img {{
+  margin: 14px 0; background: var(--bg-card);
+  border: 1px solid var(--border); display:inline-block; max-width:100%;
+}}
+.chart-img img {{
+  max-width:600px; width:100%; height:auto; display:block;
+}}
+
+/* ===== FOOTER ===== */
+.site-footer {{
+  max-width:960px; margin:0 auto; padding: 28px 24px 48px;
+  border-top: 2px solid var(--border); text-align:center;
+}}
+.footer-logo {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:13px; font-weight:700; color: var(--text-primary);
+  letter-spacing:2px; margin-bottom:10px;
+}}
 .footer-info {{
-  font-size: 11px; color: #999; line-height: 2; letter-spacing: 0.3px;
+  font-size:11px; color: var(--text-muted); line-height:2;
+  font-family: 'JetBrains Mono', monospace;
 }}
 .footer-disclaimer {{
-  font-size: 10px; color: #bbb; margin-top: 12px;
-  padding-top: 12px; border-top: 1px solid #e0dcd5;
-  line-height: 1.8;
+  font-size:10px; color: var(--text-muted); margin-top:14px;
+  padding-top:14px; border-top: 1px solid var(--border);
+  line-height:1.8;
 }}
 .online-link {{
-  display: inline-block; margin-top: 14px;
-  padding: 10px 28px; background: #c0392b; color: #fff;
-  font-size: 13px; font-weight: 600; letter-spacing: 1px;
-  text-decoration: none; border-radius: 3px;
+  display:inline-block; margin-top:14px;
+  padding: 10px 24px; background: var(--accent); color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size:12px; font-weight:600; letter-spacing:1.5px;
+  text-decoration:none; border-radius:2px;
+  text-transform:uppercase;
   transition: background 0.2s;
 }}
-.online-link:hover {{ background: #a93226; }}
+.online-link:hover {{ background: #e85d2c; }}
 
-/* ===== 响应式 ===== */
-@media (max-width: 600px) {{
-  .masthead h1 {{ font-size: 28px; }}
-  .top-bar-inner {{ flex-direction: column; gap: 4px; text-align: center; }}
-  .top-meta {{ text-align: center; }}
-  .ticker-inner {{ padding: 8px 12px; }}
-  .ticker {{ min-width: 90px; padding: 6px 10px; }}
-  .ticker-price {{ font-size: 15px; }}
-  .charts-row {{ grid-template-columns: 1fr; }}
-  .content {{ padding: 0 14px 30px; }}
-  .rpt-heading {{ font-size: 18px; }}
-  .rpt-news-item {{ padding: 10px 12px; }}
-  .masthead {{ padding: 24px 14px 18px; }}
+/* ===== RESPONSIVE ===== */
+@media (max-width: 680px) {{
+  .masthead h1 {{ font-size:26px; }}
+  .topbar-inner {{ flex-direction:column; gap:4px; text-align:center; }}
+  .topbar-meta {{ text-align:center; }}
+  .ticker-inner {{ padding:6px 12px; }}
+  .tkr {{ min-width:100px; padding:6px 12px; }}
+  .tkr-p {{ font-size:14px; }}
+  .charts-row {{ grid-template-columns:1fr; }}
+  .content {{ padding:0 14px 30px; }}
+  .sec-h {{ font-size:16px; }}
+  .ni {{ padding:10px 12px; }}
+  .fp-grid {{ grid-template-columns:1fr; }}
+  .chart-img img {{ max-width:100%; }}
 }}
 </style>
 </head>
 <body>
 
-<!-- 顶部导航 -->
-<div class="top-bar">
-  <div class="top-bar-inner">
-    <div class="brand">MARKET<span>BRIEF</span></div>
-    <div class="top-meta">{weekday}, {today_en}<br>{now_str} CST</div>
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">MARKET<em>//</em>BRIEF</div>
+    <div class="topbar-meta">{weekday}<br>{now_str} CST</div>
   </div>
 </div>
 
-<!-- 行情条 -->
+<!-- TICKER STRIP -->
 <div class="ticker-strip">
-  <div class="ticker-inner">{quote_rows}</div>
+  <div class="ticker-inner">{quote_cells}</div>
 </div>
 
-<!-- 历史简报导航 -->
-<div class="history-nav">
-  <span class="history-label">📅 历史简报</span>
+<!-- HISTORY NAV -->
+<div class="hnav">
+  <span class="hnav-label">HISTORY</span>
   {history_links_html}
 </div>
 
-<!-- 标题区 -->
+<!-- MASTHEAD -->
 <div class="masthead">
-  <div class="masthead-date">{today} {wk_cn}</div>
-  <h1>每日股市简报</h1>
-  <div class="masthead-sub">AI-Powered Daily Market Intelligence</div>
+  <div class="masthead-date">{today} · {wk_cn}</div>
+  <h1>每日市场情报</h1>
+  <div class="masthead-sub">INSTITUTIONAL · MARKET · INTELLIGENCE</div>
   <div class="masthead-tags">
-    <span class="mtag mtag-a">A股 {a_count} 条</span>
+    <span class="mtag mtag-a">A-SHARE · {a_count}</span>
+    <span class="mtag mtag-us">US · {us_count}</span>
+    <span class="mtag mtag-hk">HK · {hk_count}</span>
   </div>
 </div>
 
 <div class="content">
 
-  <!-- 走势图 -->
-  <div class="sec-header">INTRADAY CHARTS</div>
+  <!-- FUND FLOW PANEL -->
+  <div class="sec-hdr">CAPITAL FLOWS</div>
+  <div class="fp-grid">{fund_panel}</div>
+
+  <!-- INTRADAY CHARTS -->
+  <div class="sec-hdr">INTRADAY</div>
   <div class="charts-row">{chart_html}</div>
 
-  <!-- AI 报告 -->
-  <div class="sec-header">MARKET ANALYSIS</div>
+  <!-- AI ANALYSIS -->
+  <div class="sec-hdr">ANALYSIS</div>
   <div class="report-body">{report_html}</div>
 
 </div>
 
 <div class="site-footer">
-  <div class="footer-brand">MARKET BRIEF</div>
-  {f'<a class="online-link" href="{page_url}">查看在线版本</a>' if page_url else ''}
+  <div class="footer-logo">MARKET//BRIEF</div>
+  {f'<a class="online-link" href="{page_url}">VIEW ONLINE</a>' if page_url else ''}
   <div class="footer-info">
-    Data: CLS / East Money / Sina Finance<br>
-    AI Analysis by Tongyi Qwen
+    DATA · East Money / Sina Finance<br>
+    AI · DeepSeek V4
   </div>
   <div class="footer-disclaimer">
-    本报告由 AI 自动生成，仅供参考，不构成任何投资建议。<br>
-    市场有风险，投资需谨慎。
+    本报告由 AI 自动生成，仅供研究参考，不构成任何投资建议。<br>
+    市场有风险，投资需谨慎。PAST PERFORMANCE IS NOT INDICATIVE OF FUTURE RESULTS.
   </div>
 </div>
 
@@ -816,10 +1040,12 @@ body {{
     return html
 
 
-# ============ PDF 生成 ============
+# ============================================================
+#  PDF 生成
+# ============================================================
 
 def generate_pdf(html_path):
-    """将 HTML 报告转为 PDF（使用 Chrome Headless）"""
+    """将 HTML 报告转为 PDF（Chrome Headless）。"""
     import subprocess
     import shutil
 
@@ -865,33 +1091,30 @@ def generate_pdf(html_path):
         return None
 
 
-# ============ GitHub Pages 部署 ============
+# ============================================================
+#  GitHub Pages 部署
+# ============================================================
 
 def deploy_github_pages(html_content):
-    """将 HTML 报告写入 docs/ 目录供 GitHub Pages 使用"""
+    """将 HTML 写入 docs/ 目录。"""
     today = datetime.now().strftime("%Y%m%d")
     os.makedirs("docs", exist_ok=True)
 
-    # 写入当天报告
     report_path = f"docs/report_{today}.html"
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-    # 写入 index.html（始终指向最新报告）
+    # index.html → 最新报告
     with open("docs/index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
 
-    page_url = os.environ.get("GITHUB_PAGES_URL", "")
-    if page_url:
-        full_url = f"{page_url}/report_{today}.html"
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if repo:
+        owner = repo.split("/")[0].lower()
+        repo_name = repo.split("/")[1]
+        full_url = f"https://{owner}.github.io/{repo_name}/report_{today}.html"
     else:
-        repo = os.environ.get("GITHUB_REPOSITORY", "")
-        if repo:
-            owner = repo.split("/")[0].lower()
-            repo_name = repo.split("/")[1]
-            full_url = f"https://{owner}.github.io/{repo_name}/report_{today}.html"
-        else:
-            full_url = ""
+        full_url = ""
 
     print(f"详情页已生成: {report_path}")
     if full_url:
@@ -899,23 +1122,22 @@ def deploy_github_pages(html_content):
     return full_url
 
 
-# ============ Server酱微信推送（公众号风格）============
+# ============================================================
+#  推送通知
+# ============================================================
 
-def send_wechat(report, quotes, page_url):
-    """通过 Server酱 推送精美的微信消息"""
+def send_wechat(report, quotes, news_list, page_url):
+    """通过 Server酱 推送微信消息。"""
     send_key = os.environ.get("SERVERCHAN_KEY", "")
     if not send_key:
         print("未设置 SERVERCHAN_KEY，跳过微信推送")
         return
 
     today = datetime.now().strftime("%Y年%m月%d日")
-    title = f"📈 每日股市简报 | {today}"
+    title = f"📈 每日市场情报 | {today}"
 
-    # 构建公众号风格的 Markdown 内容
-    lines = []
-
-    # 行情概览表格
-    lines.append("## 📊 今日行情一览\n")
+    # 行情表
+    lines = ["## 📊 行情一览\n"]
     lines.append("| 指数 | 最新价 | 涨跌幅 |")
     lines.append("|:---:|:---:|:---:|")
     for q in quotes:
@@ -929,33 +1151,26 @@ def send_wechat(report, quotes, page_url):
         lines.append(f"| {q['name']} | {q['price']} | {emoji} {change} |")
     lines.append("")
 
-    # 大盘分时走势图
-    lines.append("## 📈 大盘走势\n")
+    # 分时图
     lines.append("![上证指数](https://image.sinajs.cn/newchart/min/n/sh000001.gif)")
     lines.append("")
 
-    # 分隔线
+    # 报告摘要
     lines.append("---\n")
-
-    # AI 分析报告
-    lines.append("## 🤖 AI 分析报告\n")
-    lines.append(report)
+    lines.append("## 🤖 AI 分析\n")
+    lines.append(report[:3000])  # 微信限制
     lines.append("")
 
-    # 详情链接
+    # 链接
     lines.append("---\n")
     if page_url:
-        lines.append(f"### 🔗 [点击查看完整图文报告]({page_url})\n")
-    lines.append(f"> 📅 {today} · 数据来自财联社/东方财富/新浪财经 · AI分析仅供参考")
+        lines.append(f"### 🔗 [查看完整报告]({page_url})\n")
+    lines.append(f"> 📅 {today} · {len(news_list)}条资讯 · AI分析仅供参考")
 
     desp = "\n".join(lines)
 
     url = f"https://sctapi.ftqq.com/{send_key}.send"
-    payload = urllib.parse.urlencode({
-        "title": title,
-        "desp": desp,
-    }).encode("utf-8")
-
+    payload = urllib.parse.urlencode({"title": title, "desp": desp}).encode("utf-8")
     req = urllib.request.Request(url, data=payload, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
@@ -968,21 +1183,24 @@ def send_wechat(report, quotes, page_url):
         print(f"微信推送失败: {e}")
 
 
-# ============ Webhook 推送 ============
-
 def send_webhook(text):
+    """推送 Webhook（钉钉/飞书/企业微信）。"""
     webhook_url = os.environ.get("WEBHOOK_URL", "")
     if not webhook_url:
         return
     if "qyapi.weixin" in webhook_url:
         payload = json.dumps({"msgtype": "markdown", "markdown": {"content": text[:4096]}})
     elif "dingtalk" in webhook_url:
-        payload = json.dumps({"msgtype": "markdown", "markdown": {"title": "股市日报", "text": text[:4096]}})
+        payload = json.dumps({"msgtype": "markdown", "markdown": {"title": "市场情报", "text": text[:4096]}})
     elif "feishu" in webhook_url or "larksuite" in webhook_url:
         payload = json.dumps({"msg_type": "text", "content": {"text": text[:4096]}})
     else:
         payload = json.dumps({"text": text[:4096]})
-    req = urllib.request.Request(webhook_url, data=payload.encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+
+    req = urllib.request.Request(
+        webhook_url, data=payload.encode("utf-8"),
+        headers={"Content-Type": "application/json"}, method="POST"
+    )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             print(f"Webhook 推送成功: {resp.status}")
@@ -990,38 +1208,53 @@ def send_webhook(text):
         print(f"Webhook 推送失败: {e}")
 
 
-# ============ 主流程 ============
+# ============================================================
+#  主流程
+# ============================================================
 
 def main():
-    print(f"[{datetime.now()}] 开始生成股市日报...")
+    print(f"[{datetime.now()}] 开始生成每日市场情报...")
+    print()
 
-    # 1. 抓取指数行情
-    print("正在抓取指数行情...")
+    # 1. 行情
+    print("▸ 抓取指数行情...")
     quotes = fetch_index_quotes()
     for q in quotes:
         print(f"  {q['name']}: {q['price']} ({q['change']})")
 
-    # 2. 抓取新闻
-    print("正在抓取新闻...")
-    news = fetch_all_news()
-    valid = [n for n in news if "error" not in n]
-    errors = [n for n in news if "error" in n]
-    print(f"  抓取完成: {len(valid)} 条新闻, {len(errors)} 个错误")
+    # 2. 新闻 + 资金面
+    print("\n▸ 抓取多市场新闻 & 资金面数据...")
+    news_list, northbound, fund_flow = fetch_all_news()
 
-    if not valid:
+    a_news = [n for n in news_list if n.get("market") == "A股" and "error" not in n]
+    us_news = [n for n in news_list if n.get("market") == "美股" and "error" not in n]
+    hk_news = [n for n in news_list if n.get("market") == "港股" and "error" not in n]
+    print(f"  A股: {len(a_news)}条 | 美股: {len(us_news)}条 | 港股: {len(hk_news)}条")
+    if fund_flow:
+        latest = fund_flow[-1]
+        direction = "流入" if latest["net_flow"] >= 0 else "流出"
+        print(f"  主力资金({latest['date']}): {direction} {abs(latest['net_flow']):.1f}亿")
+    if northbound:
+        latest_nb = northbound[-1]
+        direction = "流入" if latest_nb.get("net_buy_total", 0) >= 0 else "流出"
+        nb_total = abs(latest_nb.get("net_buy_total", 0))
+        if nb_total > 0:
+            print(f"  北向资金({latest_nb['date']}): {direction} {nb_total:.1f}亿")
+
+    if not a_news and not us_news and not hk_news:
         print("没有抓取到任何新闻，退出")
         return
 
-    # 3. 格式化 & 调用 LLM
-    news_text = format_news(news)
-    print("正在生成分析报告...")
+    # 3. 格式化 & LLM 分析
+    news_text = format_news(news_list, northbound, fund_flow)
+    print("\n▸ 生成 AI 市场分析...")
     report = call_llm(news_text)
 
-    # 3.5 AI 选股分析
-    print("正在执行 AI 选股...")
+    # 4. AI 选股
+    print("▸ 执行 AI 产业链选股...")
     stock_picks = call_stock_picker(news_text)
 
-    # 预先构造 GitHub Pages 基础 URL（用于图表嵌入）
+    # 预先构造 GitHub Pages URL
     today_str = datetime.now().strftime("%Y%m%d")
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     if repo:
@@ -1031,62 +1264,63 @@ def main():
     else:
         page_base_url = "https://hcongxi42-web.github.io/HZT/"
 
-    # 对 5-4 星股票生成技术分析图表
+    # 5. 技术分析图表
     if stock_picks and stock_analyzer:
-        print("  正在解析高评分股票...")
+        print("  解析高评分股票...")
         stock_list = stock_analyzer.parse_stock_picks(stock_picks)
         if stock_list:
-            print(f"  发现 {len(stock_list)} 只高评分股票，正在生成技术分析图...")
+            print(f"  发现 {len(stock_list)} 只高评分股票，生成技术分析图...")
             charts_dir = os.path.join("docs", "charts")
             chart_urls = stock_analyzer.analyze_stocks(stock_list, charts_dir, page_base_url)
             if chart_urls:
-                # 将技术分析图插入到对应股票下方
                 stock_picks = insert_charts_into_picks(stock_picks, chart_urls)
-                print(f"  已生成 {len(chart_urls)} 张技术分析图并嵌入到对应股票下方")
+                print(f"  已生成 {len(chart_urls)} 张 K 线图")
             else:
                 print("  未能生成任何图表")
         else:
-            print("  未解析到高评分股票（可能是代码格式不匹配）")
+            print("  未解析到高评分股票")
     elif not stock_analyzer:
-        print("  stock_analyzer 模块未加载")
+        print("  stock_analyzer 模块未加载，跳过图表")
 
+    # 组装完整报告
     if stock_picks:
         report += format_stock_picks(stock_picks)
-        print("AI 选股完成")
+        print("  AI 选股完成")
 
     print("\n" + "=" * 60)
-    print(report)
+    print(report[:2000])
+    if len(report) > 2000:
+        print(f"... (总 {len(report)} 字符)")
     print("=" * 60)
 
-    # 4. 生成 HTML 详情页
-    print("\n正在生成详情页...")
+    # 6. HTML
+    print("\n▸ 生成详情页...")
     page_url = f"{page_base_url}report_{today_str}.html"
-    html = generate_html_report(report, quotes, news, page_url, page_base_url)
+    html = generate_html_report(report, quotes, news_list, page_url, page_base_url,
+                                northbound, fund_flow)
     page_url = deploy_github_pages(html)
 
-    # 4.5 生成 PDF
-    print("正在生成 PDF...")
-    html_file = f"docs/report_{datetime.now().strftime('%Y%m%d')}.html"
+    # 7. PDF
+    print("▸ 生成 PDF...")
+    html_file = f"docs/report_{today_str}.html"
     generate_pdf(html_file)
 
-    # 5. 保存 Markdown
+    # 8. 保存 Markdown
     report_file = f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
     with open(report_file, "w", encoding="utf-8") as f:
-        f.write(f"# 每日股市简报 - {datetime.now().strftime('%Y-%m-%d')}\n\n")
+        f.write(f"# 每日市场情报 - {datetime.now().strftime('%Y-%m-%d')}\n\n")
         f.write(report)
     print(f"Markdown 报告: {report_file}")
 
-    # 6. GitHub Actions 输出
+    # 9. GitHub Actions output
     github_output = os.environ.get("GITHUB_OUTPUT", "")
     if github_output:
         with open(github_output, "a") as f:
             f.write(f"report_file={report_file}\n")
             f.write(f"page_url={page_url}\n")
 
-    # 7. 推送微信
-    send_wechat(report, quotes, page_url)
-
-    # 8. 推送 Webhook
+    # 10. 推送
+    send_wechat(report, quotes, news_list, page_url)
     send_webhook(report)
 
     print(f"\n[{datetime.now()}] 完成")
