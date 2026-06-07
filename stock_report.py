@@ -312,63 +312,121 @@ def format_stock_picks(picks_md):
 # ============================================================
 
 def insert_charts_into_picks(stock_picks, chart_urls):
-    """将技术分析图插入选股文本：保持表格完整，在表格后追加 K 线图。"""
+    """将技术分析图精准插入到对应股票所在的 section 下方。
+
+    策略：
+      1. 将选股文本按 ### 标题拆分为多个 section
+      2. 每个 section 独立处理：扫描其中的股票代码 → 匹配图表 → 插入到该 section 的表格之后
+      3. 每张图只插入一次（优先插在第一个提到该股票代码的 section）
+      4. 未匹配的图表追加在末尾
+      5. 移除任何残留的独立「技术分析图」板块
+    """
     if not chart_urls:
         return stock_picks
 
-    # 移除旧版独立「技术分析图」板块
+    # 移除旧版独立「技术分析图」板块（兼容历史数据）
     stock_picks = re.sub(
         r'\n*###\s*📊\s*技术分析图\s*\n(?:\*\*.*?\*\*[^\n]*\n|!\[.*?\]\(.*?\)\n|\n)*',
         '', stock_picks
     )
 
-    def _appearance_order(_name, code, _stars, _url):
+    # 构建代码 → 图表 URL 的映射
+    code_to_chart = {}
+    for name, code, _stars, url in chart_urls:
         num_match = re.search(r'(\d{6})', code)
-        if not num_match:
-            return 9999
-        idx = stock_picks.find(num_match.group(1))
-        return idx if idx >= 0 else 9999
+        if num_match:
+            code6 = num_match.group(1)
+            if code6 not in code_to_chart:
+                code_to_chart[code6] = (name, code, url)
 
-    lines = stock_picks.split('\n')
+    placed_codes = set()
 
-    # 定位表格结束
-    in_table = False
-    table_end = None
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        is_table_row = bool(re.match(r'^\|.+\|$', stripped))
-        if is_table_row and not in_table:
-            in_table = True
-        elif not is_table_row and in_table:
-            table_end = i
-            break
+    # ---- 按 ### 标题拆分 section ----
+    # 使用正则可以保留分隔符
+    section_pattern = re.compile(r'^(?=###\s)', re.MULTILINE)
+    raw_sections = section_pattern.split(stock_picks)
 
-    if table_end is not None:
-        while table_end < len(lines) and lines[table_end].strip() == '':
-            table_end += 1
+    if not raw_sections:
+        return stock_picks
 
-    if table_end is not None:
-        insert_at = table_end - 1
-        while insert_at >= 0 and not re.match(r'^\|.+\|$', lines[insert_at].strip()):
-            insert_at -= 1
-        insert_at += 1
-    else:
-        insert_at = len(lines)
+    # 第一个分段可能是 preamble（### 之前的内容），保留它
+    processed_sections = []
+    for sec_text in raw_sections:
+        if not sec_text.strip():
+            processed_sections.append(sec_text)
+            continue
 
-    ordered = sorted(chart_urls, key=lambda x: _appearance_order(*x))
-    chart_lines = []
-    for name, code, _stars, url in ordered:
-        chart_lines.append('')
-        chart_lines.append(f'![{name} {code}]({url})')
-        chart_lines.append('')
+        # 如果是 preamble（不以 ### 开头），不做图表插入
+        if not re.match(r'^###\s', sec_text.strip()):
+            processed_sections.append(sec_text)
+            continue
 
-    result = lines[:insert_at]
-    if result and result[-1].strip() != '':
-        result.append('')
-    result.extend(chart_lines)
-    result.extend(lines[insert_at:])
+        # ---- 找到这个 section 里的所有股票代码 ----
+        codes_in_section = set()
+        for m in re.finditer(r'(\d{6})', sec_text):
+            codes_in_section.add(m.group(1))
 
-    return '\n'.join(result)
+        # ---- 找到 section 中表格的结束位置 ----
+        lines = sec_text.split('\n')
+        in_table = False
+        table_last_line = -1
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            is_table_row = bool(re.match(r'^\|.+\|$', stripped))
+            if is_table_row and not in_table:
+                in_table = True
+                table_last_line = i
+            elif is_table_row and in_table:
+                table_last_line = i
+            elif not is_table_row and in_table:
+                break  # 表格结束
+
+        # ---- 收集该 section 匹配的图表 ----
+        section_charts = []
+        for code6 in codes_in_section:
+            if code6 in code_to_chart and code6 not in placed_codes:
+                section_charts.append(code_to_chart[code6])
+                placed_codes.add(code6)
+
+        if not section_charts:
+            processed_sections.append(sec_text)
+            continue
+
+        # ---- 在表格后插入图表 ----
+        if table_last_line >= 0:
+            # 在表格最后一行之后插入
+            insert_pos = table_last_line + 1
+        else:
+            # 没有表格，追加到 section 末尾
+            insert_pos = len(lines)
+
+        chart_md_lines = []
+        for name, code, url in section_charts:
+            chart_md_lines.append(f'![{name} {code}]({url})')
+
+        # 在插入点后加一个空行分隔
+        result_lines = lines[:insert_pos]
+        if result_lines and result_lines[-1].strip() != '':
+            result_lines.append('')
+        result_lines.extend(chart_md_lines)
+        result_lines.append('')
+        result_lines.extend(lines[insert_pos:])
+
+        processed_sections.append('\n'.join(result_lines))
+
+    result = ''.join(processed_sections)
+
+    # ---- 追加未匹配的图表 ----
+    unmatched = []
+    for code6, (name, code, url) in code_to_chart.items():
+        if code6 not in placed_codes:
+            unmatched.append(f'![{name} {code}]({url})')
+
+    if unmatched:
+        result = result.rstrip() + '\n\n' + '\n'.join(unmatched) + '\n'
+        print(f'[Charts] {len(unmatched)} 张图表未匹配到对应section，已追加到末尾')
+
+    return result
 
 
 # ============================================================

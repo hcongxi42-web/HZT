@@ -17,86 +17,172 @@ warnings.filterwarnings("ignore")
 # ============ Matplotlib 中文字体配置 ============
 
 def setup_matplotlib():
-    """配置 matplotlib 中文字体（支持 headless 环境 / GitHub Actions / Windows / Mac）。
+    """配置 matplotlib 中文字体（支持 headless / GitHub Actions / Windows / Mac）。
 
-    策略：按名称查找 → 按文件路径扫描 → 重建字体缓存。覆盖绝大多数环境。
+    策略：直接扫描文件系统找到 CJK 字体 → 注册 → 强制重建字体列表 → 应用。
+    避免依赖 findfont 名称匹配（跨平台不可靠）和字体缓存（往往过时）。
     """
     import matplotlib
     matplotlib.use("Agg")  # 无 GUI 后端
     import matplotlib.pyplot as plt
     from matplotlib import font_manager
     import glob as _glob
+    import os as _os
 
-    # ---- 1. 重建字体缓存（确保刚安装的字体被识别） ----
+    # ---- 1. 清除字体缓存（强制 matplotlib 重建字体列表）----
     cache_dir = matplotlib.get_cachedir()
     try:
-        for cf in _glob.glob(os.path.join(cache_dir, "fontlist*")):
-            os.remove(cf)
+        for cf in _glob.glob(_os.path.join(cache_dir, "fontlist*")):
+            _os.remove(cf)
+        # 删除旧版缓存文件
+        for cf in _glob.glob(_os.path.join(cache_dir, "*fontList*")):
+            _os.remove(cf)
     except Exception:
         pass
 
-    # ---- 2. 按名称查找 ----
-    candidate_names = [
-        "Noto Sans CJK SC",
-        "Noto Sans SC",
-        "WenQuanYi Micro Hei",
-        "WenQuanYi Zen Hei",
-        "SimHei",
-        "Microsoft YaHei",
-        "AR PL UMing CN",
-        "AR PL UKai CN",
+    # ---- 2. 文件系统扫描：找到第一个可用的 CJK 字体文件 ----
+    search_roots = [
+        "C:/Windows/Fonts",                       # Windows
+        "/usr/share/fonts",                        # Linux (apt)
+        "/usr/local/share/fonts",                  # Linux (manual)
+        _os.path.expanduser("~/.fonts"),           # Linux (user)
+        "/System/Library/Fonts",                   # macOS
+        "/Library/Fonts",                          # macOS
     ]
-    font_found = None
-    for name in candidate_names:
-        try:
-            font_manager.findfont(name, fallback_to_default=False)
-            font_found = name
-            break
-        except Exception:
+
+    # 优先匹配：非 VF (可变字体) 优先，避免 matplotlib VF 渲染兼容问题
+    cjk_keywords_priority = [
+        # Windows 首选（.ttc 集合字体，兼容性最好）
+        "msyh.ttc", "msyh.ttf",     # 微软雅黑
+        "simhei.ttf",                # 黑体
+        "simsun.ttc", "simsun.ttf",  # 宋体
+        "simkai.ttf",                # 楷体
+        # Linux 首选
+        "NotoSansCJK", "NotoSansSC",
+        "NotoSansMonoCJK",
+        "wqy-microhei", "WenQuanYi",
+        "DroidSansFallback",
+        # macOS 首选
+        "PingFang", "Heiti", "STHeiti",
+        # 最后的兜底：任何包含 CJK 线索的字体
+    ]
+
+    cjk_keywords_broad = [
+        "NotoSans", "noto", "CJK",
+        "wqy", "WenQuanYi", "wenquan",
+        "simhei", "SimHei", "simsun", "SimSun",
+        "yahei", "YaHei", "msyh",
+        "songti", "heiti", "uming", "ukai",
+        "PingFang", "STHeiti",
+    ]
+
+    font_path = None
+    font_name_from_file = None
+
+    for root_dir in search_roots:
+        if not _os.path.isdir(root_dir):
             continue
 
-    # ---- 3. 按文件扫描（兜底） ----
-    if not font_found:
-        search_roots = [
-            "/usr/share/fonts",
-            "/usr/local/share/fonts",
-            os.path.expanduser("~/.fonts"),
-            "C:/Windows/Fonts",
-            "/System/Library/Fonts",
-        ]
-        cjk_keywords = [
-            "NotoSansCJK", "NotoSansSC", "noto", "CJK",
-            "wqy", "WenQuanYi", "simhei", "SimHei",
-            "yahei", "YaHei", "simsun", "SimSun",
-            "songti", "heiti", "uming", "ukai",
-        ]
-        for root_dir in search_roots:
-            if not os.path.isdir(root_dir):
-                continue
-            for dirpath, _dirs, files in os.walk(root_dir):
+        # 第一轮：精确匹配（非 VF 优先）
+        for dirpath, _dirs, files in _os.walk(root_dir):
+            for fn in files:
+                if not fn.lower().endswith((".ttf", ".ttc", ".otf")):
+                    continue
+                fn_lower = fn.lower()
+                # 跳过可变字体（Variable Font），matplotlib 对此支持不稳定
+                if "vf" in fn_lower and not any(k in fn_lower for k in ["msyh", "simhei", "simsun", "simkai"]):
+                    continue
+                if not any(kw.lower() in fn_lower for kw in cjk_keywords_priority):
+                    continue
+                fp = _os.path.join(dirpath, fn)
+                try:
+                    # 验证该字体确实支持中文
+                    from matplotlib.ft2font import FT2Font
+                    ft = FT2Font(fp)
+                    if ft.get_char_index(ord("中")) > 0:
+                        font_path = fp
+                        font_name_from_file = ft.family_name
+                        break
+                except Exception:
+                    continue
+            if font_path:
+                break
+
+        # 第二轮：宽泛匹配（如果第一轮没找到）
+        if not font_path:
+            for dirpath, _dirs, files in _os.walk(root_dir):
                 for fn in files:
                     if not fn.lower().endswith((".ttf", ".ttc", ".otf")):
                         continue
-                    if not any(kw.lower() in fn.lower() for kw in cjk_keywords):
+                    fn_lower = fn.lower()
+                    if "vf" in fn_lower and "noto" in fn_lower:
                         continue
-                    fp = os.path.join(dirpath, fn)
+                    if not any(kw.lower() in fn_lower for kw in cjk_keywords_broad):
+                        continue
+                    fp = _os.path.join(dirpath, fn)
                     try:
-                        font_manager.fontManager.addfont(fp)
-                        prop = font_manager.FontProperties(fname=fp)
-                        font_found = prop.get_name()
-                        break
+                        from matplotlib.ft2font import FT2Font
+                        ft = FT2Font(fp)
+                        if ft.get_char_index(ord("中")) > 0:
+                            font_path = fp
+                            font_name_from_file = ft.family_name
+                            break
                     except Exception:
                         continue
-                if font_found:
+                if font_path:
                     break
-            if font_found:
-                break
 
-    # ---- 4. 应用 ----
-    if font_found:
-        plt.rcParams["font.family"] = "sans-serif"
-        plt.rcParams["font.sans-serif"] = [font_found] + plt.rcParams.get("font.sans-serif", [])
-    plt.rcParams["axes.unicode_minus"] = False
+        if font_path:
+            break
+
+    # ---- 3. 注册并应用 ----
+    applied = False
+    if font_path and font_name_from_file:
+        try:
+            # 注册字体文件
+            font_manager.fontManager.addfont(font_path)
+            # 强制重建字体列表
+            try:
+                font_manager._load_fontmanager(try_read_cache=False)
+            except Exception:
+                pass
+
+            # 设置全局字体
+            plt.rcParams["font.family"] = "sans-serif"
+            current_sans = plt.rcParams.get("font.sans-serif", [])
+            plt.rcParams["font.sans-serif"] = [font_name_from_file] + [
+                f for f in current_sans if f != font_name_from_file
+            ]
+            plt.rcParams["axes.unicode_minus"] = False
+            applied = True
+            print(f"[Font] 已注册: {font_name_from_file} ({font_path})")
+        except Exception as e:
+            print(f"[Font] 注册字体文件失败: {e}")
+
+    # ---- 4. 兜底：按名称设置（仅当文件注册失败时）----
+    if not applied:
+        fallback_names = [
+            "Microsoft YaHei", "SimHei", "Noto Sans CJK SC",
+            "Noto Sans SC", "WenQuanYi Micro Hei", "PingFang SC",
+        ]
+        for name in fallback_names:
+            try:
+                # 检查字体是否确实存在
+                test_path = font_manager.findfont(name, fallback_to_default=False)
+                if test_path and _os.path.exists(test_path):
+                    plt.rcParams["font.family"] = "sans-serif"
+                    current = plt.rcParams.get("font.sans-serif", [])
+                    plt.rcParams["font.sans-serif"] = [name] + [f for f in current if f != name]
+                    plt.rcParams["axes.unicode_minus"] = False
+                    applied = True
+                    print(f"[Font] 按名称设置: {name} ({test_path})")
+                    break
+            except Exception:
+                continue
+
+    if not applied:
+        print("[Font] 警告：未找到 CJK 字体，中文可能显示为方框")
+
     return plt
 
 
