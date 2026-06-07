@@ -18,6 +18,9 @@ try:
 except ImportError:
     stock_analyzer = None
 
+# 共享爬取函数（避免与 news_fetcher.py 重复维护）
+from news_fetcher import fetch_cls_news, fetch_eastmoney_news
+
 
 # ============ 指数行情抓取 ============
 
@@ -55,96 +58,11 @@ def fetch_index_quotes():
 
 
 # ============ 新闻抓取部分 ============
-
-def fetch_cls_news(market_filter=None):
-    """从财联社抓取快讯"""
-    url = "https://www.cls.cn/nodeapi/updateTelegraphList?app=CailianpressWeb&os=web&sv=8.4.6&rn=50"
-    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36", "Referer": "https://www.cls.cn/"}
-    try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode())
-        articles = []
-        for item in data.get("data", {}).get("roll_data", []):
-            content = re.sub(r"<[^>]+>", "", item.get("content", ""))
-            ctime = item.get("ctime", 0)
-            time_str = datetime.fromtimestamp(ctime).strftime("%Y-%m-%d %H:%M") if ctime else ""
-            subjects = [s.get("subject_name", "") for s in item.get("subjects", [])]
-            subject_str = " ".join(subjects)
-            is_hk = any(kw in subject_str for kw in ["港股", "港交所", "HK"]) or any(kw in content for kw in ["港股", "恒生", "港交所", "恒指"])
-            is_us = any(kw in subject_str for kw in ["美股", "美联储", "纳斯达克"]) or any(kw in content for kw in ["美股", "纳指", "标普", "道指"])
-            if market_filter == "HK" and not is_hk:
-                continue
-            if market_filter == "A" and (is_hk or is_us):
-                continue
-            market_label = "港股" if is_hk else ("美股" if is_us else "A股")
-            title = item.get("title", "") or content[:50]
-            articles.append({"title": title, "summary": content[:200], "time": time_str, "source": "财联社", "market": market_label})
-            if len(articles) >= 15:
-                break
-        return articles
-    except Exception as e:
-        return [{"error": str(e), "source": "财联社", "market": "A股"}]
-
-
-def fetch_eastmoney_news():
-    url = "https://np-listapi.eastmoney.com/comm/web/getNewsByColumns?client=web&biz=web_news_col&column=350&order=1&needInteractData=0&page_index=1&page_size=15&req_trace=a"
-    headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.eastmoney.com/"}
-    try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode())
-        return [{"title": item.get("title", ""), "summary": item.get("digest", "")[:200], "time": item.get("showTime", ""), "source": "东方财富", "market": "A股"} for item in data.get("data", {}).get("list", [])[:15]]
-    except Exception as e:
-        return [{"error": str(e), "source": "东方财富", "market": "A股"}]
-
-
-def fetch_eastmoney_kuaixun(type_id="111", market="美股"):
-    url = f"https://newsapi.eastmoney.com/kuaixun/v1/getlist_{type_id}_ajaxResult_15_1_.html"
-    headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.eastmoney.com/"}
-    try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            raw = resp.read().decode()
-            json_str = raw[raw.index("{"):raw.rindex("}") + 1]
-            data = json.loads(json_str)
-        return [{"title": item.get("title", ""), "summary": item.get("digest", item.get("title", ""))[:200], "time": item.get("showtime", ""), "source": "东方财富", "market": market} for item in data.get("LivesList", [])[:15]]
-    except Exception as e:
-        return [{"error": str(e), "source": "东方财富", "market": market}]
-
-
-def fetch_sina_us_stock():
-    url = "https://feed.mix.sina.com.cn/api/roll/get?pageid=153&lid=2509&k=&num=15&page=1"
-    headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.sina.com.cn/"}
-    try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode())
-        articles = []
-        for item in data.get("result", {}).get("data", [])[:15]:
-            title = re.sub(r"<[^>]+>", "", item.get("title", "").replace("&nbsp;", " ").replace("&amp;", "&"))
-            ctime = item.get("ctime", "")
-            time_str = datetime.fromtimestamp(int(ctime)).strftime("%Y-%m-%d %H:%M") if ctime else ""
-            intro = re.sub(r"<[^>]+>", "", item.get("intro", ""))
-            articles.append({"title": title, "summary": (intro or title)[:200], "time": time_str, "source": "新浪财经", "market": "美股"})
-        return articles
-    except Exception as e:
-        return [{"error": str(e), "source": "新浪财经", "market": "美股"}]
-
-
-def fetch_eastmoney_hk():
-    url = "https://np-listapi.eastmoney.com/comm/web/getNewsByColumns?client=web&biz=web_news_col&column=351&order=1&needInteractData=0&page_index=1&page_size=15&req_trace=a"
-    headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://hk.eastmoney.com/"}
-    try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode())
-        return [{"title": item.get("title", ""), "summary": item.get("digest", "")[:200], "time": item.get("showTime", ""), "source": "东方财富", "market": "港股"} for item in data.get("data", {}).get("list", [])[:15]]
-    except Exception as e:
-        return [{"error": str(e), "source": "东方财富", "market": "港股"}]
+# fetch_cls_news / fetch_eastmoney_news 统一从 news_fetcher.py 导入，避免重复维护
 
 
 def fetch_all_news():
+    """抓取 A 股新闻（财联社 + 东方财富）"""
     news = []
     news.extend(fetch_cls_news(market_filter="A"))
     news.extend(fetch_eastmoney_news())
@@ -294,20 +212,95 @@ def call_llm(news_text):
 # ============ HTML 详情页生成 ============
 
 def markdown_to_html(md):
-    """将 Markdown 转为结构化 HTML（Bloomberg/WSJ 风格）"""
+    """将 Markdown 转为结构化 HTML（Bloomberg/WSJ 风格），支持表格。
+
+    采用两阶段处理：
+      1. 预扫描 — 将 Markdown 表格块转为 HTML，用占位符替换
+      2. 标准处理 — 段落、标题、列表等，占位符直接插入原始 HTML
+    """
+
+    # ---- 阶段 1：提取表格 ----
+    tables = []          # 存放生成的 HTML 表格
+    lines = md.split("\n")
+    processed_lines = []  # 替换占位符后的行序列
+    i = 0
+    while i < len(lines):
+        raw = lines[i]
+        stripped = raw.strip()
+        if re.match(r"^\|.+\|$", stripped):
+            # 检查下一行是否为分隔行 |---|:---:|...|
+            if i + 1 < len(lines) and re.match(r"^\|(?:[\s\-:]+\|)+$", lines[i + 1].strip()):
+                # ---------- 解析表头 ----------
+                header_cells = [c.strip() for c in stripped.split("|")[1:-1]]
+                sep_cells = [c.strip() for c in lines[i + 1].strip().split("|")[1:-1]]
+
+                # 对齐方式
+                aligns = []
+                for sep in sep_cells:
+                    if sep.startswith(":") and sep.endswith(":"):
+                        aligns.append("center")
+                    elif sep.endswith(":"):
+                        aligns.append("right")
+                    else:
+                        aligns.append("left")
+                while len(aligns) < len(header_cells):
+                    aligns.append("left")
+
+                # 构建表头 HTML
+                html = '<div class="rpt-table-wrapper"><table class="rpt-table"><thead><tr>'
+                for j, cell in enumerate(header_cells):
+                    al = aligns[j]
+                    html += f'<th style="text-align:{al}">{cell}</th>'
+                html += "</tr></thead><tbody>"
+
+                # ---------- 解析数据行 ----------
+                i += 2  # 跳到表体第一行
+                while i < len(lines) and re.match(r"^\|.+\|$", lines[i].strip()):
+                    row_line = lines[i].strip()
+                    cells = [c.strip() for c in row_line.split("|")[1:-1]]
+                    html += "<tr>"
+                    for j, cell in enumerate(cells):
+                        al = aligns[j] if j < len(aligns) else "left"
+                        html += f'<td style="text-align:{al}">{cell}</td>'
+                    html += "</tr>"
+                    i += 1
+
+                html += "</tbody></table></div>"
+
+                token = f"%%TABLE_{len(tables)}%%"
+                tables.append(html)
+                processed_lines.append(token)
+                continue  # i 已被内层 while 推进到表尾之后
+
+        processed_lines.append(raw)
+        i += 1
+
+    # ---- 阶段 2：标准解析（含表格占位符） ----
+    md_clean = "\n".join(processed_lines)
+
     sections = []
     current_section = {"title": "", "content": []}
 
-    for line in md.split("\n"):
+    for line in md_clean.split("\n"):
         line = line.strip()
         if not line:
             continue
+
+        # 表格占位符 → 直接注入 HTML
+        tbl_match = re.match(r"^%%TABLE_(\d+)%%$", line)
+        if tbl_match:
+            idx = int(tbl_match.group(1))
+            if idx < len(tables):
+                current_section["content"].append(("raw_html", tables[idx]))
+            continue
+
         h_match = re.match(r"^#{1,3}\s+(.+)$", line)
         if h_match:
             if current_section["title"] or current_section["content"]:
                 sections.append(current_section)
             current_section = {"title": h_match.group(1), "content": []}
             continue
+
         line = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", line)
         ol_match = re.match(r"^(\d+)\.\s+(.+)$", line)
         if ol_match:
@@ -328,15 +321,17 @@ def markdown_to_html(md):
     for sec in sections:
         html_parts.append('<div class="rpt-section">')
         if sec["title"]:
-            # 清理标题中的序号前缀（如"一、"）
             clean_title = re.sub(r"^[一二三四五六七八九十]+[、．.]?\s*", "", sec["title"])
             html_parts.append(f'<h3 class="rpt-heading">{clean_title}</h3>')
         for item in sec["content"]:
-            if item[0] == "ol":
+            typ = item[0]
+            if typ == "ol":
                 num, text = item[1], item[2]
                 html_parts.append(f'<div class="rpt-news-item"><span class="rpt-num">{num}</span><div class="rpt-news-text">{text}</div></div>')
-            elif item[0] == "ul":
+            elif typ == "ul":
                 html_parts.append(f'<div class="rpt-bullet"><div class="rpt-bullet-text">{item[1]}</div></div>')
+            elif typ == "raw_html":
+                html_parts.append(item[1])  # 直接注入 HTML，不加任何包装
             else:
                 html_parts.append(f'<p class="rpt-para">{item[1]}</p>')
         html_parts.append("</div>")
@@ -588,6 +583,36 @@ body {{
   margin: 10px 0; text-align: justify;
 }}
 .rpt-para strong {{ color: #c0392b; }}
+
+/* ===== 表格（AI 选股 / 数据）===== */
+.rpt-table-wrapper {{
+  overflow-x: auto; margin: 16px 0;
+  -webkit-overflow-scrolling: touch;
+}}
+.rpt-table {{
+  width: 100%; border-collapse: collapse;
+  font-size: 13.5px; line-height: 1.7;
+  background: #fff; border: 1px solid #e0dcd5;
+}}
+.rpt-table thead {{
+  background: #1a1a1a; color: #fff;
+}}
+.rpt-table th {{
+  padding: 10px 12px; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  border-bottom: 2px solid #c0392b;
+}}
+.rpt-table td {{
+  padding: 8px 12px; border-bottom: 1px solid #ece8e1;
+  color: #2a2a2a;
+}}
+.rpt-table tbody tr:nth-child(even) {{
+  background: #faf8f6;
+}}
+.rpt-table tbody tr:hover {{
+  background: #fdf0ee;
+}}
+.rpt-table td strong {{ color: #c0392b; font-weight: 700; }}
 
 /* ===== 页脚 ===== */
 .site-footer {{

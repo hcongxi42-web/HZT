@@ -27,7 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install baostock matplotlib pandas
+          pip install -r requirements.txt
           sudo apt-get update -qq
           sudo apt-get install -y -qq fonts-noto-cjk
 
