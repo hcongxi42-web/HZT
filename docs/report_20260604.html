@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARKET BRIEF - 2026-06-04</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Noto Sans SC', 'Inter', -apple-system, sans-serif;
+  background: #f7f3ef; color: #1a1a1a; line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== 顶部导航栏 (Bloomberg 风格) ===== */
+.top-bar {
+  background: #111; color: #fff; padding: 0;
+  border-bottom: 3px solid #c0392b;
+}
+.top-bar-inner {
+  max-width: 860px; margin: 0 auto; padding: 12px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.brand {
+  font-family: 'Playfair Display', 'Noto Serif SC', Georgia, serif;
+  font-size: 22px; font-weight: 900; letter-spacing: 1px; color: #fff;
+}
+.brand span { color: #c0392b; }
+.top-meta {
+  font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px;
+  text-align: right; line-height: 1.5;
+}
+
+/* ===== Ticker 行情条 ===== */
+.ticker-strip {
+  background: #1a1a1a; border-bottom: 1px solid #333;
+  overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
+}
+.ticker-strip::-webkit-scrollbar { height: 0; }
+.ticker-inner {
+  max-width: 860px; margin: 0 auto; padding: 10px 20px;
+  display: flex; gap: 0;
+}
+.ticker {
+  flex: 0 0 auto; padding: 6px 16px; text-align: center;
+  border-right: 1px solid #333; min-width: 110px;
+}
+.ticker:last-child { border-right: none; }
+.ticker-name {
+  font-size: 10px; color: #888; letter-spacing: 1.5px;
+  text-transform: uppercase; font-weight: 600; margin-bottom: 2px;
+}
+.ticker-price {
+  font-family: 'Inter', monospace; font-size: 17px; font-weight: 700;
+  color: #fff; font-variant-numeric: tabular-nums;
+}
+.ticker-change {
+  font-family: 'Inter', monospace; font-size: 12px; font-weight: 600;
+  margin-top: 1px;
+}
+.ticker.up .ticker-change { color: #e74c3c; }
+.ticker.down .ticker-change { color: #27ae60; }
+.ticker.flat .ticker-change { color: #888; }
+
+/* ===== 主标题区 (WSJ 社论风格) ===== */
+.masthead {
+  max-width: 860px; margin: 0 auto; padding: 36px 20px 24px;
+  border-bottom: 2px solid #1a1a1a; text-align: center;
+}
+
+/* ===== 历史简报导航条 ===== */
+.history-nav {
+  max-width: 860px; margin: 0 auto; padding: 14px 20px;
+  border-bottom: 1px solid #e0dcd5;
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; background: #faf8f5;
+}
+.history-label {
+  font-size: 12px; font-weight: 700; color: #888;
+  letter-spacing: 1px; text-transform: uppercase;
+  margin-right: 6px;
+}
+.history-link {
+  font-size: 12px; font-weight: 600; color: #c0392b;
+  padding: 5px 12px; border-radius: 3px;
+  background: #fff; border: 1px solid #e8e4dc;
+  text-decoration: none; transition: all 0.2s;
+}
+.history-link:hover {
+  background: #c0392b; color: #fff; border-color: #c0392b;
+}
+.history-current {
+  background: #c0392b; color: #fff; border-color: #c0392b;
+  cursor: default;
+}
+.masthead-date {
+  font-size: 12px; color: #888; letter-spacing: 2px;
+  text-transform: uppercase; font-weight: 500; margin-bottom: 10px;
+}
+.masthead h1 {
+  font-family: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
+  font-size: 38px; font-weight: 900; color: #1a1a1a;
+  letter-spacing: 2px; line-height: 1.3; margin-bottom: 10px;
+}
+.masthead-sub {
+  font-size: 15px; color: #666; font-weight: 300;
+  font-family: 'Noto Sans SC', 'Inter', sans-serif;
+}
+.masthead-tags {
+  margin-top: 16px; display: flex; justify-content: center; gap: 10px;
+  flex-wrap: wrap;
+}
+.mtag {
+  font-size: 11px; font-weight: 600; letter-spacing: 1px;
+  padding: 4px 14px; border-radius: 2px;
+  text-transform: uppercase;
+}
+.mtag-a { background: #fdecea; color: #c0392b; }
+.mtag-us { background: #eaf0fb; color: #2c5aa0; }
+.mtag-hk { background: #fef9e7; color: #b7950b; }
+
+/* ===== 内容容器 ===== */
+.content { max-width: 860px; margin: 0 auto; padding: 0 20px 40px; }
+
+/* ===== 区块标题 ===== */
+.sec-header {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: #c0392b;
+  padding: 20px 0 10px; margin-top: 28px;
+  border-top: 3px solid #1a1a1a;
+}
+
+/* ===== 走势图区 ===== */
+.charts-row {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+  margin-top: 16px;
+}
+.chart-cell {
+  background: #fff; border: 1px solid #e0dcd5;
+}
+.chart-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: #666; text-align: center;
+  padding: 10px 0 4px; border-bottom: 1px solid #f0ece6;
+}
+.chart-cell img { width: 100%; display: block; }
+
+/* ===== AI 分析报告 ===== */
+.report-body { margin-top: 16px; }
+
+.rpt-section { margin-bottom: 28px; }
+.rpt-section:last-child { margin-bottom: 0; }
+
+.rpt-heading {
+  font-family: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
+  font-size: 20px; font-weight: 700; color: #1a1a1a;
+  padding-bottom: 8px; margin-bottom: 14px;
+  border-bottom: 1px solid #d5d0c8;
+}
+
+.rpt-news-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 18px; margin: 10px 0;
+  background: #fff; border: 1px solid #e8e4dc;
+  border-left: 3px solid #c0392b;
+  transition: box-shadow 0.2s;
+}
+.rpt-news-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.rpt-num {
+  flex-shrink: 0; width: 24px; height: 24px; line-height: 24px;
+  text-align: center; font-family: 'Playfair Display', serif;
+  font-size: 14px; font-weight: 900; color: #c0392b;
+  border: 2px solid #c0392b; border-radius: 50%;
+}
+.rpt-news-text {
+  font-size: 14.5px; line-height: 1.8; color: #2a2a2a;
+}
+.rpt-news-text strong { color: #c0392b; font-weight: 700; }
+
+.rpt-bullet {
+  padding: 6px 18px 6px 32px; margin: 4px 0;
+  position: relative;
+}
+.rpt-bullet::before {
+  content: ''; position: absolute; left: 18px; top: 15px;
+  width: 5px; height: 5px; background: #c0392b;
+}
+.rpt-bullet-text {
+  font-size: 14.5px; line-height: 1.8; color: #2a2a2a;
+}
+.rpt-bullet-text strong { color: #c0392b; }
+
+.rpt-para {
+  font-size: 15px; line-height: 1.9; color: #333;
+  margin: 10px 0; text-align: justify;
+}
+.rpt-para strong { color: #c0392b; }
+
+/* ===== 页脚 ===== */
+.site-footer {
+  max-width: 860px; margin: 0 auto; padding: 30px 20px 50px;
+  border-top: 3px solid #1a1a1a; text-align: center;
+}
+.footer-brand {
+  font-family: 'Playfair Display', 'Noto Serif SC', serif;
+  font-size: 15px; font-weight: 700; color: #1a1a1a;
+  letter-spacing: 1px; margin-bottom: 8px;
+}
+.footer-info {
+  font-size: 11px; color: #999; line-height: 2; letter-spacing: 0.3px;
+}
+.footer-disclaimer {
+  font-size: 10px; color: #bbb; margin-top: 12px;
+  padding-top: 12px; border-top: 1px solid #e0dcd5;
+  line-height: 1.8;
+}
+.online-link {
+  display: inline-block; margin-top: 14px;
+  padding: 10px 28px; background: #c0392b; color: #fff;
+  font-size: 13px; font-weight: 600; letter-spacing: 1px;
+  text-decoration: none; border-radius: 3px;
+  transition: background 0.2s;
+}
+.online-link:hover { background: #a93226; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 600px) {
+  .masthead h1 { font-size: 28px; }
+  .top-bar-inner { flex-direction: column; gap: 4px; text-align: center; }
+  .top-meta { text-align: center; }
+  .ticker-inner { padding: 8px 12px; }
+  .ticker { min-width: 90px; padding: 6px 10px; }
+  .ticker-price { font-size: 15px; }
+  .charts-row { grid-template-columns: 1fr; }
+  .content { padding: 0 14px 30px; }
+  .rpt-heading { font-size: 18px; }
+  .rpt-news-item { padding: 10px 12px; }
+  .masthead { padding: 24px 14px 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="top-bar">
+  <div class="top-bar-inner">
+    <div class="brand">MARKET<span>BRIEF</span></div>
+    <div class="top-meta">Thursday, June 04, 2026<br>10:07 CST</div>
+  </div>
+</div>
+
+<!-- 行情条 -->
+<div class="ticker-strip">
+  <div class="ticker-inner"><div class="ticker down"><div class="ticker-name">上证指数</div><div class="ticker-price">4057.78</div><div class="ticker-change">&#9660; -0.64%</div></div><div class="ticker down"><div class="ticker-name">深证成指</div><div class="ticker-price">15661.57</div><div class="ticker-change">&#9660; -0.27%</div></div><div class="ticker down"><div class="ticker-name">创业板指</div><div class="ticker-price">4088.88</div><div class="ticker-change">&#9660; -0.83%</div></div></div>
+</div>
+
+<!-- 历史简报导航 -->
+<div class="history-nav">
+  <span class="history-label">📅 历史简报</span>
+  <a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260603.html">06月03日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260602.html">06月02日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260601.html">06月01日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260531.html">05月31日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260530.html">05月30日</a>
+</div>
+
+<!-- 标题区 -->
+<div class="masthead">
+  <div class="masthead-date">2026-06-04 星期四</div>
+  <h1>每日股市简报</h1>
+  <div class="masthead-sub">AI-Powered Daily Market Intelligence</div>
+  <div class="masthead-tags">
+    <span class="mtag mtag-a">A股 15 条</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- 走势图 -->
+  <div class="sec-header">INTRADAY CHARTS</div>
+  <div class="charts-row"><div class="chart-cell"><div class="chart-label">上证指数</div><img src="https://image.sinajs.cn/newchart/min/n/sh000001.gif" alt="上证指数" onerror="this.parentElement.style.display='none'"></div><div class="chart-cell"><div class="chart-label">深证成指</div><img src="https://image.sinajs.cn/newchart/min/n/sz399001.gif" alt="深证成指" onerror="this.parentElement.style.display='none'"></div></div>
+
+  <!-- AI 报告 -->
+  <div class="sec-header">MARKET ANALYSIS</div>
+  <div class="report-body"><div class="rpt-section">
+<h3 class="rpt-heading">每日股市简报</h3>
+<p class="rpt-para"><strong>日期</strong>: 2026年6月4日</p>
+<p class="rpt-para"><strong>分析师</strong>: 资深金融分析师</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">1. 市场总览</h3>
+<p class="rpt-para">今日A股盘后消息面呈现明显的政策驱动特征，央行、商务部、工信部等多部委密集释放稳增长与产业扶持信号。虽然日内盘面未体现，但政策组合拳旨在通过流动性呵护及产业引导，巩固市场对科技成长与稳外贸主线的信心基础。</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">2. 重要新闻 TOP 5</h3>
+<p class="rpt-para"><strong>① </strong>央行连续开展大规模流动性投放**</p>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>内容</strong>: 央行宣布将于6月5日开展5000亿元3个月期买断式逆回购操作（多篇独立报道确认）。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响</strong>: 此举延续了近期偏宽松的货币政策基调，旨在跨季前平抑资金面波动，对银行、券商及高负债行业形成直接利好，有助于稳定市场基本预期。</div></div>
+<p class="rpt-para"><strong>② </strong>工信部启动6G创新发展专项行动**</p>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>内容</strong>: 工信部组织开展6G创新发展部省协同试点专项行动。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响</strong>: 明确释放了对未来通信技术超前布局的顶层政策信号，预计将刺激6G概念、通信设备及卫星互联网等板块的短期热度，科技成长风格或再度活跃。</div></div>
+<p class="rpt-para"><strong>③ </strong>创业板深化改革：增设第四套上市标准**</p>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>内容</strong>: 创业板增设第四套标准，聚焦为科技企业带来新机会。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响</strong>: 这是资本市场支持“硬科技”的直接体现，降低特定阶段科技企业的上市门槛，利好创投概念及中小市值科技公司，长期有利于优化科技股供给结构。</div></div>
+<p class="rpt-para"><strong>④ </strong>国家发改委就数据要素价格机制赴粤调研**</p>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>内容</strong>: 国家发改委赴广东省开展数据要素价格形成机制调研。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响</strong>: 表明数据资产化进程正在政策层面加速推进，直接催化数据要素、确权及交易等数字经济细分赛道，为“数字中国”落地提供实际支持。</div></div>
+<p class="rpt-para"><strong>⑤ </strong>商务部密集发声：应对贸易限制与保障出海安全**</p>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>内容</strong>: 反对美方“强迫劳动”贸易限制；健全海外法治服务体系，保障出海企业合规。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响</strong>: 针对外部贸易摩擦更新风险应对策略，短期提振“出海”概念与外贸企业信心，同时稀土、光伏及纺织等受贸易摩擦影响的行业情绪或有所修复。</div></div>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">3. 个股聚焦</h3>
+<p class="rpt-para">今日重要公开信息未直接涉及具体上市公司的突发重大利好/利空。</p>
+<p class="rpt-para"><strong>盘后观察方向</strong>：</p>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>科技成长类</strong>：受6G试点与创业板规则优化催化，通信、软件及创投类个股次日高关注度概率较高。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>数据与光电</strong>：吉林“中国光电城”规划及数据要素调研，或为相关地域及概念股带来主题性机会。</div></div>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">4. 市场情绪</h3>
+<p class="rpt-para"><strong>判断：乐观（偏低吸结构型）</strong></p>
+<p class="rpt-para"><strong>理由</strong>：</p>
+<p class="rpt-para">消息面整体偏暖，未见重大利空。央行“真金白银”的5000亿流动性注入，有效缓解了市场对年中资金面的担忧。叠加6G、数据要素、创业板改革等密集的产业政策，市场风险偏好受到正向提振，资金倾向于在科技成长主线上寻找结构性机会。外部贸易战的困扰被商务部强硬的保障措施表态部分对冲。</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">5. 明日展望</h3>
+<p class="rpt-para">预计明日市场将围绕<strong>流动性宽松</strong>与<strong>硬核科技政策</strong>展开交易。</p>
+<div class="rpt-news-item"><span class="rpt-num">1</span><div class="rpt-news-text"><strong>指数层面</strong>，受大金融获流动性支撑影响，大幅下跌风险有限，有望维持震荡偏强格局。</div></div>
+<div class="rpt-news-item"><span class="rpt-num">2</span><div class="rpt-news-text"><strong>板块方面</strong>，6G概念、数据要素、创业板小盘科技股可能成为短线资金进攻的核心方向；同时，受逆回购利好直接刺激的券商及银行股大概率呈现稳定态势。</div></div>
+<div class="rpt-news-item"><span class="rpt-num">3</span><div class="rpt-news-text"><strong>风险点</strong>需留意5000亿逆回购资金到账后，债市及资金利率的盘中传导效应，以及对高股息防御板块的潜在分流。</div></div>
+<p class="rpt-para"><strong>免责声明</strong>: 本简报基于公开新闻数据生成，仅供参考，不构成具体投资建议。</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">📌 每日精选个股（AI 选股）</h3>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">1. 商务部：落实对外投资规定 做好投资者服务指导</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">|--------------|----------|----------|------|------|</p>
+<p class="rpt-para">| 中国交建（601800） | 海外工程承包龙头，对外投资便利化直接降低项目落地门槛 | ⚡事件驱动 | ⭐⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">| 紫金矿业（601899） | 海外矿产投资遍布全球，政策护航提升投资安全性与审批效率 | ⚡事件驱动 | ⭐⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">| 中国中车（601766） | 高端装备出海代表，对外投资服务体系完善有利于海外基地建设 | ⚡事件驱动 | ⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">3星及以下：北方国际（000065）、中钢国际（000928）</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">2. 纠偏大类招生乱象：高考志愿拒绝冷热专业捆绑</h3>
+<p class="rpt-para">直接映射公司极弱，仅概念牵涉：</p>
+<div class="rpt-bullet"><div class="rpt-bullet-text">全通教育（300359）1星</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text">方直科技（300235）1星</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text">鸿合科技（002955）1星</div></div>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">3. 央行：6月5日将开展5000亿元3个月期买断式逆回购操作</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">|--------------|----------|----------|------|------|</p>
+<p class="rpt-para">| 中信证券（600030） | 流动性释放利好券商经纪、两融业务及自营债券投资 | ⚡事件驱动 | ⭐⭐⭐ | 短期 |</p>
+<p class="rpt-para">| 华泰证券（601688） | 同上，头部券商弹性较大 | ⚡事件驱动 | ⭐⭐⭐ | 短期 |</p>
+<p class="rpt-para">| 招商银行（600036） | 银行间流动性充裕降低资金成本，提升债券投资收益 | ⚡事件驱动 | ⭐⭐⭐ | 短期 |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">4. 进口量即将达到配额！商务部提醒澳大利亚牛肉进口商关注相关提示｜快讯</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">|--------------|----------|----------|------|------|</p>
+<p class="rpt-para">| 鹏都农牧（002505） | 国内肉牛养殖龙头，进口配额受限将推升国内牛肉价格 | ⚡事件驱动 | ⭐⭐⭐⭐ | 短期 |</p>
+<p class="rpt-para">| 福成股份（600965） | 肉牛养殖及屠宰加工一体化，直接受益供给缺口 | ⚡事件驱动 | ⭐⭐⭐⭐ | 短期 |</p>
+<p class="rpt-para">| 西部牧业（300106） | 拥有肉牛养殖业务，进口替代预期提升产品售价 | ⚡事件驱动 | ⭐⭐⭐ | 短期 |</p>
+<p class="rpt-para">3星及以下：天山生物（300313）</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">5. 工信部组织开展6G创新发展部省协同试点专项行动</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">|--------------|----------|----------|------|------|</p>
+<p class="rpt-para">| 中兴通讯（000063） | 6G核心设备研发龙头，试点直接拉动设备测试与预商用订单 | 🔥强势利好 | ⭐⭐⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">| 信维通信（300136） | 射频天线核心供应商，6G超大规模天线技术升级明确受益 | 🔥强势利好 | ⭐⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">| 中国卫通（601698） | 卫星互联网是6G关键组成，公司拥有卫星通信运营资质 | ⚡事件驱动 | ⭐⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">| 亨通光电（600487） | 光纤光缆及全光网底座，6G网络建设需求增量 | ⚡事件驱动 | ⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">3星及以下：三维通信（002115）、国脉科技（002093）</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">6. 商务部：健全海外综合服务体系，为出海企业参与国际合作竞争提供有力法治保障</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">|--------------|----------|----------|------|------|</p>
+<p class="rpt-para">| 中国交建（601800） | 海外工程服务类企业面临的法律风险降低，竞争力增强 | ⚡事件驱动 | ⭐⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">| 紫金矿业（601899） | 海外矿业投资常遇法律纠纷，法治保障体系利好投资回报 | ⚡事件驱动 | ⭐⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">| 中国电信（601728） | 运营商出海如云计算、国际专线，法律护航提升安全边际 | ⚡事件驱动 | ⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">3星及以下：中国中冶（601618）、海信家电（000921）</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">7. 吉林：要科学谋划产业布局和资源配置 规划好、建设好中国光电城项目</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">|--------------|----------|----------|------|------|</p>
+<p class="rpt-para">| 奥普光电（002338） | 中科院长春光机所背景，光栅编码器、光电测控核心企业，直接参与光电城建设 | 🔥强势利好 | ⭐⭐⭐⭐ | 中期 |</p>
+<p class="rpt-para">| 福晶科技（002222） | 全球非线性光学晶体</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">📊 技术分析图</h3>
+<p class="rpt-para"><strong>中国交建 601800.SH</strong>（⭐⭐⭐⭐）</p>
+<p class="rpt-para">![中国交建 技术分析](https://hcongxi42-web.github.io/HZT/charts/601800_SH_20260604.png)</p>
+<p class="rpt-para"><strong>紫金矿业 601899.SH</strong>（⭐⭐⭐⭐）</p>
+<p class="rpt-para">![紫金矿业 技术分析](https://hcongxi42-web.github.io/HZT/charts/601899_SH_20260604.png)</p>
+<p class="rpt-para"><strong>福成股份 600965.SH</strong>（⭐⭐⭐⭐）</p>
+<p class="rpt-para">![福成股份 技术分析](https://hcongxi42-web.github.io/HZT/charts/600965_SH_20260604.png)</p>
+<p class="rpt-para"><strong>中兴通讯 000063.SZ</strong>（⭐⭐⭐⭐⭐）</p>
+<p class="rpt-para">![中兴通讯 技术分析](https://hcongxi42-web.github.io/HZT/charts/000063_SZ_20260604.png)</p>
+<p class="rpt-para"><strong>信维通信 300136.SZ</strong>（⭐⭐⭐⭐）</p>
+<p class="rpt-para">![信维通信 技术分析](https://hcongxi42-web.github.io/HZT/charts/300136_SZ_20260604.png)</p>
+<p class="rpt-para"><strong>中国卫通 601698.SH</strong>（⭐⭐⭐⭐）</p>
+<p class="rpt-para">![中国卫通 技术分析](https://hcongxi42-web.github.io/HZT/charts/601698_SH_20260604.png)</p>
+<p class="rpt-para"><strong>奥普光电 002338.SZ</strong>（⭐⭐⭐⭐）</p>
+<p class="rpt-para">![奥普光电 技术分析](https://hcongxi42-web.github.io/HZT/charts/002338_SZ_20260604.png)</p>
+</div></div>
+
+</div>
+
+<div class="site-footer">
+  <div class="footer-brand">MARKET BRIEF</div>
+  <a class="online-link" href="https://hcongxi42-web.github.io/HZT/report_20260604.html">查看在线版本</a>
+  <div class="footer-info">
+    Data: CLS / East Money / Sina Finance<br>
+    AI Analysis by Tongyi Qwen
+  </div>
+  <div class="footer-disclaimer">
+    本报告由 AI 自动生成，仅供参考，不构成任何投资建议。<br>
+    市场有风险，投资需谨慎。
+  </div>
+</div>
+
+</body>
+</html>

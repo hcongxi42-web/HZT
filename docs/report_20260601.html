@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARKET BRIEF - 2026-06-01</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Noto Sans SC', 'Inter', -apple-system, sans-serif;
+  background: #f7f3ef; color: #1a1a1a; line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== 顶部导航栏 (Bloomberg 风格) ===== */
+.top-bar {
+  background: #111; color: #fff; padding: 0;
+  border-bottom: 3px solid #c0392b;
+}
+.top-bar-inner {
+  max-width: 860px; margin: 0 auto; padding: 12px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.brand {
+  font-family: 'Playfair Display', 'Noto Serif SC', Georgia, serif;
+  font-size: 22px; font-weight: 900; letter-spacing: 1px; color: #fff;
+}
+.brand span { color: #c0392b; }
+.top-meta {
+  font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px;
+  text-align: right; line-height: 1.5;
+}
+
+/* ===== Ticker 行情条 ===== */
+.ticker-strip {
+  background: #1a1a1a; border-bottom: 1px solid #333;
+  overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
+}
+.ticker-strip::-webkit-scrollbar { height: 0; }
+.ticker-inner {
+  max-width: 860px; margin: 0 auto; padding: 10px 20px;
+  display: flex; gap: 0;
+}
+.ticker {
+  flex: 0 0 auto; padding: 6px 16px; text-align: center;
+  border-right: 1px solid #333; min-width: 110px;
+}
+.ticker:last-child { border-right: none; }
+.ticker-name {
+  font-size: 10px; color: #888; letter-spacing: 1.5px;
+  text-transform: uppercase; font-weight: 600; margin-bottom: 2px;
+}
+.ticker-price {
+  font-family: 'Inter', monospace; font-size: 17px; font-weight: 700;
+  color: #fff; font-variant-numeric: tabular-nums;
+}
+.ticker-change {
+  font-family: 'Inter', monospace; font-size: 12px; font-weight: 600;
+  margin-top: 1px;
+}
+.ticker.up .ticker-change { color: #e74c3c; }
+.ticker.down .ticker-change { color: #27ae60; }
+.ticker.flat .ticker-change { color: #888; }
+
+/* ===== 主标题区 (WSJ 社论风格) ===== */
+.masthead {
+  max-width: 860px; margin: 0 auto; padding: 36px 20px 24px;
+  border-bottom: 2px solid #1a1a1a; text-align: center;
+}
+
+/* ===== 历史简报导航条 ===== */
+.history-nav {
+  max-width: 860px; margin: 0 auto; padding: 14px 20px;
+  border-bottom: 1px solid #e0dcd5;
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; background: #faf8f5;
+}
+.history-label {
+  font-size: 12px; font-weight: 700; color: #888;
+  letter-spacing: 1px; text-transform: uppercase;
+  margin-right: 6px;
+}
+.history-link {
+  font-size: 12px; font-weight: 600; color: #c0392b;
+  padding: 5px 12px; border-radius: 3px;
+  background: #fff; border: 1px solid #e8e4dc;
+  text-decoration: none; transition: all 0.2s;
+}
+.history-link:hover {
+  background: #c0392b; color: #fff; border-color: #c0392b;
+}
+.history-current {
+  background: #c0392b; color: #fff; border-color: #c0392b;
+  cursor: default;
+}
+.masthead-date {
+  font-size: 12px; color: #888; letter-spacing: 2px;
+  text-transform: uppercase; font-weight: 500; margin-bottom: 10px;
+}
+.masthead h1 {
+  font-family: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
+  font-size: 38px; font-weight: 900; color: #1a1a1a;
+  letter-spacing: 2px; line-height: 1.3; margin-bottom: 10px;
+}
+.masthead-sub {
+  font-size: 15px; color: #666; font-weight: 300;
+  font-family: 'Noto Sans SC', 'Inter', sans-serif;
+}
+.masthead-tags {
+  margin-top: 16px; display: flex; justify-content: center; gap: 10px;
+  flex-wrap: wrap;
+}
+.mtag {
+  font-size: 11px; font-weight: 600; letter-spacing: 1px;
+  padding: 4px 14px; border-radius: 2px;
+  text-transform: uppercase;
+}
+.mtag-a { background: #fdecea; color: #c0392b; }
+.mtag-us { background: #eaf0fb; color: #2c5aa0; }
+.mtag-hk { background: #fef9e7; color: #b7950b; }
+
+/* ===== 内容容器 ===== */
+.content { max-width: 860px; margin: 0 auto; padding: 0 20px 40px; }
+
+/* ===== 区块标题 ===== */
+.sec-header {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: #c0392b;
+  padding: 20px 0 10px; margin-top: 28px;
+  border-top: 3px solid #1a1a1a;
+}
+
+/* ===== 走势图区 ===== */
+.charts-row {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+  margin-top: 16px;
+}
+.chart-cell {
+  background: #fff; border: 1px solid #e0dcd5;
+}
+.chart-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: #666; text-align: center;
+  padding: 10px 0 4px; border-bottom: 1px solid #f0ece6;
+}
+.chart-cell img { width: 100%; display: block; }
+
+/* ===== AI 分析报告 ===== */
+.report-body { margin-top: 16px; }
+
+.rpt-section { margin-bottom: 28px; }
+.rpt-section:last-child { margin-bottom: 0; }
+
+.rpt-heading {
+  font-family: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
+  font-size: 20px; font-weight: 700; color: #1a1a1a;
+  padding-bottom: 8px; margin-bottom: 14px;
+  border-bottom: 1px solid #d5d0c8;
+}
+
+.rpt-news-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 18px; margin: 10px 0;
+  background: #fff; border: 1px solid #e8e4dc;
+  border-left: 3px solid #c0392b;
+  transition: box-shadow 0.2s;
+}
+.rpt-news-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.rpt-num {
+  flex-shrink: 0; width: 24px; height: 24px; line-height: 24px;
+  text-align: center; font-family: 'Playfair Display', serif;
+  font-size: 14px; font-weight: 900; color: #c0392b;
+  border: 2px solid #c0392b; border-radius: 50%;
+}
+.rpt-news-text {
+  font-size: 14.5px; line-height: 1.8; color: #2a2a2a;
+}
+.rpt-news-text strong { color: #c0392b; font-weight: 700; }
+
+.rpt-bullet {
+  padding: 6px 18px 6px 32px; margin: 4px 0;
+  position: relative;
+}
+.rpt-bullet::before {
+  content: ''; position: absolute; left: 18px; top: 15px;
+  width: 5px; height: 5px; background: #c0392b;
+}
+.rpt-bullet-text {
+  font-size: 14.5px; line-height: 1.8; color: #2a2a2a;
+}
+.rpt-bullet-text strong { color: #c0392b; }
+
+.rpt-para {
+  font-size: 15px; line-height: 1.9; color: #333;
+  margin: 10px 0; text-align: justify;
+}
+.rpt-para strong { color: #c0392b; }
+
+/* ===== 页脚 ===== */
+.site-footer {
+  max-width: 860px; margin: 0 auto; padding: 30px 20px 50px;
+  border-top: 3px solid #1a1a1a; text-align: center;
+}
+.footer-brand {
+  font-family: 'Playfair Display', 'Noto Serif SC', serif;
+  font-size: 15px; font-weight: 700; color: #1a1a1a;
+  letter-spacing: 1px; margin-bottom: 8px;
+}
+.footer-info {
+  font-size: 11px; color: #999; line-height: 2; letter-spacing: 0.3px;
+}
+.footer-disclaimer {
+  font-size: 10px; color: #bbb; margin-top: 12px;
+  padding-top: 12px; border-top: 1px solid #e0dcd5;
+  line-height: 1.8;
+}
+.online-link {
+  display: inline-block; margin-top: 14px;
+  padding: 10px 28px; background: #c0392b; color: #fff;
+  font-size: 13px; font-weight: 600; letter-spacing: 1px;
+  text-decoration: none; border-radius: 3px;
+  transition: background 0.2s;
+}
+.online-link:hover { background: #a93226; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 600px) {
+  .masthead h1 { font-size: 28px; }
+  .top-bar-inner { flex-direction: column; gap: 4px; text-align: center; }
+  .top-meta { text-align: center; }
+  .ticker-inner { padding: 8px 12px; }
+  .ticker { min-width: 90px; padding: 6px 10px; }
+  .ticker-price { font-size: 15px; }
+  .charts-row { grid-template-columns: 1fr; }
+  .content { padding: 0 14px 30px; }
+  .rpt-heading { font-size: 18px; }
+  .rpt-news-item { padding: 10px 12px; }
+  .masthead { padding: 24px 14px 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="top-bar">
+  <div class="top-bar-inner">
+    <div class="brand">MARKET<span>BRIEF</span></div>
+    <div class="top-meta">Monday, June 01, 2026<br>11:48 CST</div>
+  </div>
+</div>
+
+<!-- 行情条 -->
+<div class="ticker-strip">
+  <div class="ticker-inner"><div class="ticker down"><div class="ticker-name">上证指数</div><div class="ticker-price">4057.74</div><div class="ticker-change">&#9660; -0.27%</div></div><div class="ticker down"><div class="ticker-name">深证成指</div><div class="ticker-price">15340.36</div><div class="ticker-change">&#9660; -1.51%</div></div><div class="ticker down"><div class="ticker-name">创业板指</div><div class="ticker-price">3950.94</div><div class="ticker-change">&#9660; -2.15%</div></div></div>
+</div>
+
+<!-- 历史简报导航 -->
+<div class="history-nav">
+  <span class="history-label">📅 历史简报</span>
+  <a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260531.html">05月31日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260530.html">05月30日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260529.html">05月29日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260528.html">05月28日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260527.html">05月27日</a>
+</div>
+
+<!-- 标题区 -->
+<div class="masthead">
+  <div class="masthead-date">2026-06-01 星期一</div>
+  <h1>每日股市简报</h1>
+  <div class="masthead-sub">AI-Powered Daily Market Intelligence</div>
+  <div class="masthead-tags">
+    <span class="mtag mtag-a">A股 15 条</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- 走势图 -->
+  <div class="sec-header">INTRADAY CHARTS</div>
+  <div class="charts-row"><div class="chart-cell"><div class="chart-label">上证指数</div><img src="https://image.sinajs.cn/newchart/min/n/sh000001.gif" alt="上证指数" onerror="this.parentElement.style.display='none'"></div><div class="chart-cell"><div class="chart-label">深证成指</div><img src="https://image.sinajs.cn/newchart/min/n/sz399001.gif" alt="深证成指" onerror="this.parentElement.style.display='none'"></div></div>
+
+  <!-- AI 报告 -->
+  <div class="sec-header">MARKET ANALYSIS</div>
+  <div class="report-body"><div class="rpt-section">
+<h3 class="rpt-heading">每日股市简报</h3>
+<p class="rpt-para"><strong>日期：2026年6月1日 星期一</strong></p>
+<p class="rpt-para">#### <strong>市场总览</strong></p>
+<p class="rpt-para">今日A股市场整体呈现结构性震荡态势，指数层面的直接驱动消息较为平静，但盘后密集发布的政策与行业数据显示，宏观与产业层面的积极信号正在累积。市场关注焦点从短期流动性博弈，悄然转向对地产、对外开放及未来产业等中期结构性主线的布局。</p>
+<p class="rpt-para">#### <strong>重要新闻TOP5</strong></p>
+<div class="rpt-news-item"><span class="rpt-num">1</span><div class="rpt-news-text"><strong>房地产供需两端持续松绑</strong></div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>新闻摘要</strong>：房地产贷款集中度管理进一步“松绑”，多家全国性银行今年起已不再报送相关数据；同时，百城新房价格环比上涨0.16%，5月楼市热度不减。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响简析</strong>：供给端（银行信贷）与需求端（价格信号）出现同步回暖迹象。这强化了市场对地产链基本面企稳的预期，对银行、地产及后周期产业链构成情绪提振。</div></div>
+<div class="rpt-news-item"><span class="rpt-num">2</span><div class="rpt-news-text"><strong>国务院新规支持市场化对外投资</strong></div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>新闻摘要</strong>：国务院公布新规，明确支持投资者按照市场化原则开展对外投资活动。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响简析</strong>：这是国家层面在制度上为企业“出海”松绑护航，结合服贸会搭建出海服务专区等消息，有助于提升市场对跨境贸易、高端制造及有海外业务布局企业的估值想象空间。</div></div>
+<div class="rpt-news-item"><span class="rpt-num">3</span><div class="rpt-news-text"><strong>浙江启动“星火计划”布局未来产业</strong></div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>新闻摘要</strong>：浙江将启动“星火计划”，旨在推动未来产业从单点技术突破走向产业生态构建。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响简析</strong>：继上海发布服务业新格局后，长三角又一重要省份明确产业升级路径。政策红利将系统性地利好人工智能、生物制造、空天信息等前沿科技板块，激发主题投资热情。</div></div>
+<div class="rpt-news-item"><span class="rpt-num">4</span><div class="rpt-news-text"><strong>跨月后流动性维持适度宽松预期明确</strong></div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>新闻摘要</strong>：票据利率告别“地板价”，市场分析认为跨月后流动性大概率维持适度宽松。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响简析</strong>：消除了市场对半年末资金面大幅收紧的担忧。适度宽松的货币环境为资本市场提供了平稳运行的“安全垫”，有利于成长股估值的维持。</div></div>
+<div class="rpt-news-item"><span class="rpt-num">5</span><div class="rpt-news-text"><strong>各地财政数据透露紧平衡，但发展动能不减</strong></div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>新闻摘要</strong>：21省前4月财政收支仍处于紧平衡状态；与此同时，城投公司资产规模持续壮大，多家营收超百亿，且在向市场化转型。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响简析</strong>：表面是压力，实则映射出在紧约束下，各地正通过盘活城投资产、加速自贸区建设（如内蒙古）等方式培育新增长点，经济转型中的结构性机会值得关注。</div></div>
+<p class="rpt-para">#### <strong>个股聚焦</strong></p>
+<p class="rpt-para">今日无直接影响具体上市公司的突发性个股消息。然而，基于上述新闻，以下板块中的龙头企业值得重点关注：</p>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>出海概念股</strong>：受国务院对外投资新规及服贸会“出海服务专区”设立的双重催化，关注有全球竞争力的跨境电商、物流及高端装备制造龙头。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>未来产业标的</strong>：受浙江“星火计划”启发，未来产业生态构建将利好掌握核心技术的人工智能、新材料领域龙头公司。</div></div>
+<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>城投转型受益股</strong>：百亿级营收城投公司增多，其市场化转型过程中释放的订单和合作机会，将对部分相关地方公用事业、环保类上市公司形成正面影响。</div></div>
+<p class="rpt-para">#### <strong>市场情绪: 中性偏乐观</strong></p>
+<p class="rpt-para"><strong>判断理由</strong>：今日消息面没有可引发情绪剧烈波动的重磅利空。虽然宏观财政数据仍显压力，但市场更聚焦于积极的对冲政策。房地产风险的逐步化解、支持出海和未来产业的明确导向，以及宽松的流动性预期，共同构成了一个偏向结构性与建设性的氛围。市场情绪正从前期观望，转向在确定性的改革方向上寻找阿尔法机会。</p>
+<p class="rpt-para">#### <strong>明日展望</strong></p>
+<p class="rpt-para">预计明日市场将延续结构性行情。<strong>地产链</strong>在持续的政策+数据催化下，有望继续迎来估值修复；<strong>出海与未来产业</strong>（特别是长三角区域的科技股）有可能成为新的活跃题材。指数层面，在上证综指当前位置，若无突发外部扰动，大概率将维持蓄力震荡、重心缓上的格局。建议投资者密切关注成交量变化，若早盘量能配合，上述热点方向或有较佳表现。</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">📌 每日精选个股（AI 选股）</h3>
+<p class="rpt-para">基于您提供的今日新闻数据，经过逐条全面扫描，发现这些新闻均属于宏观政策、行业趋势、地方发展或监管动态范畴，<strong>没有任何一条新闻明确提及任何上市公司的股票名称或代码</strong>。因此，本次分析无法提取出具体的、有新闻依据的个股进行供应链推理。</p>
+<p class="rpt-para">根据分析任务的核心原则——“不要编造没有新闻支撑的股票”，现将每条新闻的扫描结果按指定格式输出如下。所有新闻均符合无明确关联股票的条件。</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 19:33:11] 浙江将启动“星火计划”，让未来产业从单点技术走向产业生态</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为地方产业政策，未提及任何具体上市公司或核心企业，无法进行供应链推理。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 19:30:00] 百城新房价格环比上涨0.16%，重点城市5月楼市热度不减</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为行业宏观数据描述，未提及任何房地产开发、中介或上下游公司。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 19:29:00] 2026年服贸会将搭建出海服务专区</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为展会活动预告，未提及任何具体的参会企业或受益公司。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 19:19:13] 全国234家城投公司总资产达28.94万亿元 百亿级营收企业超50家</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为城投公司群体的概括性统计数据，未披露任何单家城投公司的名称或关联上市公司。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 19:14:00] 多位专家建议：构建中国经管自主知识体系，要植根中国发展实践</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为专家观点，属学术和政策讨论，不涉及商业实体。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 19:08:00] 重庆市国资委与中化学生态环境有限公司举行工作座谈会</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 提及“中化学生态环境有限公司”，但该公司并非A股上市公司，新闻也未提及任何相关上市主体。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 18:39:49] 内蒙古自贸试验区三片区建设提速</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为区域建设进展，未提及任何在片区内有业务的上市公司。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 18:31:51] 国务院公布新规：支持投资者按照市场化原则开展对外投资活动</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为宏观对外投资政策，未提及任何具体的对外投资企业或受益主体。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 18:10:00] 市场监管总局发布一批儿童相关国家标准</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为儿童产品领域的标准发布，未提及任何具体的儿童用品、食品或服务类上市公司。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 18:06:01] 票据利率告别“地板价”，跨月后流动性大概率维持适度宽松</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为货币市场利率与流动性分析，未点名任何依赖融资成本的金融机构或企业。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 18:02:03] 21省披露前4月财政数据，地方财政收支仍紧平衡</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为地方财政的宏观盘点，不涉及任何上市公司。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 17:49:04] 房地产贷款集中度管理进一步“松绑”，多家全国性银行：今年以来不再报送数据</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻提及“多家全国性银行”，但未披露任何一家银行的具体名称。无法锁定任何明确受益的银行个股。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 17:46:56] 北京市石景山区副区长胡浩：将服贸会“流量”转化为城市发展“增量”</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为地方官员对区域发展的表态，未点出任何相关企业。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 17:43:10] 国家发展改革委与塞尔维亚有关部门签署合作文件</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为中外政府间合作，未涉及在塞尔维亚有明确、公开业务布局的A股上市公司。 | — | — | — |</p>
+</div>
+<div class="rpt-section">
+<h3 class="rpt-heading">[2026-06-01 17:41:36] “十五五”上海服务业格局大揭秘，就藏在“一核两翼三带多片区”里</h3>
+<p class="rpt-para">| 股票名称代码 | 关联逻辑 | 利好类型 | 强度 | 周期 |</p>
+<p class="rpt-para">| :--- | :--- | :--- | :--- | :--- |</p>
+<p class="rpt-para">| 无 | 新闻为上海服务业未来的空间规划蓝图，未列出任何具体的服务业上市公司。 | — | — | — |</p>
+<p class="rpt-para"><strong>分析总结</strong>：今日提供的新闻数据均为宏观、中观层面的信息，缺乏微观层面可操作的个股精选依据。量化选股模型在数据不足时选择不执行交易决策，以规避编造信息带来的风险。</p>
+</div></div>
+
+</div>
+
+<div class="site-footer">
+  <div class="footer-brand">MARKET BRIEF</div>
+  <a class="online-link" href="https://hcongxi42-web.github.io/HZT/report_20260601.html">查看在线版本</a>
+  <div class="footer-info">
+    Data: CLS / East Money / Sina Finance<br>
+    AI Analysis by Tongyi Qwen
+  </div>
+  <div class="footer-disclaimer">
+    本报告由 AI 自动生成，仅供参考，不构成任何投资建议。<br>
+    市场有风险，投资需谨慎。
+  </div>
+</div>
+
+</body>
+</html>
