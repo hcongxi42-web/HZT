@@ -301,6 +301,16 @@ def markdown_to_html(md):
             current_section = {"title": h_match.group(1), "content": []}
             continue
 
+        # Markdown 图片: ![alt](url)
+        img_match = re.match(r"^!\[(.+)\]\((.+)\)$", line)
+        if img_match:
+            alt = img_match.group(1)
+            url = img_match.group(2)
+            # 处理 alt 文本中的 **bold** 标记
+            alt = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", alt)
+            current_section["content"].append(("img", alt, url))
+            continue
+
         line = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", line)
         ol_match = re.match(r"^(\d+)\.\s+(.+)$", line)
         if ol_match:
@@ -332,6 +342,9 @@ def markdown_to_html(md):
                 html_parts.append(f'<div class="rpt-bullet"><div class="rpt-bullet-text">{item[1]}</div></div>')
             elif typ == "raw_html":
                 html_parts.append(item[1])  # 直接注入 HTML，不加任何包装
+            elif typ == "img":
+                alt, url = item[1], item[2]
+                html_parts.append(f'<div class="rpt-chart"><img src="{url}" alt="{alt}" loading="lazy" onerror="this.parentElement.style.display=\'none\'"></div>')
             else:
                 html_parts.append(f'<p class="rpt-para">{item[1]}</p>')
         html_parts.append("</div>")
@@ -532,6 +545,15 @@ body {{
   padding: 10px 0 4px; border-bottom: 1px solid #f0ece6;
 }}
 .chart-cell img {{ width: 100%; display: block; }}
+
+/* 技术分析图（AI 选股图表） */
+.rpt-chart {{
+  margin: 24px 0; text-align: center;
+  background: #fff; border: 1px solid #e0dcd5;
+}}
+.rpt-chart img {{
+  max-width: 100%; height: auto; display: block;
+}}
 
 /* ===== AI 分析报告 ===== */
 .report-body {{ margin-top: 16px; }}
