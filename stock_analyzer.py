@@ -17,30 +17,84 @@ warnings.filterwarnings("ignore")
 # ============ Matplotlib 中文字体配置 ============
 
 def setup_matplotlib():
-    """配置 matplotlib 中文字体（支持 headless 环境）"""
+    """配置 matplotlib 中文字体（支持 headless 环境 / GitHub Actions / Windows / Mac）。
+
+    策略：按名称查找 → 按文件路径扫描 → 重建字体缓存。覆盖绝大多数环境。
+    """
     import matplotlib
     matplotlib.use("Agg")  # 无 GUI 后端
     import matplotlib.pyplot as plt
     from matplotlib import font_manager
+    import glob as _glob
 
-    # 尝试查找系统中文字体
-    chinese_fonts = [
+    # ---- 1. 重建字体缓存（确保刚安装的字体被识别） ----
+    cache_dir = matplotlib.get_cachedir()
+    try:
+        for cf in _glob.glob(os.path.join(cache_dir, "fontlist*")):
+            os.remove(cf)
+    except Exception:
+        pass
+
+    # ---- 2. 按名称查找 ----
+    candidate_names = [
         "Noto Sans CJK SC",
         "Noto Sans SC",
         "WenQuanYi Micro Hei",
+        "WenQuanYi Zen Hei",
         "SimHei",
         "Microsoft YaHei",
+        "AR PL UMing CN",
+        "AR PL UKai CN",
     ]
     font_found = None
-    for font_name in chinese_fonts:
+    for name in candidate_names:
         try:
-            font_manager.findfont(font_name, fallback_to_default=False)
-            font_found = font_name
+            font_manager.findfont(name, fallback_to_default=False)
+            font_found = name
             break
         except Exception:
             continue
 
+    # ---- 3. 按文件扫描（兜底） ----
+    if not font_found:
+        search_roots = [
+            "/usr/share/fonts",
+            "/usr/local/share/fonts",
+            os.path.expanduser("~/.fonts"),
+            "C:/Windows/Fonts",
+            "/System/Library/Fonts",
+        ]
+        cjk_keywords = [
+            "NotoSansCJK", "NotoSansSC", "noto", "CJK",
+            "wqy", "WenQuanYi", "simhei", "SimHei",
+            "yahei", "YaHei", "simsun", "SimSun",
+            "songti", "heiti", "uming", "ukai",
+        ]
+        for root_dir in search_roots:
+            if not os.path.isdir(root_dir):
+                continue
+            for dirpath, _dirs, files in os.walk(root_dir):
+                for fn in files:
+                    if not fn.lower().endswith((".ttf", ".ttc", ".otf")):
+                        continue
+                    if not any(kw.lower() in fn.lower() for kw in cjk_keywords):
+                        continue
+                    fp = os.path.join(dirpath, fn)
+                    try:
+                        font_manager.fontManager.addfont(fp)
+                        prop = font_manager.FontProperties(fname=fp)
+                        font_found = prop.get_name()
+                        break
+                    except Exception:
+                        continue
+                if font_found:
+                    break
+            if font_found:
+                break
+
+    # ---- 4. 应用 ----
     if font_found:
+        plt.rcParams["font.family"] = "sans-serif"
         plt.rcParams["font.sans-serif"] = [font_found] + plt.rcParams.get("font.sans-serif", [])
     plt.rcParams["axes.unicode_minus"] = False
     return plt
@@ -167,8 +221,8 @@ def generate_chart(stock_name, stock_code, df, output_path):
         return False
 
     try:
-        fig, axes = plt.subplots(3, 1, figsize=(10, 10), gridspec_kw={"height_ratios": [3, 1, 1]})
-        fig.suptitle(f"{stock_name} {stock_code} 技术分析", fontsize=14)
+        fig, axes = plt.subplots(3, 1, figsize=(8, 5.5), gridspec_kw={"height_ratios": [3, 1, 1]})
+        fig.suptitle(f"{stock_name} {stock_code}", fontsize=12, fontweight="bold")
 
         x = range(len(df))
         dates = df["date"].dt.strftime("%m-%d").tolist()

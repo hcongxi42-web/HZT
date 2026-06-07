@@ -182,6 +182,78 @@ def format_stock_picks(picks_md):
     )
 
 
+def insert_charts_into_picks(stock_picks, chart_urls):
+    """将技术分析图插入到对应的股票下方。
+
+    策略：保持 AI 生成的表格完整不拆分，在表格结束后的
+    第一个空行处按表格出现顺序插入对应股票的 K 线图。
+    未匹配的图表追加在最末尾。
+    """
+    if not chart_urls:
+        return stock_picks
+
+    # 移除旧版独立「技术分析图」板块（兼容历史数据）
+    stock_picks = re.sub(r'\n*###\s*📊\s*技术分析图\s*\n(?:\*\*.*?\*\*[^\n]*\n|!\[.*?\]\(.*?\)\n|\n)*',
+                         '', stock_picks)
+
+    # 按在 stock_picks 中出现的顺序重排 chart_urls
+    def _appearance_order(name, code, _stars, _url):
+        num_match = re.search(r'(\d{6})', code)
+        if not num_match:
+            return 9999
+        idx = stock_picks.find(num_match.group(1))
+        return idx if idx >= 0 else 9999
+
+    # 拆分成「表格前 / 表格体 / 表格后」三段
+    lines = stock_picks.split('\n')
+
+    # 找到表格结束位置：连续 |...| 行之后第一个非 |...| 非空行
+    table_start = None
+    table_end = None
+    in_table = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        is_table_row = bool(re.match(r'^\|.+\|$', stripped))
+        if is_table_row and not in_table:
+            table_start = i
+            in_table = True
+        elif not is_table_row and in_table:
+            table_end = i
+            break
+    # 修正：表格结束后可能是空行，找下一个非空行
+    if table_end is not None:
+        while table_end < len(lines) and lines[table_end].strip() == '':
+            table_end += 1
+
+    # 确定插入点：紧接表格体之后（表格末行后一个空行）
+    if table_end is not None:
+        insert_at = table_end - 1  # 表格最后一个数据行
+        # 回溯到最后一个表格行
+        while insert_at >= 0 and not re.match(r'^\|.+\|$', lines[insert_at].strip()):
+            insert_at -= 1
+        insert_at += 1  # 紧接表格末行之后
+    else:
+        # 找不到表格，追加在末尾
+        insert_at = len(lines)
+
+    # 按表格中出现顺序排列图表
+    ordered = sorted(chart_urls, key=lambda x: _appearance_order(*x))
+    chart_lines = []
+    for name, code, _stars, url in ordered:
+        chart_lines.append('')
+        chart_lines.append(f'![{name} {code}]({url})')
+        chart_lines.append('')
+
+    # 插入（先插入一个空行作为分隔）
+    result = lines[:insert_at]
+    if result and result[-1].strip() != '':
+        result.append('')
+    result.extend(chart_lines)
+    result.extend(lines[insert_at:])
+
+    return '\n'.join(result)
+
+
 def call_llm(news_text):
     api_key = os.environ.get("DEEPSEEK_API_KEY", "")
     if not api_key:
@@ -546,13 +618,17 @@ body {{
 }}
 .chart-cell img {{ width: 100%; display: block; }}
 
-/* 技术分析图（AI 选股图表） */
+/* 技术分析图（嵌入在选股列表中的 K 线图） */
 .rpt-chart {{
-  margin: 24px 0; text-align: center;
+  margin: 12px 0 20px 0; text-align: left;
   background: #fff; border: 1px solid #e0dcd5;
+  display: inline-block; max-width: 100%;
 }}
 .rpt-chart img {{
-  max-width: 100%; height: auto; display: block;
+  max-width: 620px; width: 100%; height: auto; display: block;
+}}
+@media (max-width: 680px) {{
+  .rpt-chart img {{ max-width: 100%; }}
 }}
 
 /* ===== AI 分析报告 ===== */
@@ -953,7 +1029,7 @@ def main():
         repo_name = repo.split("/")[1]
         page_base_url = f"https://{owner}.github.io/{repo_name}/"
     else:
-        page_base_url = "https://ivyxiashengjie.github.io/stock-daily-report/"
+        page_base_url = "https://hcongxi42-web.github.io/HZT/"
 
     # 对 5-4 星股票生成技术分析图表
     if stock_picks and stock_analyzer:
@@ -964,13 +1040,9 @@ def main():
             charts_dir = os.path.join("docs", "charts")
             chart_urls = stock_analyzer.analyze_stocks(stock_list, charts_dir, page_base_url)
             if chart_urls:
-                # 在 stock_picks 末尾追加图表链接
-                chart_md = "\n\n### 📊 技术分析图\n\n"
-                for name, code, stars, url in chart_urls:
-                    chart_md += f"**{name} {code}**（{'⭐' * stars}）\n\n"
-                    chart_md += f"![{name} 技术分析]({url})\n\n"
-                stock_picks += chart_md
-                print(f"  已生成 {len(chart_urls)} 张技术分析图")
+                # 将技术分析图插入到对应股票下方
+                stock_picks = insert_charts_into_picks(stock_picks, chart_urls)
+                print(f"  已生成 {len(chart_urls)} 张技术分析图并嵌入到对应股票下方")
             else:
                 print("  未能生成任何图表")
         else:
