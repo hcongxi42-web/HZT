@@ -247,6 +247,28 @@ STOCK_PICKER_TEMPLATE = """请基于以下今日多市场资讯和资金面数�
 
 
 # ============================================================
+#  LLM 输出清洗
+# ============================================================
+
+def _cleanup_report(text):
+    """清洗 LLM 生成的报告：移除 #### 标签和 *** 分隔线。"""
+    import re as _re
+
+    # 1. 移除 #### 前缀（四级标题 → 保留其后的内容）
+    #    "#### **市场总览**"  →  "**市场总览**"
+    #    "#### 普通标题"     →  "普通标题"
+    text = _re.sub(r'^####\s+', '', text, flags=_re.MULTILINE)
+
+    # 2. 移除独立的 *** 分隔线（整行只有 ***，允许前后空白）
+    text = _re.sub(r'^\s*\*{3}\s*$', '', text, flags=_re.MULTILINE)
+
+    # 3. 清理可能产生的多余空行（连续 3+ 空行 → 2 个空行）
+    text = _re.sub(r'\n{3,}', '\n\n', text)
+
+    return text
+
+
+# ============================================================
 #  LLM 调用
 # ============================================================
 
@@ -285,9 +307,10 @@ def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096)
 
 
 def call_llm(news_text):
-    """调用 LLM 生成市场分析报告。"""
-    return _call_deepseek(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
-                          temperature=0.5, max_tokens=4096)
+    """调用 LLM 生成市场分析报告，并清理 #### / *** 标记。"""
+    raw = _call_deepseek(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
+                         temperature=0.5, max_tokens=4096)
+    return _cleanup_report(raw)
 
 
 def call_stock_picker(news_text):
@@ -605,6 +628,19 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
                 f'<a class="hl" href="{page_base_url}report_{d.strftime("%Y%m%d")}.html">'
                 f'{label}</a>'
             )
+        # 日期选择器：跳转到任意历史简报
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        history_links_html += (
+            f'<span class="hnav-spacer"></span>'
+            f'<input type="date" id="historyPicker" class="hl-date" '
+            f'value="{today_str}" max="{today_str}" min="2025-01-01" '
+            f'title="选择日期查看历史简报">'
+            f'<button class="hl-go" onclick="'
+            f'var d=document.getElementById(\'historyPicker\').value;'
+            f'if(d){{var p=d.split(\'-\');'
+            f'window.location.href=\'{page_base_url}report_\'+p[0]+p[1]+p[2]+\'.html\'}}'
+            f'">GO</button>'
+        )
 
     # ---- 行情条 ----
     quote_cells = ""
@@ -699,14 +735,14 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
 
 :root {{
-  --bg: #0d1117;
-  --bg-card: #161b22;
-  --bg-elevated: #1c2333;
-  --border: #21262d;
-  --border-light: #30363d;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted: #484f58;
+  --bg: #131a24;
+  --bg-card: #1c2533;
+  --bg-elevated: #243041;
+  --border: #2a3543;
+  --border-light: #374557;
+  --text-primary: #edf2f8;
+  --text-secondary: #b0b9c5;
+  --text-muted: #6e7887;
   --accent: #ff6b35;
   --accent-blue: #58a6ff;
   --green: #3fb950;
@@ -797,6 +833,30 @@ body {{
   text-decoration:none; transition: all 0.15s;
 }}
 .hl:hover {{ color: var(--accent); border-color: var(--accent); }}
+.hnav-spacer {{
+  flex:1; min-width:12px;
+}}
+.hl-date {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; color: var(--text-primary);
+  padding:4px 8px; border-radius:2px;
+  background: var(--bg); border:1px solid var(--border);
+  outline:none; transition: border-color 0.15s;
+  color-scheme: dark;
+}}
+.hl-date:focus {{ border-color: var(--accent); }}
+.hl-date::-webkit-calendar-picker-indicator {{
+  filter: invert(0.7); cursor:pointer;
+}}
+.hl-go {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:700; color: #fff;
+  padding:4px 12px; border-radius:2px;
+  background: var(--accent); border:none;
+  cursor:pointer; transition: background 0.15s;
+  letter-spacing: 1px;
+}}
+.hl-go:hover {{ background: #e85d2c; }}
 
 /* ===== MASTHEAD ===== */
 .masthead {{
