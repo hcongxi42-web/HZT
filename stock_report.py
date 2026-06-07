@@ -381,12 +381,16 @@ def insert_charts_into_picks(stock_picks, chart_urls):
             elif not is_table_row and in_table:
                 break  # 表格结束
 
-        # ---- 收集该 section 匹配的图表 ----
+        # ---- 收集该 section 匹配的图表（按文本中首次出现顺序排列）----
         section_charts = []
         for code6 in codes_in_section:
             if code6 in code_to_chart and code6 not in placed_codes:
-                section_charts.append(code_to_chart[code6])
+                pos = sec_text.find(code6)
+                section_charts.append((pos, code_to_chart[code6]))
                 placed_codes.add(code6)
+        # 按在文本中首次出现位置排序
+        section_charts.sort(key=lambda x: x[0])
+        section_charts = [c for _, c in section_charts]
 
         if not section_charts:
             processed_sections.append(sec_text)
