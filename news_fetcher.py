@@ -342,71 +342,120 @@ def fetch_northbound_flow(days=5):
     返回格式:
       [{"date": "2026-06-05", "net_buy_sh": 12.34, "net_buy_sz": 5.67, "net_buy_total": 18.01}, ...]
 
-    注意：非交易日/数据未更新时可能返回零值。
-    数据来源：东方财富 push2his K 线 API。
+    数据来源：东方财富 push2his K 线 API + push2 实时 API 兜底。
+    通过累计余额差分计算每日净流入（比直接读 f52 更可靠）。
     """
-    url = (
+    headers = {"User-Agent": _UA}
+
+    # ── 方案 A：K线 API（按累计余额差值计算净流量）──
+    kline_url = (
         "https://push2his.eastmoney.com/api/qt/kamt.kline/get"
         "?fields1=f1,f2,f3,f7"
         "&fields2=f51,f52,f53,f54"
         "&klt=101&lmt=30"
         "&secid=0.000001"
     )
-    headers = {"User-Agent": _UA}
 
-    def _do_fetch():
-        req = urllib.request.Request(url, headers=headers)
+    def _do_fetch_kline():
+        req = urllib.request.Request(kline_url, headers=headers)
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode())
 
-        result = []
         hk2sh = data.get("data", {}).get("hk2sh", [])
         hk2sz = data.get("data", {}).get("hk2sz", [])
 
-        # 每行格式: date,net_buy,quota_remaining,cumulative_balance
-        # 数值单位可能为万元或原始元，按比例推算
-        for sh_row, sz_row in zip(hk2sh[-days:], hk2sz[-days:]):
+        # 逐行解析，用 f54（累计余额）的日间差分计算每日净流入
+        rows = []
+        for sh_row, sz_row in zip(hk2sh, hk2sz):
             sh_parts = sh_row.split(",")
             sz_parts = sz_row.split(",")
             try:
-                # 东方财富 f52 为当日净买入（原始值）
-                net_sh_raw = float(sh_parts[1]) if len(sh_parts) > 1 else 0
-                net_sz_raw = float(sz_parts[1]) if len(sz_parts) > 1 else 0
-                # 尝试检测单位：如果日配额约 5,200,000，则单位为百元
-                quota_raw = float(sh_parts[2]) if len(sh_parts) > 2 else 0
-                if quota_raw > 100000:  # 大数→单位可能是元，除以1e8得亿
-                    divisor = 1e8
-                elif quota_raw > 1000:  # 中等→单位可能是万元
-                    divisor = 1e4
-                else:
-                    divisor = 1  # 已是亿元单位
-
-                net_sh = round(net_sh_raw / divisor, 2)
-                net_sz = round(net_sz_raw / divisor, 2)
+                date = sh_parts[0]
+                sh_cum = float(sh_parts[3]) if len(sh_parts) > 3 else 0.0
+                sz_cum = float(sz_parts[3]) if len(sz_parts) > 3 else 0.0
+                rows.append({"date": date, "sh_cum": sh_cum, "sz_cum": sz_cum})
             except (ValueError, IndexError):
+                continue
+
+        # 差分 → 每日净流入（单位：万元 → 亿元）
+        result = []
+        for i in range(len(rows)):
+            if i == 0:
                 net_sh = 0.0
                 net_sz = 0.0
-
+            else:
+                net_sh = round((rows[i]["sh_cum"] - rows[i - 1]["sh_cum"]) / 1e4, 2)
+                net_sz = round((rows[i]["sz_cum"] - rows[i - 1]["sz_cum"]) / 1e4, 2)
             result.append({
-                "date": sh_parts[0],
+                "date": rows[i]["date"],
                 "net_buy_sh": net_sh,
                 "net_buy_sz": net_sz,
                 "net_buy_total": round(net_sh + net_sz, 2),
             })
         return result
 
+    # ── 方案 B：实时 API（兜底，获取最新快照）──
+    def _do_fetch_realtime():
+        rt_url = (
+            "https://push2.eastmoney.com/api/qt/kamt/get"
+            "?fields1=f1,f2,f3,f4"
+            "&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60"
+            "&secid=1.000003"
+        )
+        req = urllib.request.Request(rt_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode())
+
+        hk2sh = data.get("data", {}).get("hk2sh", {})
+        hk2sz = data.get("data", {}).get("hk2sz", {})
+
+        # dayNetAmtIn 单位已是万元
+        net_sh = round(hk2sh.get("dayNetAmtIn", 0) / 1e4, 2)
+        net_sz = round(hk2sz.get("dayNetAmtIn", 0) / 1e4, 2)
+        date = hk2sh.get("date2", datetime.now().strftime("%Y-%m-%d"))
+
+        return [{
+            "date": date,
+            "net_buy_sh": net_sh,
+            "net_buy_sz": net_sz,
+            "net_buy_total": round(net_sh + net_sz, 2),
+        }]
+
+    # ── 主逻辑 ──
     try:
-        result = _retry_fetch(_do_fetch)
-        # 检测数据是否有效：最近3天至少有一天非零
+        result = _retry_fetch(_do_fetch_kline)
+
+        # 1. 检测数据有效性
         recent_nonzero = any(
-            abs(r.get("net_buy_total", 0)) > 0.01 for r in result[-3:]
+            abs(r.get("net_buy_total", 0)) > 0.01 for r in result[-5:]
         )
         if not recent_nonzero:
-            print("[Northbound] 近3日数据均为零，可能非交易日或数据源延迟")
-        return result
+            # 2. 用实时 API 兜底
+            print("[Northbound] K线差分数据全零，尝试实时API...")
+            rt_result = _retry_fetch(_do_fetch_realtime, max_retries=2)
+            rt_nonzero = any(
+                abs(r.get("net_buy_total", 0)) > 0.01 for r in rt_result
+            )
+            if rt_nonzero:
+                # 用实时数据替换最后一天
+                if result:
+                    result[-1] = rt_result[0]
+                else:
+                    result = rt_result
+                print(f"[Northbound] 实时API获取到数据: {rt_result[0]}")
+            else:
+                print("[Northbound] 实时API也为零，可能当前为非交易日")
+
+        # 3. 截取最近 N 天
+        return result[-days:] if len(result) >= days else result
+
     except Exception as e:
         print(f"[Northbound] 获取失败 (已重试): {e}")
-        return []
+        # 最后尝试：只用实时 API
+        try:
+            return _retry_fetch(_do_fetch_realtime, max_retries=1)
+        except Exception:
+            return []
 
 
 # ============================================================

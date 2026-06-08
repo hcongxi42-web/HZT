@@ -251,21 +251,16 @@ STOCK_PICKER_TEMPLATE = """请基于以下今日多市场资讯和资金面数�
 # ============================================================
 
 def _cleanup_report(text):
-    """清洗 LLM 生成的报告：移除 #### / *** / ** 标记。"""
+    """清洗 LLM 生成的报告：移除 #### 和 *** 标记，保留 ** 加粗。"""
     import re as _re
 
-    # 1. 移除 ** 标记（加粗符号，保留中间文字）
-    #    "**绿的谐波 (688017)**"  →  "绿的谐波 (688017)"
-    #    "**核心供应商：**"        →  "核心供应商："
-    text = _re.sub(r'\*\*', '', text)
-
-    # 2. 移除 #### 前缀（四级标题 → 保留其后的内容）
+    # 1. 移除 #### 前缀（四级标题 → 保留其后的内容）
     text = _re.sub(r'^####\s+', '', text, flags=_re.MULTILINE)
 
-    # 3. 移除独立的 *** 分隔线（整行只有 ***，允许前后空白）
+    # 2. 移除独立的 *** 分隔线（整行只有 ***，允许前后空白）
     text = _re.sub(r'^\s*\*{3}\s*$', '', text, flags=_re.MULTILINE)
 
-    # 4. 清理可能产生的多余空行（连续 3+ 空行 → 2 个空行）
+    # 3. 清理可能产生的多余空行（连续 3+ 空行 → 2 个空行）
     text = _re.sub(r'\n{3,}', '\n\n', text)
 
     return text
@@ -1021,7 +1016,7 @@ body {{
   font-size:14.5px; line-height:1.8; color: var(--text-secondary);
   margin:8px 0;
 }}
-.para strong {{ color: var(--text-primary); }}
+.para strong {{ color: var(--accent); font-weight: 700; }}
 
 /* ---- Tables ---- */
 .tbl-wrap {{
@@ -1544,12 +1539,12 @@ def send_wechat(report, quotes, news_list, page_url):
     desp_lines.append("")
 
     # ── AI 一句话摘要 ──
-    # 从报告中提取第一段非空行作为摘要
+    # 从报告中提取第一段非空行作为摘要（去除 ** 标记以适配微信）
     summary_line = ""
     for line in report.strip().split("\n"):
         stripped = line.strip()
         if stripped and not stripped.startswith("#") and not stripped.startswith(">") and len(stripped) > 10:
-            summary_line = stripped[:200]
+            summary_line = stripped[:200].replace("**", "")
             break
     if summary_line:
         desp_lines.append("---\n")
