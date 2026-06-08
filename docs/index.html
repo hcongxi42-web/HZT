@@ -11,14 +11,14 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
 
 :root {
-  --bg: #0d1117;
-  --bg-card: #161b22;
-  --bg-elevated: #1c2333;
-  --border: #21262d;
-  --border-light: #30363d;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted: #484f58;
+  --bg: #131a24;
+  --bg-card: #1c2533;
+  --bg-elevated: #243041;
+  --border: #2a3543;
+  --border-light: #374557;
+  --text-primary: #edf2f8;
+  --text-secondary: #b0b9c5;
+  --text-muted: #6e7887;
   --accent: #ff6b35;
   --accent-blue: #58a6ff;
   --green: #3fb950;
@@ -109,6 +109,30 @@ body {
   text-decoration:none; transition: all 0.15s;
 }
 .hl:hover { color: var(--accent); border-color: var(--accent); }
+.hnav-spacer {
+  flex:1; min-width:12px;
+}
+.hl-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; color: var(--text-primary);
+  padding:4px 8px; border-radius:2px;
+  background: var(--bg); border:1px solid var(--border);
+  outline:none; transition: border-color 0.15s;
+  color-scheme: dark;
+}
+.hl-date:focus { border-color: var(--accent); }
+.hl-date::-webkit-calendar-picker-indicator {
+  filter: invert(0.7); cursor:pointer;
+}
+.hl-go {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:700; color: #fff;
+  padding:4px 12px; border-radius:2px;
+  background: var(--accent); border:none;
+  cursor:pointer; transition: background 0.15s;
+  letter-spacing: 1px;
+}
+.hl-go:hover { background: #e85d2c; }
 
 /* ===== MASTHEAD ===== */
 .masthead {
@@ -353,19 +377,19 @@ body {
 <div class="topbar">
   <div class="topbar-inner">
     <div class="logo">MARKET<em>//</em>BRIEF</div>
-    <div class="topbar-meta">Monday<br>00:18 CST</div>
+    <div class="topbar-meta">Monday<br>04:04 CST</div>
   </div>
 </div>
 
 <!-- TICKER STRIP -->
 <div class="ticker-strip">
-  <div class="ticker-inner"><div class="tkr dn"><span class="tkr-n">上证指数</span><span class="tkr-p">4027.74</span><span class="tkr-c">▼ -0.74%</span></div><div class="tkr dn"><span class="tkr-n">深证成指</span><span class="tkr-p">15314.70</span><span class="tkr-c">▼ -2.21%</span></div><div class="tkr dn"><span class="tkr-n">创业板指</span><span class="tkr-p">3957.93</span><span class="tkr-c">▼ -3.20%</span></div><div class="tkr up"><span class="tkr-n">恒生指数</span><span class="tkr-p">24961.95</span><span class="tkr-c">▲ +0.00%</span></div><div class="tkr up"><span class="tkr-n">纳斯达克</span><span class="tkr-p">22484.07</span><span class="tkr-c">▲ +0.00%</span></div></div>
+  <div class="ticker-inner"><div class="tkr dn"><span class="tkr-n">上证指数</span><span class="tkr-p">3976.83</span><span class="tkr-c">▼ -1.26%</span></div><div class="tkr dn"><span class="tkr-n">深证成指</span><span class="tkr-p">14933.82</span><span class="tkr-c">▼ -2.49%</span></div><div class="tkr dn"><span class="tkr-n">创业板指</span><span class="tkr-p">3845.78</span><span class="tkr-c">▼ -2.83%</span></div><div class="tkr up"><span class="tkr-n">恒生指数</span><span class="tkr-p">24668.39</span><span class="tkr-c">▲ +0.00%</span></div><div class="tkr up"><span class="tkr-n">纳斯达克</span><span class="tkr-p">22484.07</span><span class="tkr-c">▲ +0.00%</span></div></div>
 </div>
 
 <!-- HISTORY NAV -->
 <div class="hnav">
   <span class="hnav-label">HISTORY</span>
-  <a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260607.html">06月07日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260606.html">06月06日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260605.html">06月05日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260604.html">06月04日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260603.html">06月03日</a>
+  <a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260607.html">06月07日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260606.html">06月06日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260605.html">06月05日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260604.html">06月04日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260603.html">06月03日</a><span class="hnav-spacer"></span><input type="date" id="historyPicker" class="hl-date" value="2026-06-08" max="2026-06-08" min="2025-01-01" title="选择日期查看历史简报"><button class="hl-go" onclick="var d=document.getElementById('historyPicker').value;if(d){var p=d.split('-');window.location.href='https://hcongxi42-web.github.io/HZT/report_'+p[0]+p[1]+p[2]+'.html'}">GO</button>
 </div>
 
 <!-- MASTHEAD -->
@@ -374,9 +398,9 @@ body {
   <h1>每日市场情报</h1>
   <div class="masthead-sub">INSTITUTIONAL · MARKET · INTELLIGENCE</div>
   <div class="masthead-tags">
-    <span class="mtag mtag-a">A-SHARE · 40</span>
+    <span class="mtag mtag-a">A-SHARE · 44</span>
     <span class="mtag mtag-us">US · 25</span>
-    <span class="mtag mtag-hk">HK · 11</span>
+    <span class="mtag mtag-hk">HK · 10</span>
   </div>
 </div>
 
@@ -395,91 +419,105 @@ body {
   <div class="report-body"><div class="sec">
 <h3 class="sec-h">每日市场情报</h3>
 <p class="para"><strong>日期：2026-06-08</strong></p>
-<p class="para"><strong>分析师：宏观策略组</strong></p>
+<p class="para"><strong>标签：地缘冲击 · 流动性收缩 · 防御性调仓</strong></p>
 </div>
 <div class="sec">
-<h3 class="sec-h">1. 资金面信号：⚠️ 防守</h3>
-<p class="para">内资主力今日疯狂出逃，单日净流出 <strong>272.52 亿</strong>，创近期峰值，且盘面呈现“日内反抽即卖”的空头压制格局。北向资金因合规调整数据不公开，失去外资风向标。<strong>结论：内资已进入“核按钮”式防守反击状态，短期流动性负反馈风险加剧。</strong></p>
+<h3 class="sec-h">1. 资金面信号：防守</h3>
+<p class="para">今日主力资金半日净流出超 270 亿，为近5日最大幅度流出，抛压骤然升级；北向资金通道连续4日录得“0.00 亿”，无论数据缺失还是实际停止披露，均指向外资在避险环境下彻底「装死」。<strong>资金态度明确转为防守，场内仅剩游资在机器人等小票中博取短线弹性，系统性机会消失。</strong></p>
 </div>
 <div class="sec">
 <h3 class="sec-h">2. A股主线扫描</h3>
-<div class="bi"><strong>全球化资产重定价（空头主线）</strong>：美国 5 月非农大幅超预期，导致美联储加息预期死灰复燃，美债收益率飙升。这对全球高估值成长股（尤其是对利率敏感的 AI/科技）形成系统性挤压。</div>
-<div class="bi">*判断*：<strong>持续性强</strong>，这是宏观逻辑的底层杀跌，短期难以证伪，将压制 A 股成长风格表现。</div>
-<div class="bi"><strong>地缘冲突涨价线（对冲主线）</strong>：伊朗空袭以色列，霍尔木兹海峡现新变量，国际油价暴涨超 2%。叠加韩国暴跌后的避险情绪，资金流向「石油」「黄金」及「军工」板块。</div>
-<div class="bi">*判断*：<strong>事件驱动型</strong>，持续性取决于以色列反击力度。操作上属于短期快进快出的“末日轮”交易，追高需谨慎。</div>
-<div class="bi"><strong>存力/算力硬件（抵抗主线）</strong>：英伟达与 SK 海力士深化合作，叠加国内「算电协同」政策及长存/长鑫 IPO 预期，资金在泥沙俱下中抱团确定性最高的「沪电股份」产业链及 HBM 概念。</div>
-<div class="bi">*判断*：<strong>中期逻辑硬</strong>，但需消化短期因美股科技股暴跌（黑色星期五）带来的情绪冲击，短期买点可能出现在共振杀跌之后。</div>
+<div class="bi"><strong>机器人/物理AI（反制性抱团）</strong>：驱动来自「英伟达 x LG/斗山」共建AI工厂及物理AI数据工厂，直接点燃国内映射。「丰光精密」30%二连板、「埃斯顿」涨停。<strong>逻辑硬，但大盘逆风下持续性存疑，属于“弱市炒新”情绪，短期可维持，中期警惕补跌。</strong></div>
+<div class="bi"><strong>油服/地缘避险（事件驱动）</strong>：以军空袭伊朗导弹设施，国际金价测试 4300 美元，油价预期升温。叠加「中天科技」涨停创历史新高，资金涌入「油服工程」及部分通信海缆。<strong>高度依赖中东局势发酵，若冲突不升级，此类交易极易一日游。</strong></div>
+<div class="bi"><strong>专精特新/工业气体（防御性补涨）</strong>：「中船特气」涨超10%，叠加城市更新政策预期，机械设备获主力半日净流入。<strong>逻辑偏弱，纯属高位科技股流出后，资金寻找低拥挤度洼地的结果，持续性一般。</strong></div>
 </div>
 <div class="sec">
 <h3 class="sec-h">3. 跨市场联动</h3>
-<p class="para">今日亚太市场出现极端“黑天鹅”传导：<strong>韩国 KOSPI 暴跌 8% 触发熔断，日经暴跌 3%</strong>。这不仅是美股科技股回调的映射，更反映了 AI 供应链（三星、SK 海力士崩盘）的恐慌。这对 A 股意味着两方面传导：<strong>1）情绪面的直接压制</strong>，开盘大概率跳空低开补跌；<strong>2）产业链的重估</strong>，日韩的崩盘会促使部分避险资金重新审视中国同类型资产的相对估值。</p>
+<div class="bi"><strong>美股传导压力</strong>：上周五非农“爆表”后，纳斯达克重挫 4.2%，市场已开始交易“美联储年内加息”。这对A股高估值成长股（CPO/半导体今日领跌）构成直接估值压制，<strong>纳指映射品种短期应规避。</strong></div>
+<div class="bi"><strong>港股与新兴市场“失血”</strong>：恒生科指午盘跌 2.4%，百度跌超 7%；韩国股市触发熔断，印尼盾续创新低。美联储紧缩预期引发全球资金回流美元，<strong>港股流动性枯竭将通过 A/H 溢价对 A 股核心资产形成拖累。</strong></div>
+<div class="bi"><strong>避险资产异动</strong>：比特币经历最惨一周，黄金测试前高，显示全球风险偏好已从“贪婪”急转直入“恐慌”。A股场内军工、家禽等小众防御板块的异动，是此情绪的滞后映射。</div>
 </div>
 <div class="sec">
 <h3 class="sec-h">4. 重要舆情 TOP 8</h3>
-<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>韩国 KOSPI 暴跌 8% 触发熔断</strong>：三星/SK 海力士均跌 10%，全球半导体供应链恐慌。<strong>（🔴 利空）</strong></div></div>
-<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>伊朗向以色列发射多轮导弹</strong>：中东局势急速升温，油价飙升，特朗普催谈。<strong>（🟡 中性偏空，利好油气）</strong></div></div>
-<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>美国 5 月非农大幅超预期</strong>：新增 17.2 万远超预期，加息预期重燃，美股科技股暴跌。<strong>（🔴 利空）</strong></div></div>
-<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>英伟达与 SK 海力士深化 HBM 合作</strong>：共创下一代 AI 内存，利好国内 HBM 替代链。<strong>（🟢 利好）</strong></div></div>
-<div class="ni"><span class="ni-num">5</span><div class="ni-text"><strong>新宙邦获「宁德时代」 30 万吨电解液大单</strong>：锁定未来三年需求，行业出清下的龙头集中。<strong>（🟢 利好，但注意市场整体情绪）</strong></div></div>
-<div class="ni"><span class="ni-num">6</span><div class="ni-text"><strong>「派瑞股份」财务造假被 ST</strong>：虚增虚减营收，监管“零容忍”重拳出击。<strong>（🔴 利空，警示垃圾股风险）</strong></div></div>
-<div class="ni"><span class="ni-num">7</span><div class="ni-text"><strong>央行拟取消逾期贷款高额罚息</strong>：金融让利实体，意在缓解居民端压力，但对银行息差构成小幅扰动。<strong>（🟡 中性）</strong></div></div>
-<div class="ni"><span class="ni-num">8</span><div class="ni-text"><strong>国家加码培育未来产业“独角兽”</strong>：政策面托底，指向量子、人形机器人等赛道。<strong>（🟢 利好，属于长期耐心资本范畴）</strong></div></div>
+<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>美国5月非农“爆表”</strong>：新增17.2万远超预期，降息幻觉破灭，加息预期重燃。→ <strong>利空</strong>（全球成长股估值杀）</div></div>
+<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>以军空袭伊朗导弹设施</strong>：中东地缘冲突实质性升级，特朗普表态“离协议很近”但仍未落地。→ <strong>利好</strong>（油价/黄金/军工）；<strong>利空</strong>（全球风险偏好）</div></div>
+<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>菲律宾7.9级强震+海啸预警</strong>：冲击东南亚供应链，多国发布警报。→ <strong>中性偏空</strong>（加剧市场不确定性，影响电子/原材料供应链）</div></div>
+<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>Kimi启动新一轮融资</strong>：估值一个月从200亿涨至300亿美元，烧钱速度与泡沫质疑并存。→ <strong>利好</strong>（参股/合作方）；<strong>中性</strong>（大模型竞争格局恶化）</div></div>
+<div class="ni"><span class="ni-num">5</span><div class="ni-text"><strong>英伟达全球“结盟”LG/斗山</strong>：重点布局机器人与物理AI工厂，具身智能产业化提速。→ <strong>利好</strong>（「机器人」执行器/传感器产业链）</div></div>
+<div class="ni"><span class="ni-num">6</span><div class="ni-text"><strong>韩国Kospi暴跌触发熔断</strong>：外资调仓叠加全球紧缩，高盛虽喊反弹但短期流动性踩踏未止。→ <strong>利空</strong>（亚太风险情绪，打压科创属性品种）</div></div>
+<div class="ni"><span class="ni-num">7</span><div class="ni-text"><strong>特朗普接受NBC采访“摔麦”离场</strong>：总统与主流媒体矛盾白热化，政治不确定性增加。→ <strong>中性偏空</strong>（政策执行风险溢价上升）</div></div>
+<div class="ni"><span class="ni-num">8</span><div class="ni-text"><strong>住建部推进城市更新立法</strong>：鼓励民企参与基建运营。→ <strong>利好</strong>（「城市基建」/「工程机械」），但属于长期逻辑，短线刺激有限。</div></div>
 </div>
 <div class="sec">
-<h3 class="sec-h">5. 情绪温度计：❄️ 冰点</h3>
-<p class="para"><strong>理由：</strong> 内资主力不计成本流出；外部遭遇“加息预期+地缘战争+亚太熔断”三杀共振。市场赚钱效应极度萎缩，跌停家数预计骤增。恐慌指数（VIX 传导）飙升，目前情绪处于极度恐慌与筹码交换停滞的边缘。</p>
+<h3 class="sec-h">5. 情绪温度计：😟 谨慎</h3>
+<p class="para">沪指失守 4000 点，超 4500 家股票下跌。资金面主力大幅出逃，新闻面被非农、加息预期、以伊冲突、菲律宾强震等多重利空包裹。尽管机器人板块维持住了赚钱效应，但这属于典型的“指数熊、情绪妖”的游资抱团模式，而非健康的市场信号。<strong>总体仓位应果断降低，转向现金防御。</strong></p>
 </div>
 <div class="sec">
 <h3 class="sec-h">6. 明日推演</h3>
-<div class="bi"><strong>情景一（大概率）：跳空低开后弱势震荡</strong>。受亚太情绪影响，沪指开盘下杀至关键支撑位，随后在「石油」与「高股息」护盘下保持低量震荡。成长赛道继续补跌，核心关注创业板权重股能否稳住阵脚。</div>
-<div class="bi"><strong>情景二（中性）：金针探底</strong>。如果早盘急跌消化完恐慌盘，且伊朗局势没有进一步恶化（美伊开始通话谈判），部分博弈利空出尽的资金会回补「算力」和「存储」方向，分时走出深 V 走势。</div>
-<div class="bi"><strong>操作建议</strong>：目前不要接飞刀。恐慌释放的第一天绝不是抄底的最佳时机，等待明后日量能极度萎缩且利空事件落地的右侧确认信号。守住现金就是守住未来仓位。</div>
+<div class="bi"><strong>情景一（大概率）：缩量阴跌，4000点争夺战失败。</strong> 机器人概念前排加速分化，后排掉队；油服、黄金冲高回落。主力资金继续向低估值「红利」及极少数强逻辑（如物理AI、海风）收缩仓位。沪指考验 3950 支撑。</div>
+<div class="bi"><strong>情景二（中等概率）：外部冲击加剧恐慌。</strong> 若晚间非农效应持续发酵（美联储官员鹰派讲话），或中东宣布更大规模交火，明日低开下杀，引发融资盘多杀多。出现“股债商”三杀，防御板块也难幸免。</div>
+<div class="bi"><strong>情景三（小概率）：情绪修复反抽。</strong> 极度冰点后，因CPI公布前的空头回补，沪指在跌破 3950 后触发超跌反弹，券商股护盘。但若无实质性利好，此反抽是「逃命波」，而非反转。</div>
 </div>
 <div class="sec">
 <h3 class="sec-h">📌 产业链选股（AI 驱动）</h3>
-<p class="para">好的，我将以产业链逻辑为核心，结合今日多市场资讯和资金面数据，为您执行系统性选股分析。</p>
-<p class="para"><strong>整体资金面背景判断：</strong></p>
-<p class="para">近5日大盘主力资金在6月5日出现巨额净流出（-272.52亿），北向资金通道持续关闭（净流入0），显示市场短期避险情绪浓厚，增量资金匮乏。此背景下，资金可能更聚焦于有强逻辑支撑的局部板块，而非普涨。我们对标的的选择必须更注重逻辑的刚性和催化的确定性。</p>
+<p class="para">好的，请稍等。基于您提供的 2026-06-08 多市场资讯及资金面数据，我将执行系统性选股分析。</p>
 </div>
 <div class="sec">
-<h3 class="sec-h">🔥🔥🔥 英伟达与SK海力士深化HBM及AI内存合作，韩国AI基础设施扩建</h3>
-<p class="para"><strong>新闻简述</strong>：英伟达宣布与SK海力士进行多年技术合作，共同开发下一代AI内存（HBM），服务于Vera Rubin等下一代平台。同时，韩国互联网巨头NAVER、SK电讯均宣布与英伟达合作，利用其DSX平台在韩国构建吉瓦（GW）级AI云基础设施。</p>
-<p class="para"><strong>产业链推导</strong>：</p>
-<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>核心受益方 (直接合作)</strong>：SK海力士是明确提及的合作方，直接受益于HBM技术捆绑和未来订单。NAVER、SK电讯作为AI基础设施采购方，其供应链将产生订单。</div></div>
-<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>上游 - HBM及先进封装</strong>：HBM生产涉及<strong>核心设备和材料</strong>，如TSV（硅通孔）刻蚀/沉积设备、热压键合机（TCB）、封装基板、EMC（环氧塑封料）等。</div></div>
-<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>上游 - AI服务器/算力基建</strong>：吉瓦级AI数据中心需要大量AI服务器、高速光模块、交换机、液冷系统等。</div></div>
-<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>竞争与对标</strong>：国内HBM产业链、先进封装厂商，以及为国内AI基建提供类似产品的公司，将被市场对标。</div></div>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**沪电股份 (002463)**</td><td style="text-align:left">🔥 **核心受益**：今日发布赴港IPO招股书，明确指出“AI驱动的数据中心需求是核心增长引擎”。其高多层PCB板是AI服务器、HBM及高性能计算的关键元器件，直接对标产业链上游需求。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥🔥</td></tr><tr><td style="text-align:left">**新宙邦 (300037)**</td><td style="text-align:left">🔥🔥 **产业链传导**：昨晚公告与宁德时代签订30万吨电解液大单。虽非直接AI链，但此大单印证了新能源龙头锁定供应链的趋势。同时，公司电容器化学品（电解液上游添加剂）是HBM先进封装中使用的MLCC等行业的关键材料，侧接受益于算力军备竞赛。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**唯特偶 (301319)**</td><td style="text-align:left">🔥 **关联逻辑**：今日回复关注函，承认其产品应用于光模块及先进封装，但营收占比不足1%。这代表了产业链微电子焊接材料环节，逻辑上间接受益于AI硬件爆发，但短期业绩贡献极低，需警惕炒作风险。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥</td></tr><tr><td style="text-align:left">**中际旭创 (300308)**</td><td style="text-align:left">🔥🔥 **产业链传导**：英伟达配套AI服务器核心光模块供应商。NAVER、SK电讯扩建AI数据中心将直接带动对800G/1.6T等高速率光模块的需求，公司作为全球龙头确定性高。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**工业富联 (601138)**</td><td style="text-align:left">🔥🔥 **产业链传导**：全球AI服务器龙头。韩国等海外AI算力扩建将增加对公司AI服务器的采购订单，作为英伟达核心合作伙伴，其逻辑清晰。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr></tbody></table></div>
+<h3 class="sec-h">资金面分析</h3>
+<div class="bi"><strong>大盘主力资金</strong>：近5日整体呈净流出态势，尤其是6月5日净流出272.52亿元，6月8日午间数据显示主力资金流向机械设备、通信、计算机，流出国防军工、交通运输、食品饮料。</div>
+<div class="bi"><strong>北向资金</strong>：连续无数据，参考意义不大。</div>
+<div class="bi"><strong>策略指引</strong>：当前市场空头情绪占主导，应谨慎追高，优先选择有明确资金流入、有新事件催化的板块（如机器人、物理AI）。</div>
 </div>
 <div class="sec">
-<h3 class="sec-h">🔥🔥 数据中心“算电协同”与全球首条三波段光缆开通</h3>
-<p class="para"><strong>新闻简述</strong>：1. 国内政策强调数据中心建设需强化“算电协同”，解决高能耗问题。2. 全球首条S+C+L三波段超低损多芯光缆线路在山东青岛建成开通，打通AI算力“肠梗阻”。</p>
-<p class="para"><strong>产业链推导</strong>：</p>
-<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>“算电协同”</strong>：数据中心在西部绿电资源丰富地区布局，将带动<strong>绿电运营、特高压/配电网设备、液冷/温控节能、电力交易软件</strong>等环节。</div></div>
-<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>三波段光缆</strong>：这属于<strong>DCI（数据中心互联）</strong>的范畴，将刺激<strong>超低损光纤、多芯光纤连接器、波分复用(WDM)光模块/器件、DCI设备</strong>的新一轮升级需求。</div></div>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**中天科技 (600522)**</td><td style="text-align:left">🔥🔥 **产业链传导**：“三波段”消息提及超低损多芯光缆的建成，公司是国内光纤光缆龙头，具备超低损、大有效面积光纤的研发和生产能力，是DCI长距离传输的直接受益方。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**英维克 (002837)**</td><td style="text-align:left">🔥🔥 **产业链传导**：AI算力密度提升，“算电协同”政策首要强调能耗问题。公司是数据中心精密温控和液冷解决方案龙头，这既是技术趋势也是政策推动方向。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**科华数据 (002335)**</td><td style="text-align:left">🔥🔥 **产业链传导**：公司同时布局数据中心UPS/温控（解决PUE）和在“东数西算”节点的绿电运营/储能业务，完美契合“算电协同”从设备到运营的全链条。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**长江电力 (600900)**</td><td style="text-align:left">🔥 **关联逻辑**：大型数据中心追求稳定且清洁的电力，公司作为水电龙头，是IDC绿电直供或绿证交易的理想对象，间接受益于算电协同的清洁能源需求。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥</td></tr><tr><td style="text-align:left">**光环新网 (300383)**</td><td style="text-align:left">🔥🔥 **产业链传导**：国内第三方数据中心龙头。信通院预测算力需求增长引爆IDC服务需求，公司直接受益于政策对数据中心建设和算力协同的推动。中信证券研报也提到DCI产业链系统性重构，公司是下游场景提供方。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr></tbody></table></div>
+<h3 class="sec-h">核心新闻分析与产业链标的</h3>
 </div>
 <div class="sec">
-<h3 class="sec-h">🔥🔥 新宙邦与宁德时代签订30万吨电解液长单</h3>
-<p class="para"><strong>新闻简述</strong>：电解液龙头新宙邦获得动力电池巨头宁德时代三年长协订单。</p>
-<p class="para"><strong>产业链推导</strong>：</p>
-<p class="para">长单锁定了电池龙头的采购需求，其<strong>上游原材料（六氟磷酸锂、溶剂、添加剂）</strong>供应商将因此获得稳定的出货渠道预期。同时，同行业的其他电解液/电池材料公司可能面临市场份额的竞争压力，但长单模式本身对行业有稳定预期的作用。</p>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**天赐材料 (002709)**</td><td style="text-align:left">🔥🔥 **竞争对标**：公司与新宙邦同为电解液双龙头。宁德时代的长单模式确认了头部企业的供应链地位，对天赐材料与宁德及其他电池厂的合作预期有正向引导。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**多氟多 (002407)**</td><td style="text-align:left">🔥🔥 **产业链传导**：新宙邦上游，核心原材料六氟磷酸锂的主要供应商之一。大额长期订单落地意味着对上游原材料的需求确定性增强。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**石大胜华 (603026)**</td><td style="text-align:left">🔥🔥 **产业链传导**：新宙邦上游，电解液溶剂（碳酸酯系列）的全球龙头供应商。下游销量预期稳定将直接传导至溶剂采购需求。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**永太科技 (002326)**</td><td style="text-align:left">🔥 **观察标的**：公司也是六氟磷酸锂和添加剂（VC、FEC）的供应商，逻辑上属于上游受益链，但其与宁德时代的绑定程度或市场份额可能不及多氟多。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥</td></tr></tbody></table></div>
+<h3 class="sec-h">1. 英伟达与LG、斗山扩大合作：聚焦机器人、物理AI及AI工厂</h3>
+<div class="bi"><strong>新闻要点</strong>：英伟达同日宣布与LG集团、韩国斗山集团扩大合作，共建AI工厂，推进机器人与自动驾驶。具体涉及：英伟达Isaac Sim/GR00T框架训练LG家用机器人CLoiD；斗山机器人在物理AI及机器人领域的合作。</div>
+<div class="bi"><strong>产业链推导逻辑</strong>：</div>
+<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>核心合作方</strong>：LG、斗山具备整机能力，它们在中国的供应链伙伴将直接受益于量产预期。</div></div>
+<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>上游核心零部件</strong>：人形机器人/协作机器人放量，对减速器、伺服电机、传感器、丝杠等需求激增。</div></div>
+<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>软件与算法平台</strong>：物理AI（Physical AI）强调仿真与真实物理世界的交互，利好拥有仿真平台、数据训练解决方案的公司。</div></div>
+<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>竞争对标</strong>：大厂入局加速行业发展，利好国内领先的机器人整机龙头，市场空间被打开。</div></div>
+<div class="ni"><span class="ni-num">5</span><div class="ni-text"><strong>AI算力基础设施</strong>：AI工厂概念需要大规模加速计算设施，利好上游服务器、光模块、数据中心供应商。</div></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**绿的谐波 (688017)**</td><td style="text-align:left">**核心供应商：** 谐波减速器龙头，机器人关节核心部件，确定受益于机器人整机（无论国内还是海外龙头）的放量</td><td style="text-align:left">利好</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**埃斯顿 (002747)**</td><td style="text-align:left">**核心对标：** 自主化工业机器人及运动控制龙头，盘面已涨停，作为LG/斗山机器人的国内直接竞争者，市场空间预期被打开</td><td style="text-align:left">利好</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**中大力德 (002896)**</td><td style="text-align:left">**上游零部件：** RV减速器、行星减速器供应商，机器人传动系统核心，今日减速器概念板块走强</td><td style="text-align:left">利好</td><td style="text-align:left">强</td></tr><tr><td style="text-align:left">**凌云光 (688400)**</td><td style="text-align:left">**软件/仿真：** 机器视觉与工业AI平台，与英伟达Isaac平台生态有合作潜力，属于物理AI仿真环节</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr><tr><td style="text-align:left">**工业富联 (601138)**</td><td style="text-align:left">**AI算力设施：** AI工厂需要大量AI服务器、数据中心基础设施，作为英伟达核心供应商直接受益</td><td style="text-align:left">利好</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**中际旭创 (300308)**</td><td style="text-align:left">**AI算力设施：** AI数据中心对高速光模块需求持续，是构建AI工厂的底层硬件供应商</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr></tbody></table></div>
+<div class="bi"><strong>🔥 观察标的</strong>：</div>
+<div class="bi"><strong>九丰能源 (605090)</strong>：成立航天动力科技公司，沾边“动力”概念，但与今日新闻的直接关联度较弱。</div>
+<div class="bi"><strong>丰光精密 (430510)</strong>：2连板，减速器概念情绪标的，但需注意其基本面与LG/斗山合作的具体关联度不高，属于概念炒作。</div>
 </div>
 <div class="sec">
-<h3 class="sec-h">🔥 半导体及存储产业（受韩股暴跌、政策及IPO消息影响）</h3>
-<p class="para"><strong>新闻简述</strong>：1. 韩国KOSPI指数暴跌逾8%触发熔断，三星、SK海力士均跌10%。2. 耐心资本加码股权投资，长鑫科技、长江存储IPO有新进展。3. 菲律宾7.9级强震，可能对当地半导体封测厂造成影响。</p>
-<p class="para"><strong>产业链推导</strong>：</p>
-<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>韩国半导体暴跌</strong>：情绪面冲击全球科技股，但若暴跌由非基本面因素（如地缘政治、流动性）引发，可能为国内具有替代逻辑的存储/半导体公司提供被动关注。</div></div>
-<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>国内存储IPO</strong>：利好其<strong>上下游的国产设备、材料和封测</strong>供应商，也可能吸引资金关注同板块的已上市公司。</div></div>
-<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>菲律宾地震</strong>：菲律宾是日韩和欧美半导体大厂重要的MLCC（村田、三星电机）、封测基地。地震可能短期影响供给，利好<strong>国内MLCC和封测</strong>的替代/涨价逻辑。</div></div>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**兆易创新 (603986)**</td><td style="text-align:left">🔥🔥 **竞争对标**：国内存储芯片（Nor Flash/MCU）龙头。长江存储、长鑫科技IPO将提升市场对国产存储的关注度，作为已上市的对标公司，其估值和情绪面受益。韩厂若受冲击，可能加速国产替代的采购意愿。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**北方华创 (002371)**</td><td style="text-align:left">🔥🔥 **产业链传导**：长鑫、长存IPO意味着融资后将加大资本开支扩产，北方华创是国产半导体设备龙头，刻蚀、薄膜沉积等设备将直接获得确定性的采购订单。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**风华高科 (000636)**</td><td style="text-align:left">🔥 **观察标的**：国内被动元件（MLCC）龙头。菲律宾地震可能冲击村田、三星电机在菲的MLCC产能，引发短期供给紧张和涨价预期，公司直接受益于产能缺口和国产替代。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥</td></tr><tr><td style="text-align:left">**三环集团 (300408)**</td><td style="text-align:left">🔥 **观察标的**：国内陶瓷插芯、PKG（封装基座）龙头。逻辑与风华高科类似，PKG属于半导体封装环节相关，间接受益于菲律宾封测产能可能受冲击的供给风险。</td><td style="text-align:left">利好</td><td style="text-align:left">🔥</td></tr></tbody></table></div>
+<h3 class="sec-h">2. Kimi启动新一轮融资，估值一个月内涨100亿美元</h3>
+<div class="bi"><strong>新闻要点</strong>：国内独立大模型公司月之暗面Kimi启动新一轮融资，投前估值300亿美元。上一轮20亿美元融资刚在5月中下旬收尾，估值暴涨。</div>
+<div class="bi"><strong>产业链推导逻辑</strong>：</div>
+<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>核心软件与应用</strong>：Kimi本身未上市，但其估值暴涨将重估A股同类大模型公司的价值。</div></div>
+<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>上游投资方</strong>：参与Kimi融资的股东公司，其投资价值将被市场重新评估。</div></div>
+<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>算力与设备供应商</strong>：大模型公司获得充足弹药后，首要支出是采购算力（GPU服务器、光模块等）。</div></div>
+<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>下游应用场景</strong>：大模型能力跃升将加速AI在办公、文娱、编程等场景的落地。</div></div>
+<div class="ni"><span class="ni-num">5</span><div class="ni-text"><strong>竞争对标</strong>：其他国产大模型独角兽及其合作方的价值凸显。</div></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**百度 (9888.HK)**</td><td style="text-align:left">**核心对标：** 拥有文心一言大模型，Kimi估值飙升直接为其价值提供重估锚点。今日港股跌超7%是受大盘拖累，基本面逻辑上AI估值体系提升是明确利好</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr><tr><td style="text-align:left">**阿里 (9988.HK)**</td><td style="text-align:left">**核心投资方/对标：** 为Kimi重要投资方，且自身拥有通义千问大模型，双重受益于AI行业的资本热潮</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr><tr><td style="text-align:left">**海天瑞声 (688787)**</td><td style="text-align:left">**上游数据：** AI模型训练的“卖水人”，大模型军备竞赛将直接拉动高质量训练数据集的需求</td><td style="text-align:left">利好</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**奥飞数据 (300738)**</td><td style="text-align:left">**上游算力：** 大模型公司融资后扩购算力，对提供算力租赁和数据中心服务的企业构成中期利好</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr><tr><td style="text-align:left">**中科曙光 (603019)**</td><td style="text-align:left">**上游算力设施：** 国产服务器及算力基础设施核心厂商，受益于整体算力资本开支增长</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr></tbody></table></div>
+<div class="bi"><strong>🔥 观察标的</strong>：</div>
+<div class="bi"><strong>凡拓数创 (301313)</strong>：今日20%涨停，概念为空间计算与AIGC，属于AI应用方向的情绪标的。</div>
+<div class="bi"><strong>天娱数科 (002354)</strong>、<strong>能科科技 (603859)</strong>：物理AI概念2连板，逻辑较远，偏重情绪。</div>
+</div>
+<div class="sec">
+<h3 class="sec-h">3. 美国5月非农爆表，美联储加息预期重燃，全球市场剧震</h3>
+<div class="bi"><strong>新闻要点</strong>：美国5月新增非农17.2万人，远超预期。市场对美联储年内加息的押注骤升，导致上周五及今日亚太股市集体重挫，韩股熔断。机构预警海外风险向港股及A股传导。</div>
+<div class="bi"><strong>产业链推导逻辑</strong>：此属系统性宏观风险。</div>
+<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>对利率敏感行业</strong>：高估值成长股（尤其是对折现率敏感的未盈利科技股）将面临估值挤压。</div></div>
+<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>资金流向逆转</strong>：新兴市场（A股、港股）面临资金回流美国的压力，北向资金重仓股承压。</div></div>
+<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>避险资产</strong>：黄金、美债等市场逻辑发生变化，若加息预期成真，无息资产黄金可能承压。</div></div>
+<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>出口/外需驱动型企业</strong>：加息可能抑制美国经济需求，对高度依赖美国市场的出口型企业构成中期利空。</div></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**韦尔股份 (603501)**</td><td style="text-align:left">**高估值/外需：** 高估值半导体设计龙头，对利率上行敏感；且其下游消费电子与汽车部分依赖海外需求</td><td style="text-align:left">利空</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**歌尔股份 (002241)**</td><td style="text-align:left">**北向重仓/外需：** 北向资金重仓的消费电子龙头，面临流动性抽离压力；海外加息压制消费需求</td><td style="text-align:left">利空</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**药明康德 (603259)**</td><td style="text-align:left">**北向重仓/利率敏感：** CXO龙头，外资持股比例高，且成长股估值框架下对利率变化敏感</td><td style="text-align:left">利空</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**紫金矿业 (601899)**</td><td style="text-align:left">**逻辑切换：** 此前受益于避险，但若因“加息预期”推动实际利率上行，黄金资产的持有成本增加，逻辑生变</td><td style="text-align:left">利空</td><td style="text-align:left">中等</td></tr><tr><td style="text-align:left">**中国中免 (601888)**</td><td style="text-align:left">**北向重仓/内需逻辑受干扰：** 外资重仓的大消费龙头，宏观系统性风险下易被减仓应对流动性危机</td><td style="text-align:left">利空</td><td style="text-align:left">中等</td></tr></tbody></table></div>
+<div class="bi"><strong>🔥 观察标的</strong>：所有北向资金重仓的高估值核心资产，短期内都面临抛压，如迈瑞医疗、宁德时代等，但上述表格已涵盖典型代表。</div>
 </div>
 <div class="sec">
 <h3 class="sec-h">⚠️ 避雷</h3>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">利空逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**派瑞股份 (300831)**</td><td style="text-align:left">🔥🔥🔥 **财务造假将被ST**：公告称通过篡改验收单虚增/虚减营收平滑业绩，遭证监会处罚，股票将自6月8日起停牌一日后实施其他风险警示(ST)。重大利空，坚决回避。</td><td style="text-align:left">利空</td><td style="text-align:left">🔥🔥🔥</td></tr><tr><td style="text-align:left">**恒星科技 (002132)**</td><td style="text-align:left">🔥🔥 **公司澄清概念炒作**：公告明确指出市场热议的“光纤、黄金、机械设备”三大热点概念与公司业务基本面脱节，系“虚火”。这类主动澄清将刺破概念泡沫，短期回调压力极大。</td><td style="text-align:left">利空</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">**唯特偶 (301319)**</td><td style="text-align:left">🔥 **提示炒作风险**：今日回复关注函，确认其光模块、先进封装业务营收占比不足1%，与股价短期4倍的涨幅严重不匹配。实质是戳破“伪概念”，投机性买盘将面临出货压力。</td><td style="text-align:left">利空</td><td style="text-align:left">🔥🔥</td></tr></tbody></table></div>
-<p class="para"><strong>总结分析</strong>：</p>
-<p class="para">今日盘前消息面极为复杂：<strong>海外市场（日韩）暴跌带来系统性风险压力</strong>，地缘冲突升温（伊朗空袭以色列）扰动油价和避险情绪，资金面A股主力连续净流出。在此环境下，资金可能从高位概念股出逃，转向有<strong>业绩支撑和强产业链逻辑</strong>的领域，如<strong>AI算力硬件（光模块、PCB、服务器）、大算力配套（温控、光缆）以及有实质大单落地的锂电中上游</strong>。同时，必须严格规避如派瑞股份此类实质性利空，并对恒星科技、唯特偶这类被公司亲自“证伪”的概念股保持高度警惕。</p>
+<div class="bi"><strong>胜宏科技 (300476)</strong></div>
+<div class="bi"><strong>利空逻辑</strong>：公司回应涉及高管的网传传闻，虽称与生产经营活动无关，但此类事件通常会引发市场对公司治理的担忧和不确定性，短期对股价构成情绪性压制。</div>
+<div class="bi"><strong>“回收料”牙刷事件波及标的</strong></div>
+<div class="bi"><strong>利空逻辑</strong>：央视曝光扬州企业使用废旧塑料生产一次性牙刷，涉事企业被连夜查处。虽然具体上市公司名称未直接点出，但位于江苏扬州的相关牙刷制造、日化上市公司的市场信誉可能受到短期负面冲击，需警惕。</div>
+<div class="bi"><strong>菲律宾强震（7.9级）相关</strong></div>
+<div class="bi"><strong>利空逻辑</strong>：菲律宾是全球重要的镍矿、铜矿出口国，强震可能影响矿区生产和港口运输，持有当地矿产资源或供应链依赖菲律宾镍矿的公司（如部分不锈钢、新能源电池上游前驱体企业）面临短期供应中断风险。具体标的如华友钴业（在印尼有大量镍项目，可能间接受区域物流与电力中断影响）等需警惕。</div>
 </div></div>
 
 </div>
