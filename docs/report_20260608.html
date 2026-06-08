@@ -6,25 +6,25 @@
 <title>MARKET BRIEF · 2026-06-08</title>
 <style>
 /* ============================================================
-   Bloomberg Terminal Dark — Professional Market Intelligence
+   Institutional Research — Clean Light Theme
    ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
 
 :root {
-  --bg: #131a24;
-  --bg-card: #1c2533;
-  --bg-elevated: #243041;
-  --border: #2a3543;
-  --border-light: #374557;
-  --text-primary: #edf2f8;
-  --text-secondary: #b0b9c5;
-  --text-muted: #6e7887;
-  --accent: #ff6b35;
-  --accent-blue: #58a6ff;
-  --green: #3fb950;
-  --red: #f85149;
-  --amber: #d2991d;
-  --purple: #a371f7;
+  --bg: #f7f8fa;
+  --bg-card: #ffffff;
+  --bg-elevated: #eef0f4;
+  --border: #dde1e8;
+  --border-light: #e4e7ed;
+  --text-primary: #1a1d24;
+  --text-secondary: #4e5460;
+  --text-muted: #9096a2;
+  --accent: #e85d2c;
+  --accent-blue: #2070cc;
+  --green: #1a8a3f;
+  --red: #d63031;
+  --amber: #b8860b;
+  --purple: #7c3aed;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -39,9 +39,10 @@ body {
 
 /* ===== TOP BAR ===== */
 .topbar {
-  background: #000;
+  background: #fff;
   border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .topbar-inner {
   max-width: 960px; margin:0 auto; padding: 10px 24px;
@@ -61,7 +62,7 @@ body {
 
 /* ===== TICKER STRIP ===== */
 .ticker-strip {
-  background: #000; border-bottom: 1px solid var(--border);
+  background: #fff; border-bottom: 1px solid var(--border);
   overflow-x: auto; white-space: nowrap;
 }
 .ticker-strip::-webkit-scrollbar { height:0; }
@@ -118,11 +119,11 @@ body {
   padding:4px 8px; border-radius:2px;
   background: var(--bg); border:1px solid var(--border);
   outline:none; transition: border-color 0.15s;
-  color-scheme: dark;
+  color-scheme: light;
 }
 .hl-date:focus { border-color: var(--accent); }
 .hl-date::-webkit-calendar-picker-indicator {
-  filter: invert(0.7); cursor:pointer;
+  cursor:pointer;
 }
 .hl-go {
   font-family: 'JetBrains Mono', monospace;
@@ -235,7 +236,7 @@ body {
   padding: 8px 0 4px; border-bottom: 1px solid var(--border);
   text-transform:uppercase;
 }
-.ch-cell img { width:100%; display:block; filter: brightness(0.9); }
+.ch-cell img { width:100%; display:block; }
 
 /* ===== REPORT BODY ===== */
 .report-body { margin-top:18px; }
@@ -368,6 +369,89 @@ body {
   .ni { padding:10px 12px; }
   .fp-grid { grid-template-columns:1fr; }
   .chart-img img { max-width:100%; }
+  .fav-panel { display:none; }
+}
+
+/* ===== FAVORITES PANEL ===== */
+.fav-btn {
+  display:inline-block; background:none; border:none;
+  font-size:16px; cursor:pointer; padding:0 6px; margin-right:2px;
+  color: var(--text-muted); transition: all 0.2s;
+  vertical-align: middle; line-height:1;
+}
+.fav-btn:hover { color: var(--amber); transform: scale(1.2); }
+.fav-btn.on { color: var(--amber); }
+
+.fav-panel {
+  max-width:960px; margin:0 auto; padding: 0 24px 32px;
+}
+.fav-panel-inner {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-top: 3px solid var(--amber);
+  border-radius: 0 0 4px 4px;
+}
+.fav-panel-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 20px; border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:700; color: var(--text-secondary);
+  letter-spacing:1.5px; text-transform:uppercase;
+}
+.fav-panel-hdr em { color: var(--amber); font-style:normal; }
+.fav-count { font-size:11px; color: var(--text-muted); }
+.fav-toggle {
+  background:none; border:none; color: var(--text-muted);
+  font-size:18px; cursor:pointer; padding:0 4px; line-height:1;
+  transition: color 0.15s;
+}
+.fav-toggle:hover { color: var(--text-primary); }
+.fav-empty {
+  text-align:center; padding: 24px; color: var(--text-muted);
+  font-size:13px;
+}
+.fav-list { display:flex; flex-direction:column; }
+.fav-item {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:10px 20px; border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.fav-item:last-child { border-bottom:none; }
+.fav-item:hover { background: var(--bg); }
+.fav-item-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; color: var(--text-muted); flex-shrink:0;
+  min-width:42px; padding-top:2px;
+}
+.fav-item-title {
+  flex:1; font-size:13px; font-weight:600; color: var(--text-primary);
+  cursor:pointer; line-height:1.5;
+}
+.fav-item-title:hover { color: var(--accent); }
+.fav-item-del {
+  background:none; border:1px solid var(--border); color: var(--text-muted);
+  font-size:10px; cursor:pointer; padding:2px 8px; border-radius:2px;
+  flex-shrink:0; transition: all 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+}
+.fav-item-del:hover { color: var(--red); border-color: var(--red); }
+
+/* ===== FAV TOAST ===== */
+.fav-toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background: var(--bg-elevated); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius:4px;
+  padding:8px 20px; font-size:12px; font-weight:600;
+  z-index:999; opacity:0; transition: opacity 0.3s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08); pointer-events:none;
+}
+.fav-toast.show { opacity:1; }
+
+@media (max-width: 640px) {
+  .fav-item { padding:10px 12px; gap:6px; }
+  .fav-item-date { min-width:36px; font-size:9px; }
+  .fav-item-title { font-size:12px; }
+  .fav-panel-hdr { padding:10px 14px; }
+  .fav-panel { padding: 0 14px 24px; }
 }
 </style>
 </head>
@@ -377,13 +461,13 @@ body {
 <div class="topbar">
   <div class="topbar-inner">
     <div class="logo">MARKET<em>//</em>BRIEF</div>
-    <div class="topbar-meta">Monday<br>04:04 CST</div>
+    <div class="topbar-meta">Monday<br>05:54 CST</div>
   </div>
 </div>
 
 <!-- TICKER STRIP -->
 <div class="ticker-strip">
-  <div class="ticker-inner"><div class="tkr dn"><span class="tkr-n">上证指数</span><span class="tkr-p">3976.83</span><span class="tkr-c">▼ -1.26%</span></div><div class="tkr dn"><span class="tkr-n">深证成指</span><span class="tkr-p">14933.82</span><span class="tkr-c">▼ -2.49%</span></div><div class="tkr dn"><span class="tkr-n">创业板指</span><span class="tkr-p">3845.78</span><span class="tkr-c">▼ -2.83%</span></div><div class="tkr up"><span class="tkr-n">恒生指数</span><span class="tkr-p">24668.39</span><span class="tkr-c">▲ +0.00%</span></div><div class="tkr up"><span class="tkr-n">纳斯达克</span><span class="tkr-p">22484.07</span><span class="tkr-c">▲ +0.00%</span></div></div>
+  <div class="ticker-inner"><div class="tkr dn"><span class="tkr-n">上证指数</span><span class="tkr-p">3941.69</span><span class="tkr-c">▼ -2.14%</span></div><div class="tkr dn"><span class="tkr-n">深证成指</span><span class="tkr-p">14761.69</span><span class="tkr-c">▼ -3.61%</span></div><div class="tkr dn"><span class="tkr-n">创业板指</span><span class="tkr-p">3799.16</span><span class="tkr-c">▼ -4.01%</span></div><div class="tkr up"><span class="tkr-n">恒生指数</span><span class="tkr-p">24504.58</span><span class="tkr-c">▲ +0.00%</span></div><div class="tkr up"><span class="tkr-n">纳斯达克</span><span class="tkr-p">22484.07</span><span class="tkr-c">▲ +0.00%</span></div></div>
 </div>
 
 <!-- HISTORY NAV -->
@@ -398,9 +482,9 @@ body {
   <h1>每日市场情报</h1>
   <div class="masthead-sub">INSTITUTIONAL · MARKET · INTELLIGENCE</div>
   <div class="masthead-tags">
-    <span class="mtag mtag-a">A-SHARE · 44</span>
-    <span class="mtag mtag-us">US · 25</span>
-    <span class="mtag mtag-hk">HK · 10</span>
+    <span class="mtag mtag-a">A-SHARE · 45</span>
+    <span class="mtag mtag-us">US · 26</span>
+    <span class="mtag mtag-hk">HK · 14</span>
   </div>
 </div>
 
@@ -416,108 +500,102 @@ body {
 
   <!-- AI ANALYSIS -->
   <div class="sec-hdr">ANALYSIS</div>
-  <div class="report-body"><div class="sec">
-<h3 class="sec-h">每日市场情报</h3>
-<p class="para"><strong>日期：2026-06-08</strong></p>
-<p class="para"><strong>标签：地缘冲击 · 流动性收缩 · 防御性调仓</strong></p>
+  <div class="report-body"><div class="sec" data-section-id="35885f7417">
+<h3 class="sec-h"><button class="fav-btn" data-sid="35885f7417" title="收藏此条分析" onclick="toggleFav(this)">☆</button>每日市场情报</h3>
+<p class="para">日期：2026-06-08</p>
+<p class="para">标签：#地缘冲击 #流动性危机 #风格切换</p>
 </div>
-<div class="sec">
-<h3 class="sec-h">1. 资金面信号：防守</h3>
-<p class="para">今日主力资金半日净流出超 270 亿，为近5日最大幅度流出，抛压骤然升级；北向资金通道连续4日录得“0.00 亿”，无论数据缺失还是实际停止披露，均指向外资在避险环境下彻底「装死」。<strong>资金态度明确转为防守，场内仅剩游资在机器人等小票中博取短线弹性，系统性机会消失。</strong></p>
+<div class="sec" data-section-id="b81d6b8ab9">
+<h3 class="sec-h"><button class="fav-btn" data-sid="b81d6b8ab9" title="收藏此条分析" onclick="toggleFav(this)">☆</button>1. 资金面信号：📉 资金态度：防守性撤退</h3>
+<p class="para">今日主力资金延续周五恐慌，净流出显著放大，全天预估流出规模远超上周五的272亿，属于典型的「多杀多」踩踏。北向资金数据持续静默，在离岸风险剧增背景下，外资实质性撤离压力不容忽视。结论：机构正在不计成本地砍仓避险，流动性虹吸效应显著，仅剩「油服」与「煤炭」板块获得防御性抱团。</p>
 </div>
-<div class="sec">
-<h3 class="sec-h">2. A股主线扫描</h3>
-<div class="bi"><strong>机器人/物理AI（反制性抱团）</strong>：驱动来自「英伟达 x LG/斗山」共建AI工厂及物理AI数据工厂，直接点燃国内映射。「丰光精密」30%二连板、「埃斯顿」涨停。<strong>逻辑硬，但大盘逆风下持续性存疑，属于“弱市炒新”情绪，短期可维持，中期警惕补跌。</strong></div>
-<div class="bi"><strong>油服/地缘避险（事件驱动）</strong>：以军空袭伊朗导弹设施，国际金价测试 4300 美元，油价预期升温。叠加「中天科技」涨停创历史新高，资金涌入「油服工程」及部分通信海缆。<strong>高度依赖中东局势发酵，若冲突不升级，此类交易极易一日游。</strong></div>
-<div class="bi"><strong>专精特新/工业气体（防御性补涨）</strong>：「中船特气」涨超10%，叠加城市更新政策预期，机械设备获主力半日净流入。<strong>逻辑偏弱，纯属高位科技股流出后，资金寻找低拥挤度洼地的结果，持续性一般。</strong></div>
+<div class="sec" data-section-id="980dffc171">
+<h3 class="sec-h"><button class="fav-btn" data-sid="980dffc171" title="收藏此条分析" onclick="toggleFav(this)">☆</button>2. A股主线扫描：避险为王，成长退潮</h3>
+<div class="bi">主线一：能源安全（油服/煤炭）🔥</div>
+<div class="bi">驱动：伊朗能源设施遭以军空袭，国际油价盘中急拉4%，叠加安监趋严下的煤价刚性预期。</div>
+<div class="bi">判断：这是今日唯一具备逻辑支撑的「反脆弱」方向。只要中东炮火不停，油价脉冲就会持续，持续性看地缘升温程度。（短线最强避风港）</div>
+<div class="bi">主线二：机器人/具身智能 🤖</div>
+<div class="bi">驱动：优必选人形机器人预定超预期，居然智家「机器人+新零售」概念获游资挖掘，英伟达与LG共建AI工厂也提供远期背书。</div>
+<div class="bi">判断：纯主题炒作，属于大跌市中活跃资金的「精神图腾」。大盘不稳，这类高标随时面临补跌，只看筹码博弈，不讲长期逻辑。（脉冲行情，隔日风险大）</div>
+<div class="bi">主线三：高股息红利（煤炭/部分央国企）</div>
+<div class="bi">驱动：市场风险偏好骤降，资金涌向确定性的「类债属性资产」。</div>
+<div class="bi">判断：这是资金的被动选择而非主动进攻。只要大盘不止跌，银行、煤炭等高分红板块的抱团就不会瓦解，是当下唯一的确定性。（中长期防御底仓）</div>
 </div>
-<div class="sec">
-<h3 class="sec-h">3. 跨市场联动</h3>
-<div class="bi"><strong>美股传导压力</strong>：上周五非农“爆表”后，纳斯达克重挫 4.2%，市场已开始交易“美联储年内加息”。这对A股高估值成长股（CPO/半导体今日领跌）构成直接估值压制，<strong>纳指映射品种短期应规避。</strong></div>
-<div class="bi"><strong>港股与新兴市场“失血”</strong>：恒生科指午盘跌 2.4%，百度跌超 7%；韩国股市触发熔断，印尼盾续创新低。美联储紧缩预期引发全球资金回流美元，<strong>港股流动性枯竭将通过 A/H 溢价对 A 股核心资产形成拖累。</strong></div>
-<div class="bi"><strong>避险资产异动</strong>：比特币经历最惨一周，黄金测试前高，显示全球风险偏好已从“贪婪”急转直入“恐慌”。A股场内军工、家禽等小众防御板块的异动，是此情绪的滞后映射。</div>
+<div class="sec" data-section-id="89b169c1e0">
+<h3 class="sec-h"><button class="fav-btn" data-sid="89b169c1e0" title="收藏此条分析" onclick="toggleFav(this)">☆</button>3. 跨市场联动：亚太系统性抛售的传导</h3>
+<div class="bi">韩国 KOSDAQ 熔断（-8%）：半导体出口敞口遭遇重挫，直接映射A股「科创50」深度破位。非韩单一风险，而是全球科技股估值重构的信号。</div>
+<div class="bi">港股互联网普跌：恒生科技跌近3%，美团领跌。反应的是美联储加息预期+地缘风险下，外资对新兴市场风险资产的无差别抛售。这对A股成长股估值形成压制，AH溢价再次被动拉大。</div>
+<div class="bi">美股映射减弱：上周五美股科技「黑色星期五」已消化部分恐慌，但英伟达逆势发布新品（与LG/SK海力士的深度绑定），需警惕A股光模块、存储等映射板块出现「该跌不跌」的背离信号。</div>
 </div>
-<div class="sec">
-<h3 class="sec-h">4. 重要舆情 TOP 8</h3>
-<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>美国5月非农“爆表”</strong>：新增17.2万远超预期，降息幻觉破灭，加息预期重燃。→ <strong>利空</strong>（全球成长股估值杀）</div></div>
-<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>以军空袭伊朗导弹设施</strong>：中东地缘冲突实质性升级，特朗普表态“离协议很近”但仍未落地。→ <strong>利好</strong>（油价/黄金/军工）；<strong>利空</strong>（全球风险偏好）</div></div>
-<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>菲律宾7.9级强震+海啸预警</strong>：冲击东南亚供应链，多国发布警报。→ <strong>中性偏空</strong>（加剧市场不确定性，影响电子/原材料供应链）</div></div>
-<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>Kimi启动新一轮融资</strong>：估值一个月从200亿涨至300亿美元，烧钱速度与泡沫质疑并存。→ <strong>利好</strong>（参股/合作方）；<strong>中性</strong>（大模型竞争格局恶化）</div></div>
-<div class="ni"><span class="ni-num">5</span><div class="ni-text"><strong>英伟达全球“结盟”LG/斗山</strong>：重点布局机器人与物理AI工厂，具身智能产业化提速。→ <strong>利好</strong>（「机器人」执行器/传感器产业链）</div></div>
-<div class="ni"><span class="ni-num">6</span><div class="ni-text"><strong>韩国Kospi暴跌触发熔断</strong>：外资调仓叠加全球紧缩，高盛虽喊反弹但短期流动性踩踏未止。→ <strong>利空</strong>（亚太风险情绪，打压科创属性品种）</div></div>
-<div class="ni"><span class="ni-num">7</span><div class="ni-text"><strong>特朗普接受NBC采访“摔麦”离场</strong>：总统与主流媒体矛盾白热化，政治不确定性增加。→ <strong>中性偏空</strong>（政策执行风险溢价上升）</div></div>
-<div class="ni"><span class="ni-num">8</span><div class="ni-text"><strong>住建部推进城市更新立法</strong>：鼓励民企参与基建运营。→ <strong>利好</strong>（「城市基建」/「工程机械」），但属于长期逻辑，短线刺激有限。</div></div>
+<div class="sec" data-section-id="7b3fe9c3b9">
+<h3 class="sec-h"><button class="fav-btn" data-sid="7b3fe9c3b9" title="收藏此条分析" onclick="toggleFav(this)">☆</button>4. 重要舆情 TOP 8</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">序号</th><th style="text-align:left">关键新闻</th><th style="text-align:left">影响分析</th><th style="text-align:left">情绪</th></tr></thead><tbody><tr><td style="text-align:left">1</td><td style="text-align:left">🇮🇷 伊朗能源设施遭以军空袭</td><td style="text-align:left">中东战事升级，油价飙升引发全球通胀二次反弹担忧。利好国内油气开采企业，利空制造业成本端。</td><td style="text-align:left">利多能源</td></tr><tr><td style="text-align:left">2</td><td style="text-align:left">🇺🇸 美国5月非农“爆表”</td><td style="text-align:left">就业数据超预期，联储年内降息希望彻底破灭，加息预期重燃。强美元抽血新兴市场。</td><td style="text-align:left">系统性利空</td></tr><tr><td style="text-align:left">3</td><td style="text-align:left">🇰🇷 韩国KOSDAQ暴跌8%熔断</td><td style="text-align:left">亚太科技股恐慌情绪达到顶峰，半导体产业链需求担忧加重，对A股科创板形成负面情绪映射。</td><td style="text-align:left">大利空</td></tr><tr><td style="text-align:left">4</td><td style="text-align:left">🔥 美联储加息预期重燃</td><td style="text-align:left">花旗、银河等机构纷纷撤回升息预测。核心矛盾转向通胀，高利率环境将更持久，压制全球成长股估值。</td><td style="text-align:left">系统性利空</td></tr><tr><td style="text-align:left">5</td><td style="text-align:left">💣 沪指失守4000点</td><td style="text-align:left">指数技术形态严重破位，跌停潮再现。两融平仓压力与绝对收益型机构被动砍仓将形成新的抛压。</td><td style="text-align:left">恐慌信号</td></tr><tr><td style="text-align:left">6</td><td style="text-align:left">🚀 SpaceX IPO两倍超额认购</td><td style="text-align:left">1500亿美元需求追逐，构成美股情绪的“独苗”，可能暂时稳住部分科技股信仰，但对A股无直接输血效应。</td><td style="text-align:left">中性</td></tr><tr><td style="text-align:left">7</td><td style="text-align:left">🤖 英伟达与LG合建AI工厂</td><td style="text-align:left">聚焦物理AI、机器人、自动驾驶。试图用产业资本支出对抗宏观紧缩，长期利好AI落地逻辑。</td><td style="text-align:left">弱利好</td></tr><tr><td style="text-align:left">8</td><td style="text-align:left">📊 深交所创业板改革测试</td><td style="text-align:left">交易机制改革倒计时一个月。若涉及涨跌幅放宽或T+0试点，将激活券商及创业板流动性，但短期远水难解近渴。</td><td style="text-align:left">中性偏暖</td></tr></tbody></table></div>
 </div>
-<div class="sec">
-<h3 class="sec-h">5. 情绪温度计：😟 谨慎</h3>
-<p class="para">沪指失守 4000 点，超 4500 家股票下跌。资金面主力大幅出逃，新闻面被非农、加息预期、以伊冲突、菲律宾强震等多重利空包裹。尽管机器人板块维持住了赚钱效应，但这属于典型的“指数熊、情绪妖”的游资抱团模式，而非健康的市场信号。<strong>总体仓位应果断降低，转向现金防御。</strong></p>
+<div class="sec" data-section-id="cfa0f338eb">
+<h3 class="sec-h"><button class="fav-btn" data-sid="cfa0f338eb" title="收藏此条分析" onclick="toggleFav(this)">☆</button>5. 情绪温度计：❄️ 冰点</h3>
+<p class="para">理由：</p>
+<p class="para">全球市场正经历「非农超预期 + 地缘战争升级」的双重暴击。美元指数破百、白银暴跌10%、韩股熔断，这是教科书式的流动性恐慌。 A股场内科创板暴跌，量能极度萎缩，市场已从「纠结观望」坠入「无差别抛售」。在全市场上涨家数不足千家面前，任何利好都显得苍白无力。</p>
 </div>
-<div class="sec">
-<h3 class="sec-h">6. 明日推演</h3>
-<div class="bi"><strong>情景一（大概率）：缩量阴跌，4000点争夺战失败。</strong> 机器人概念前排加速分化，后排掉队；油服、黄金冲高回落。主力资金继续向低估值「红利」及极少数强逻辑（如物理AI、海风）收缩仓位。沪指考验 3950 支撑。</div>
-<div class="bi"><strong>情景二（中等概率）：外部冲击加剧恐慌。</strong> 若晚间非农效应持续发酵（美联储官员鹰派讲话），或中东宣布更大规模交火，明日低开下杀，引发融资盘多杀多。出现“股债商”三杀，防御板块也难幸免。</div>
-<div class="bi"><strong>情景三（小概率）：情绪修复反抽。</strong> 极度冰点后，因CPI公布前的空头回补，沪指在跌破 3950 后触发超跌反弹，券商股护盘。但若无实质性利好，此反抽是「逃命波」，而非反转。</div>
+<div class="sec" data-section-id="b9cd0f474f">
+<h3 class="sec-h"><button class="fav-btn" data-sid="b9cd0f474f" title="收藏此条分析" onclick="toggleFav(this)">☆</button>6. 明日推演：三种情景假设</h3>
+<div class="bi">情景一（概率 55%）：惯性杀跌，随后低位盘整</div>
+<div class="bi">背景：今夜美股续跌，地缘无缓和。明早恐慌盘涌出，沪指回补下方缺口，但部分错杀成长股和权重股开始出现抵抗式承接。</div>
+<div class="bi">盘面：指数继续下沉，但跌停家数将收敛，机构调仓换股买油买煤。你在早盘将看到极端的价格，也可能是短线博弈买点。盯住「中国海油」和「中国神华」。</div>
+<div class="bi">情景二（概率 25%）：地缘局势逆转，暴力反弹</div>
+<div class="bi">背景：如伊朗与以色列突然释放停火信号，油价大幅跳水。</div>
+<div class="bi">盘面：超跌的半导体和创业板指将报复性反弹，但你敢追吗？大概率是一日游，这是重仓科技股者的逃命机会，而非抄底良机。警惕「美债收益率跳水」作为反转确认信号。</div>
+<div class="bi">情景三（概率 20%）：政策重磅喊话，权重护盘</div>
+<div class="bi">背景：监管层盘中释放密集利好（如汇金增持券商或银行）。</div>
+<div class="bi">盘面：指数能守住4000点，但仅限「上证50」光鲜。个股会进一步失血，这种割裂行情的交易意义不大。关注「券商股」是否异动，若不涨停即是耍流氓。</div>
+<p class="para">> 策略建议：继续用「油服/煤炭/高股息」构筑防守垫，保持仓位灵活性。别贪图便宜去接还在下降通道的科创50，地缘平息信号出现前，成长股只有反抽，没有反转。</p>
 </div>
-<div class="sec">
-<h3 class="sec-h">📌 产业链选股（AI 驱动）</h3>
-<p class="para">好的，请稍等。基于您提供的 2026-06-08 多市场资讯及资金面数据，我将执行系统性选股分析。</p>
+<div class="sec" data-section-id="1091887a41">
+<h3 class="sec-h"><button class="fav-btn" data-sid="1091887a41" title="收藏此条分析" onclick="toggleFav(this)">☆</button>📌 产业链选股（AI 驱动）</h3>
+<p class="para">好的，我们开始。今日市场呈现普跌态势，恐慌情绪蔓延。我将严格遵循新闻事实和产业链逻辑，为您在海量信息中梳理出具备交易价值的线索。</p>
 </div>
-<div class="sec">
-<h3 class="sec-h">资金面分析</h3>
-<div class="bi"><strong>大盘主力资金</strong>：近5日整体呈净流出态势，尤其是6月5日净流出272.52亿元，6月8日午间数据显示主力资金流向机械设备、通信、计算机，流出国防军工、交通运输、食品饮料。</div>
-<div class="bi"><strong>北向资金</strong>：连续无数据，参考意义不大。</div>
-<div class="bi"><strong>策略指引</strong>：当前市场空头情绪占主导，应谨慎追高，优先选择有明确资金流入、有新事件催化的板块（如机器人、物理AI）。</div>
+<div class="sec" data-section-id="b528459cf7">
+<h3 class="sec-h"><button class="fav-btn" data-sid="b528459cf7" title="收藏此条分析" onclick="toggleFav(this)">☆</button>⚠️ 避雷</h3>
+<p class="para">首先，我们快速排查明确利空的个股，规避风险。</p>
+<div class="bi">胜宏科技(300476)：公司就网传高管传闻向记者回应，称与生产经营活动无关。虽然公司尽力切割，但高管负面传闻通常会在短期内压制股价，带来不确定性，暂视为利空观察。</div>
 </div>
-<div class="sec">
-<h3 class="sec-h">核心新闻分析与产业链标的</h3>
+<div class="sec" data-section-id="2b0756b50c">
+<h3 class="sec-h"><button class="fav-btn" data-sid="2b0756b50c" title="收藏此条分析" onclick="toggleFav(this)">☆</button>重大新闻与产业链分析</h3>
 </div>
-<div class="sec">
-<h3 class="sec-h">1. 英伟达与LG、斗山扩大合作：聚焦机器人、物理AI及AI工厂</h3>
-<div class="bi"><strong>新闻要点</strong>：英伟达同日宣布与LG集团、韩国斗山集团扩大合作，共建AI工厂，推进机器人与自动驾驶。具体涉及：英伟达Isaac Sim/GR00T框架训练LG家用机器人CLoiD；斗山机器人在物理AI及机器人领域的合作。</div>
-<div class="bi"><strong>产业链推导逻辑</strong>：</div>
-<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>核心合作方</strong>：LG、斗山具备整机能力，它们在中国的供应链伙伴将直接受益于量产预期。</div></div>
-<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>上游核心零部件</strong>：人形机器人/协作机器人放量，对减速器、伺服电机、传感器、丝杠等需求激增。</div></div>
-<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>软件与算法平台</strong>：物理AI（Physical AI）强调仿真与真实物理世界的交互，利好拥有仿真平台、数据训练解决方案的公司。</div></div>
-<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>竞争对标</strong>：大厂入局加速行业发展，利好国内领先的机器人整机龙头，市场空间被打开。</div></div>
-<div class="ni"><span class="ni-num">5</span><div class="ni-text"><strong>AI算力基础设施</strong>：AI工厂概念需要大规模加速计算设施，利好上游服务器、光模块、数据中心供应商。</div></div>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**绿的谐波 (688017)**</td><td style="text-align:left">**核心供应商：** 谐波减速器龙头，机器人关节核心部件，确定受益于机器人整机（无论国内还是海外龙头）的放量</td><td style="text-align:left">利好</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**埃斯顿 (002747)**</td><td style="text-align:left">**核心对标：** 自主化工业机器人及运动控制龙头，盘面已涨停，作为LG/斗山机器人的国内直接竞争者，市场空间预期被打开</td><td style="text-align:left">利好</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**中大力德 (002896)**</td><td style="text-align:left">**上游零部件：** RV减速器、行星减速器供应商，机器人传动系统核心，今日减速器概念板块走强</td><td style="text-align:left">利好</td><td style="text-align:left">强</td></tr><tr><td style="text-align:left">**凌云光 (688400)**</td><td style="text-align:left">**软件/仿真：** 机器视觉与工业AI平台，与英伟达Isaac平台生态有合作潜力，属于物理AI仿真环节</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr><tr><td style="text-align:left">**工业富联 (601138)**</td><td style="text-align:left">**AI算力设施：** AI工厂需要大量AI服务器、数据中心基础设施，作为英伟达核心供应商直接受益</td><td style="text-align:left">利好</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**中际旭创 (300308)**</td><td style="text-align:left">**AI算力设施：** AI数据中心对高速光模块需求持续，是构建AI工厂的底层硬件供应商</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr></tbody></table></div>
-<div class="bi"><strong>🔥 观察标的</strong>：</div>
-<div class="bi"><strong>九丰能源 (605090)</strong>：成立航天动力科技公司，沾边“动力”概念，但与今日新闻的直接关联度较弱。</div>
-<div class="bi"><strong>丰光精密 (430510)</strong>：2连板，减速器概念情绪标的，但需注意其基本面与LG/斗山合作的具体关联度不高，属于概念炒作。</div>
+<div class="sec" data-section-id="75377d6397">
+<h3 class="sec-h"><button class="fav-btn" data-sid="75377d6397" title="收藏此条分析" onclick="toggleFav(this)">☆</button>地缘局势升级：伊朗能源设施遭袭，国际油价飙升</h3>
+<p class="para">今日盘中最核心的突发变量。《伊朗一能源设施遭以军空袭后疏散》及《国际油价急速拉升超4%》等多条新闻相互印证。该事件直接冲击全球能源供应预期，沥青期货日内涨4%即为明证。结合资金面，今日盘面仅“油服工程”板块走强，成为恐慌中的唯一避风港。</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">仁智股份(002629)</td><td style="text-align:left">直接从事油服工程业务，是今日盘面走强板块的直接映射标的，对油价波动最为敏感。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥🔥</td></tr><tr><td style="text-align:left">准油股份(002207)</td><td style="text-align:left">新疆地区油服企业，同样直接受益于油价上涨带来的上游资本开支增加预期和行业景气度提升。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥🔥</td></tr><tr><td style="text-align:left">中国海油(600938)</td><td style="text-align:left">A股最纯正的上游油气开采龙头，油价上涨直接增厚其利润，是高Beta受益标的。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥🔥</td></tr><tr><td style="text-align:left">山东墨龙(002490)</td><td style="text-align:left">新闻曝其成立石油科技公司，含海洋石油开采业务。叠加地缘催化，有业务扩张与行业景气双重逻辑。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">中海油服(601808)</td><td style="text-align:left">亚洲近海油田服务巨头，是中海油及其他油企的上游服务商，受益于油价上涨驱动的勘探开发活动增加。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">荣盛石化(002493)</td><td style="text-align:left">下游炼化企业。油价短期急升将增加其原料成本，若下游需求未同步跟上，则可能压缩利润。</td><td style="text-align:left">受损</td><td style="text-align:left">🔥🔥</td></tr></tbody></table></div>
+<div class="bi">🔥 观察标的：广汇能源(600256)、新潮能源(600777)（油气上游开采）；恒力石化(600346)、桐昆股份(601233)（下游炼化/化纤，成本承压）；中远海能(600026)（油运，油价上涨或刺激抢运，但地缘风险也可能导致航线受阻）。</div>
 </div>
-<div class="sec">
-<h3 class="sec-h">2. Kimi启动新一轮融资，估值一个月内涨100亿美元</h3>
-<div class="bi"><strong>新闻要点</strong>：国内独立大模型公司月之暗面Kimi启动新一轮融资，投前估值300亿美元。上一轮20亿美元融资刚在5月中下旬收尾，估值暴涨。</div>
-<div class="bi"><strong>产业链推导逻辑</strong>：</div>
-<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>核心软件与应用</strong>：Kimi本身未上市，但其估值暴涨将重估A股同类大模型公司的价值。</div></div>
-<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>上游投资方</strong>：参与Kimi融资的股东公司，其投资价值将被市场重新评估。</div></div>
-<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>算力与设备供应商</strong>：大模型公司获得充足弹药后，首要支出是采购算力（GPU服务器、光模块等）。</div></div>
-<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>下游应用场景</strong>：大模型能力跃升将加速AI在办公、文娱、编程等场景的落地。</div></div>
-<div class="ni"><span class="ni-num">5</span><div class="ni-text"><strong>竞争对标</strong>：其他国产大模型独角兽及其合作方的价值凸显。</div></div>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**百度 (9888.HK)**</td><td style="text-align:left">**核心对标：** 拥有文心一言大模型，Kimi估值飙升直接为其价值提供重估锚点。今日港股跌超7%是受大盘拖累，基本面逻辑上AI估值体系提升是明确利好</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr><tr><td style="text-align:left">**阿里 (9988.HK)**</td><td style="text-align:left">**核心投资方/对标：** 为Kimi重要投资方，且自身拥有通义千问大模型，双重受益于AI行业的资本热潮</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr><tr><td style="text-align:left">**海天瑞声 (688787)**</td><td style="text-align:left">**上游数据：** AI模型训练的“卖水人”，大模型军备竞赛将直接拉动高质量训练数据集的需求</td><td style="text-align:left">利好</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**奥飞数据 (300738)**</td><td style="text-align:left">**上游算力：** 大模型公司融资后扩购算力，对提供算力租赁和数据中心服务的企业构成中期利好</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr><tr><td style="text-align:left">**中科曙光 (603019)**</td><td style="text-align:left">**上游算力设施：** 国产服务器及算力基础设施核心厂商，受益于整体算力资本开支增长</td><td style="text-align:left">利好</td><td style="text-align:left">中等</td></tr></tbody></table></div>
-<div class="bi"><strong>🔥 观察标的</strong>：</div>
-<div class="bi"><strong>凡拓数创 (301313)</strong>：今日20%涨停，概念为空间计算与AIGC，属于AI应用方向的情绪标的。</div>
-<div class="bi"><strong>天娱数科 (002354)</strong>、<strong>能科科技 (603859)</strong>：物理AI概念2连板，逻辑较远，偏重情绪。</div>
+<div class="sec" data-section-id="d053d8fe05">
+<h3 class="sec-h"><button class="fav-btn" data-sid="d053d8fe05" title="收藏此条分析" onclick="toggleFav(this)">☆</button>英伟达AI生态链持续扩张：合建AI工厂，聚焦物理AI与机器人</h3>
+<p class="para">今日多条新闻聚焦英伟达与LG、SK海力士、楷登电子(Cadence)以及韩国斗山的合作。核心指向AI算力基础设施（AI工厂）、物理AI/机器人训练数据、先进存储和AI芯片设计。这构成了从基础硬件到应用工具的完整叙事。</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">中际旭创(300308)</td><td style="text-align:left">英伟达GPU配套光模块核心供应商。AI工厂建设的加速，直接驱动高速率光模块需求，是最清晰的受益环节之一。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥🔥</td></tr><tr><td style="text-align:left">天孚通信(300394)</td><td style="text-align:left">光模块上游精密器件龙头，是中际旭创等的核心供应商，将间接受益于AI算力投资扩张。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">胜宏科技(300476)</td><td style="text-align:left">公司是英伟达显卡PCB板的核心供应商之一。虽然公司受高管传闻扰动，但其在AI硬件链中的业务逻辑依然成立，需区分对待。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">工业富联(601138)</td><td style="text-align:left">为英伟达等客户提供AI服务器整机/主板制造服务，是AI工厂算力基础设施落地的直接参与者。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">佰维存储(688525)</td><td style="text-align:left">新闻中SK海力士与英伟达加深存储合作，且黄仁勋称存储短缺未见结束。佰维存储主营存储器，虽今日领跌，但存储供需紧张的行业逻辑未变。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">拓普集团(601689)</td><td style="text-align:left">机器人执行器龙头企业，是机器人的核心零部件供应商。英伟达与LG合作聚焦机器人训练与仿真，加速产业发展，对零部件商形成远期利好。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥</td></tr></tbody></table></div>
+<div class="bi">🔥 观察标的：三花智控(002050)（机器人热管理，产业链对标）；绿的谐波(688017)（机器人减速器）；中科创达(300496)（软件，CAD与EDA逻辑延伸）；芯原股份(688521)（芯片设计服务，受Cadence自主设计AI工程师启发）。</div>
 </div>
-<div class="sec">
-<h3 class="sec-h">3. 美国5月非农爆表，美联储加息预期重燃，全球市场剧震</h3>
-<div class="bi"><strong>新闻要点</strong>：美国5月新增非农17.2万人，远超预期。市场对美联储年内加息的押注骤升，导致上周五及今日亚太股市集体重挫，韩股熔断。机构预警海外风险向港股及A股传导。</div>
-<div class="bi"><strong>产业链推导逻辑</strong>：此属系统性宏观风险。</div>
-<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>对利率敏感行业</strong>：高估值成长股（尤其是对折现率敏感的未盈利科技股）将面临估值挤压。</div></div>
-<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>资金流向逆转</strong>：新兴市场（A股、港股）面临资金回流美国的压力，北向资金重仓股承压。</div></div>
-<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>避险资产</strong>：黄金、美债等市场逻辑发生变化，若加息预期成真，无息资产黄金可能承压。</div></div>
-<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>出口/外需驱动型企业</strong>：加息可能抑制美国经济需求，对高度依赖美国市场的出口型企业构成中期利空。</div></div>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**韦尔股份 (603501)**</td><td style="text-align:left">**高估值/外需：** 高估值半导体设计龙头，对利率上行敏感；且其下游消费电子与汽车部分依赖海外需求</td><td style="text-align:left">利空</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**歌尔股份 (002241)**</td><td style="text-align:left">**北向重仓/外需：** 北向资金重仓的消费电子龙头，面临流动性抽离压力；海外加息压制消费需求</td><td style="text-align:left">利空</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**药明康德 (603259)**</td><td style="text-align:left">**北向重仓/利率敏感：** CXO龙头，外资持股比例高，且成长股估值框架下对利率变化敏感</td><td style="text-align:left">利空</td><td style="text-align:left">较强</td></tr><tr><td style="text-align:left">**紫金矿业 (601899)**</td><td style="text-align:left">**逻辑切换：** 此前受益于避险，但若因“加息预期”推动实际利率上行，黄金资产的持有成本增加，逻辑生变</td><td style="text-align:left">利空</td><td style="text-align:left">中等</td></tr><tr><td style="text-align:left">**中国中免 (601888)**</td><td style="text-align:left">**北向重仓/内需逻辑受干扰：** 外资重仓的大消费龙头，宏观系统性风险下易被减仓应对流动性危机</td><td style="text-align:left">利空</td><td style="text-align:left">中等</td></tr></tbody></table></div>
-<div class="bi"><strong>🔥 观察标的</strong>：所有北向资金重仓的高估值核心资产，短期内都面临抛压，如迈瑞医疗、宁德时代等，但上述表格已涵盖典型代表。</div>
+<div class="sec" data-section-id="14e5056046">
+<h3 class="sec-h"><button class="fav-btn" data-sid="14e5056046" title="收藏此条分析" onclick="toggleFav(this)">☆</button>安徽省低空经济政策落地，固态电池赋能飞行汽车</h3>
+<p class="para">《安徽省出台“低空+”应用场景拓展工程行动方案》和《固态电池解锁飞行汽车新可能》两条新闻，明确了低空物流、载人等应用场景的规划，并点出了动力系统的关键技术——固态电池。</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">亿航智能(EH)</td><td style="text-align:left">美股，飞行汽车制造商。新闻提及搭载固态电池的飞行汽车飞越琼州海峡，直接验证了其商业模式和技术路线，是最直接受益的整机厂。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥🔥</td></tr><tr><td style="text-align:left">万丰奥威(002085)</td><td style="text-align:left">旗下万丰飞机工业与全球知名主机厂合作，布局电动垂直起降飞行器(eVTOL)领域，是A股核心的飞行汽车概念股。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥🔥</td></tr><tr><td style="text-align:left">宁德时代(300750)</td><td style="text-align:left">全球电池龙头，花旗刚上调其目标价。新闻中提及车厂用的固态电池，正是宁德时代等巨头重点研发的方向，是飞行汽车“心脏”的提供者。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥🔥</td></tr><tr><td style="text-align:left">卧龙电驱(600580)</td><td style="text-align:left">公司为电动航空领域提供电驱系统，是飞行汽车动力系统的核心上游供应商，受益于低空经济产业化。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥</td></tr><tr><td style="text-align:left">中信海直(000099)</td><td style="text-align:left">通航运营龙头，安徽省提出拓展低空运输、物流网络，为通航运营企业打开了新的业务场景和市场空间。</td><td style="text-align:left">受益</td><td style="text-align:left">🔥🔥</td></tr></tbody></table></div>
+<div class="bi">🔥 观察标的：莱斯信息(688631)（空管系统）、纵横股份(688070)（工业级无人机）、当升科技(300073)（固态电池正极材料）。</div>
 </div>
-<div class="sec">
-<h3 class="sec-h">⚠️ 避雷</h3>
-<div class="bi"><strong>胜宏科技 (300476)</strong></div>
-<div class="bi"><strong>利空逻辑</strong>：公司回应涉及高管的网传传闻，虽称与生产经营活动无关，但此类事件通常会引发市场对公司治理的担忧和不确定性，短期对股价构成情绪性压制。</div>
-<div class="bi"><strong>“回收料”牙刷事件波及标的</strong></div>
-<div class="bi"><strong>利空逻辑</strong>：央视曝光扬州企业使用废旧塑料生产一次性牙刷，涉事企业被连夜查处。虽然具体上市公司名称未直接点出，但位于江苏扬州的相关牙刷制造、日化上市公司的市场信誉可能受到短期负面冲击，需警惕。</div>
-<div class="bi"><strong>菲律宾强震（7.9级）相关</strong></div>
-<div class="bi"><strong>利空逻辑</strong>：菲律宾是全球重要的镍矿、铜矿出口国，强震可能影响矿区生产和港口运输，持有当地矿产资源或供应链依赖菲律宾镍矿的公司（如部分不锈钢、新能源电池上游前驱体企业）面临短期供应中断风险。具体标的如华友钴业（在印尼有大量镍项目，可能间接受区域物流与电力中断影响）等需警惕。</div>
+<div class="sec" data-section-id="b8ce8a493a">
+<h3 class="sec-h"><button class="fav-btn" data-sid="b8ce8a493a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>其他值得关注的个股催化与产业链</h3>
+<p class="para">此部分汇总其他有明确新闻驱动的个股及逻辑。</p>
+<div class="bi">居然智家(000785)</div>
+<div class="bi">催化：《居然智家：正在核实有关人形机器人合作进展》新闻直接导致股价盘中直线涨停。</div>
+<div class="bi">逻辑：公司因与优必选的战略合作而被市场视为“人形机器人”渠道销售商。优必选爆单的消息直接流向至居然智家，形成交易逻辑。确定性高但持续性存疑，需等公告确认。</div>
+<div class="bi">关联方向：服务机器人产业链。</div>
+<div class="bi">智飞生物(300122)</div>
+<div class="bi">催化：《智飞生物控股子公司宸安生物上海创新孵化中心正式揭牌》。</div>
+<div class="bi">逻辑：明确聚焦降糖、减重、MASH等GLP-1核心赛道。这是“研发管线”层面的利好，可对标港股的《GLP-1不止于减重》逻辑。定位为长线研发利好，非短期业绩催化。</div>
+<div class="bi">关联方向：创新药、CXO（诺泰生物、圣诺生物等GLP-1原料药/多肽CXO公司可关注）。</div>
+<div class="bi">山东墨龙(002490)</div>
+<div class="bi">催化：成立含海洋石油开采业务的子公司，叠加今日油价飙升。</div>
+<div class="bi">逻辑：双重概念叠加。业务拓展至海洋石油这一高壁垒、高毛利领域，叠加行业景气度，确定性较高，已在油服逻辑中列为关联标的。</div>
+<div class="bi">高德（阿里巴巴，BABA）</div>
+<div class="bi">催化：发布全球首个3D原生城市世界模型，可导入Unity、Unreal Engine。</div>
+<div class="bi">逻辑：利好数字孪生和游戏/元宇宙底层技术。A股关联公司为索辰科技(688507)（仿真）、凡拓数创(301313)（数字孪生/3D可视化，今日涨停）。该新闻或是凡拓数创上涨的催化剂之一。</div>
 </div></div>
 
 </div>
@@ -534,6 +612,173 @@ body {
     市场有风险，投资需谨慎。PAST PERFORMANCE IS NOT INDICATIVE OF FUTURE RESULTS.
   </div>
 </div>
+
+<!-- ══════════════ 自选新闻面板 ══════════════ -->
+<div class="fav-panel" id="favPanel">
+  <div class="fav-panel-inner">
+    <div class="fav-panel-hdr">
+      <span>⭐ 自选新闻 · <em id="favCount">0</em></span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="fav-count" id="favSummary"></span>
+        <button class="fav-toggle" id="favToggle" title="收起面板" onclick="toggleFavPanel()">▾</button>
+      </div>
+    </div>
+    <div class="fav-list" id="favList">
+      <div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 收藏提示浮层 ══════════════ -->
+<div class="fav-toast" id="favToast"></div>
+
+<script>
+// ── 自选新闻 · localStorage 持久化 ──
+const STORAGE_KEY = 'market_brief_favs';
+
+function getFavs() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveFavs(favs) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(favs));
+  renderFavPanel();
+  updateAllStarBtns();
+}
+
+// ── 收藏 / 取消收藏 ──
+function toggleFav(btn) {
+  const sid = btn.getAttribute('data-sid');
+  const sec = document.querySelector(`[data-section-id="${sid}"]`);
+  if (!sec) return;
+  const title = (sec.querySelector('.sec-h')?.textContent || '').replace(/^☆/, '').replace(/^★/, '').trim();
+  const date = '2026-06-08';
+  const html = sec.outerHTML;
+
+  let favs = getFavs();
+  const idx = favs.findIndex(f => f.id === sid);
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+    showToast('已取消收藏');
+  } else {
+    favs.push({ id: sid, date: date, title: title, html: html, saved_at: new Date().toISOString() });
+    showToast('已加入自选 ⭐');
+  }
+  saveFavs(favs);
+}
+
+// ── 删除收藏项 ──
+function delFav(sid) {
+  let favs = getFavs();
+  favs = favs.filter(f => f.id !== sid);
+  saveFavs(favs);
+  showToast('已删除');
+}
+
+// ── 跳转到收藏项所在报告 ──
+function gotoFav(sid) {
+  const favs = getFavs();
+  const f = favs.find(x => x.id === sid);
+  if (!f) return;
+  // 如果当前页面已有该 section，直接滚动
+  const local = document.querySelector(`[data-section-id="${sid}"]`);
+  if (local) {
+    local.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    local.style.boxShadow = '0 0 0 3px var(--amber)';
+    setTimeout(() => local.style.boxShadow = '', 2000);
+  } else {
+    // 跨报告跳转：构造 URL（同域名下按日期命名规则）
+    const reportUrl = window.location.href.replace(/report_\d{8}\.html/, 'report_' + f.date.replace(/-/g, '') + '.html');
+    window.location.href = reportUrl + '#' + sid;
+  }
+}
+
+// ── 渲染底部自选面板 ──
+function renderFavPanel() {
+  const favs = getFavs();
+  const countEl = document.getElementById('favCount');
+  const listEl = document.getElementById('favList');
+  const summaryEl = document.getElementById('favSummary');
+  const panel = document.getElementById('favPanel');
+
+  if (countEl) countEl.textContent = favs.length + '条';
+  if (summaryEl) summaryEl.textContent = favs.length ? favs.map(f => f.date.slice(5)).join(' · ') : '';
+  if (panel && favs.length > 0) panel.style.display = 'block';
+  else if (panel && favs.length === 0) panel.style.display = 'none';
+
+  if (!listEl) return;
+  if (favs.length === 0) {
+    listEl.innerHTML = '<div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>';
+    return;
+  }
+  // 最新在前
+  const sorted = [...favs].reverse();
+  listEl.innerHTML = sorted.map(f => `
+    <div class="fav-item">
+      <span class="fav-item-date">${f.date.slice(5)}</span>
+      <span class="fav-item-title" onclick="gotoFav('${f.id}')" title="点击跳转到该条分析">${f.title}</span>
+      <button class="fav-item-del" onclick="delFav('${f.id}')">✕ 删除</button>
+    </div>
+  `).join('');
+}
+
+// ── 更新所有 ☆ 按钮状态 ──
+function updateAllStarBtns() {
+  const favs = getFavs();
+  const favIds = new Set(favs.map(f => f.id));
+  document.querySelectorAll('.fav-btn').forEach(btn => {
+    const sid = btn.getAttribute('data-sid');
+    if (favIds.has(sid)) {
+      btn.textContent = '★';
+      btn.classList.add('on');
+    } else {
+      btn.textContent = '☆';
+      btn.classList.remove('on');
+    }
+  });
+}
+
+// ── 收起/展开面板 ──
+function toggleFavPanel() {
+  const list = document.getElementById('favList');
+  const toggle = document.getElementById('favToggle');
+  if (list.style.display === 'none') {
+    list.style.display = '';
+    toggle.textContent = '▾';
+  } else {
+    list.style.display = 'none';
+    toggle.textContent = '▸';
+  }
+}
+
+// ── Toast 提示 ──
+function showToast(msg) {
+  const toast = document.getElementById('favToast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._tid);
+  toast._tid = setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+// ── 初始化 ──
+(function initFavs() {
+  renderFavPanel();
+  updateAllStarBtns();
+  // 处理跨页面锚点跳转
+  const hash = window.location.hash;
+  if (hash) {
+    const target = document.querySelector(`[data-section-id="${hash.slice(1)}"]`);
+    if (target) {
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.style.boxShadow = '0 0 0 3px var(--amber)';
+        setTimeout(() => target.style.boxShadow = '', 2500);
+      }, 300);
+    }
+  }
+})();
+</script>
 
 </body>
 </html>
