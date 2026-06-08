@@ -1249,48 +1249,79 @@ def deploy_github_pages(html_content):
 # ============================================================
 
 def send_wechat(report, quotes, news_list, page_url):
-    """通过 Server酱 推送微信消息。"""
+    """通过 Server酱 推送微信消息 — 预览卡片式设计。"""
     send_key = os.environ.get("SERVERCHAN_KEY", "")
     if not send_key:
         print("未设置 SERVERCHAN_KEY，跳过微信推送")
         return
 
-    today = datetime.now().strftime("%Y年%m月%d日")
-    title = f"📈 每日市场情报 | {today}"
+    today_cn = datetime.now().strftime("%Y年%m月%d日")
+    weekday_names = ["一", "二", "三", "四", "五", "六", "日"]
+    wk = weekday_names[datetime.now().weekday()]
+    title = f"📈 每日市场情报 | {today_cn} 周{wk}"
 
-    # 行情表
-    lines = ["## 📊 行情一览\n"]
-    lines.append("| 指数 | 最新价 | 涨跌幅 |")
-    lines.append("|:---:|:---:|:---:|")
+    # ============================================================
+    #  预览卡片式推送 — 手机上看到的是干净的信息卡 + 显眼的跳转按钮
+    # ============================================================
+    desp_lines = []
+
+    # ── 顶部行情快照 ──
+    desp_lines.append("## 📊 行情快照\n")
+    desp_lines.append("| 指数 | 最新价 | 涨跌 |")
+    desp_lines.append("|:---|---:|:---:|")
     for q in quotes:
         change = q["change"]
         if change.startswith("+"):
-            emoji = "🔴"
+            arrow = "▲"
         elif change.startswith("-") and change != "--":
-            emoji = "🟢"
+            arrow = "▼"
         else:
-            emoji = "⚪"
-        lines.append(f"| {q['name']} | {q['price']} | {emoji} {change} |")
-    lines.append("")
+            arrow = "─"
+        desp_lines.append(f"| **{q['name']}** | `{q['price']}` | {arrow} {change} |")
+    desp_lines.append("")
 
-    # 分时图
-    lines.append("![上证指数](https://image.sinajs.cn/newchart/min/n/sh000001.gif)")
-    lines.append("")
+    # ── AI 一句话摘要 ──
+    # 从报告中提取第一段非空行作为摘要
+    summary_line = ""
+    for line in report.strip().split("\n"):
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and not stripped.startswith(">") and len(stripped) > 10:
+            summary_line = stripped[:200]
+            break
+    if summary_line:
+        desp_lines.append("---\n")
+        desp_lines.append("### 🤖 AI 摘要\n")
+        desp_lines.append(f"> {summary_line}\n")
 
-    # 报告摘要
-    lines.append("---\n")
-    lines.append("## 🤖 AI 分析\n")
-    lines.append(report[:3000])  # 微信限制
-    lines.append("")
+    # ── 统计数据条 ──
+    a_count = sum(1 for a in news_list if a.get("market") == "A股")
+    us_count = sum(1 for a in news_list if a.get("market") == "美股")
+    hk_count = sum(1 for a in news_list if a.get("market") == "港股")
+    desp_lines.append(
+        f"📰 A股 `{a_count}` · 美股 `{us_count}` · 港股 `{hk_count}` · "
+        f"共 `{len(news_list)}` 条资讯\n"
+    )
 
-    # 链接
-    lines.append("---\n")
+    # ── 期货/资金简况（如果有） ──
+    # 这部分信息已经在行情表中体现，不重复
+
+    # ── CTA 跳转按钮区域 — 整段视觉焦点 ──
+    desp_lines.append("---\n")
+    desp_lines.append("## 🔗 查看完整报告\n")
     if page_url:
-        lines.append(f"### 🔗 [查看完整报告]({page_url})\n")
-    lines.append(f"> 📅 {today} · {len(news_list)}条资讯 · AI分析仅供参考")
+        desp_lines.append(f">>> **[👆 点击此处查看完整报告 👆]({page_url})** <<<\n")
+        desp_lines.append(f"📋 报告内容：AI 市场分析 · 产业链选股 · 技术图表 · 资金面面板\n")
+        desp_lines.append(f"🔗 `{page_url}`\n")
+    else:
+        desp_lines.append("> ⚠️ 报告链接暂未生成\n")
 
-    desp = "\n".join(lines)
+    # ── 底部信息 ──
+    desp_lines.append("---\n")
+    desp_lines.append(f"🕐 {today_cn} 周{wk} · DeepSeek V4 自动生成 · 仅供参考不构成投资建议")
 
+    desp = "\n".join(desp_lines)
+
+    # ── 发送 ──
     url = f"https://sctapi.ftqq.com/{send_key}.send"
     payload = urllib.parse.urlencode({"title": title, "desp": desp}).encode("utf-8")
     req = urllib.request.Request(url, data=payload, method="POST")
