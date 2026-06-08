@@ -369,7 +369,8 @@ def generate_chart(stock_name, stock_code, df, output_path):
 
 def parse_stock_picks(picks_md):
     """
-    从 LLM 的 Markdown 选股输出中，提取 5-4 星股票列表
+    从 LLM 的 Markdown 选股输出中，提取值得画图的股票列表。
+    适配新格式：「核心关注」「可以看看」级别 + 表格中的代码。
     返回: [(name, code, stars, logic), ...]
     """
     if not picks_md:
@@ -397,22 +398,30 @@ def parse_stock_picks(picks_md):
         name_match = re.search(r"([^|\d\s][^|\d(]*?)\s*[\(（]?\d{6}", line)
         name = name_match.group(1).strip() if name_match else ""
 
-        # 找星级
-        stars = line.count("⭐")
-        if stars == 0:
-            stars = line.count("★")
-        if stars >= 4:
-            results.append((name, code, stars, ""))
+        # 优先级：核心关注 = 3, 可以看看 = 2, 知道就行 = 1, 表格中出现 = 2(默认)
+        if "核心关注" in line:
+            priority = 3
+        elif "可以看看" in line:
+            priority = 2
+        elif "知道就行" in line:
+            priority = 1
+        else:
+            # 在表格行中但没明确标注 → 默认中等优先级
+            priority = 2 if "|" in line else 0
 
-    # 去重
+        # 优先画高优先级的（>= 2），最多 8 只
+        if priority >= 2:
+            results.append((name, code, priority, ""))
+
+    # 按优先级降序排列，去重
     seen = set()
     unique = []
-    for item in results:
+    for item in sorted(results, key=lambda x: -x[2]):
         if item[1] not in seen:
             seen.add(item[1])
             unique.append(item)
 
-    print(f"[StockPicker] 解析到 {len(unique)} 只高评分股票: {[r[1] for r in unique]}")
+    print(f"[StockPicker] 解析到 {len(unique)} 只股票: {[r[1] for r in unique]}")
     return unique[:8]  # 最多分析 8 只
 
 

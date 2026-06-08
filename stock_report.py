@@ -78,13 +78,13 @@ def fetch_index_quotes():
 
 def fetch_all_news():
     """抓取全市场新闻 + 资金面数据（已通过 news_fetcher 聚合）。"""
-    articles, errors, northbound, fund_flow = fetch_all_news_flat("all")
+    articles, errors, fund_flow = fetch_all_news_flat("all")
     for err in errors:
         print(f"  [WARN] {err.get('error', str(err))}")
-    return articles, northbound, fund_flow
+    return articles, fund_flow
 
 
-def format_news(news_list, northbound=None, fund_flow=None):
+def format_news(news_list, fund_flow=None):
     """将多市场新闻和资金面数据格式化为 LLM 可读文本。"""
     today_str = datetime.now().strftime("%Y-%m-%d")
 
@@ -103,17 +103,6 @@ def format_news(news_list, northbound=None, fund_flow=None):
             lines.append(
                 f"- {row['date']}  主力{direction} {abs(row['net_flow']):.2f} 亿元  "
                 f"(流入 {row['main_in']:.2f} 亿 / 流出 {row['main_out']:.2f} 亿)"
-            )
-        lines.append("")
-
-    if northbound:
-        lines.append("## 资金面 · 北向资金（近5日）")
-        lines.append("")
-        for row in northbound:
-            direction = "净流入" if row.get("net_buy_total", 0) >= 0 else "净流出"
-            lines.append(
-                f"- {row['date']}  北向{direction} {abs(row['net_buy_total']):.2f} 亿元  "
-                f"(沪股通 {row['net_buy_sh']:+.2f} 亿 / 深股通 {row['net_buy_sz']:+.2f} 亿)"
             )
         lines.append("")
 
@@ -178,25 +167,26 @@ def format_news_brief(news_list):
 # ============================================================
 
 SYSTEM_PROMPT = (
-    "你是一位顶级对冲基金策略分析师，拥有 20 年全球宏观与多资产配置经验。"
-    "你擅长从海量信息中提炼关键信号，用简洁犀利的语言呈现市场判断。"
-    "你的读者是专业投资者，不需要科普，需要的是洞察和可操作的观点。"
+    "你是一位资深买方策略师，有 20 年 A 股投研经验。"
+    "你写报告的风格是：一针见血、不堆术语、用常识说话。"
+    "你不写废话，不套模板，每句话都要有信息量。"
 )
 
-USER_PROMPT_TEMPLATE = """请基于以下今日多市场资讯和资金面数据，生成一份机构级《每日市场情报》。
+USER_PROMPT_TEMPLATE = """基于以下资讯，写一份简短的盘中情报，直接给判断，别啰嗦。
 
-要求：
-1. **资金面信号**：基于主力资金流向和北向资金数据，判断当前资金态度（进攻/防守/观望），1-2句话点出关键信号
-2. **A股主线扫描**：识别今日 A 股最核心的 3 条主线，每条说明驱动逻辑和可持续性判断
-3. **跨市场联动**：美股、港股的异动对 A 股可能产生的映射和传导
-4. **重要舆情 TOP 8**：提取最重要的 8 条新闻，简述影响，标注利好/利空/中性
-5. **情绪温度计**：综合资金面+新闻面，给出市场情绪评级（🔥热/😊偏暖/😐中性/😟谨慎/❄️冰点），说明理由
-6. **明日推演**：基于今日盘面和消息面，推演明日最可能的 2-3 个情景
+结构：
+- 资金面：1-2 句判断主力态度（进攻/防守/观望），提到关键数据支撑
+- 主线扫描：今天最值得关注的 2-3 条方向，每条一两句话点出逻辑和持续性
+- 跨市场：美股/港股如有异动，说一下对 A 股可能的传导
+- 要闻速览：挑最重要的 6-8 条新闻，每条一行，标利好/利空/中性
+- 市场体温：给一个整体判断（偏热/偏暖/中性/偏冷/冰点），理由一句
+- 明天怎么看：2-3 种可能的情景推演
 
-风格要求：
-- 语言犀利直接，避免废话
-- 每部分 3-5 句即可，不要长篇大论
-- 用「」标记关键术语和股票名称
+风格：
+- 别用「值得关注的是」「总体来看」「综合来看」这种废话开头
+- 别用 emoji
+- 用「」标记股票和关键术语
+- 像给人发微信一样说话，不像在写论文
 
 ---
 数据：
@@ -209,36 +199,34 @@ USER_PROMPT_TEMPLATE = """请基于以下今日多市场资讯和资金面数据
 # ============================================================
 
 STOCK_PICKER_SYSTEM_PROMPT = (
-    "你是一位以产业链逻辑见长的量化选股专家，"
-    "擅长从新闻事件中推导出整个产业链的受益/受损传导链，"
-    "精准锁定具有交易价值的个股。"
-    "你对每只股票的判断必须有清晰的新闻依据或产业链逻辑，绝不编造。"
+    "你是一位专攻产业链研究的买方分析师，"
+    "擅长从一条新闻出发，顺藤摸瓜找出整个供应链上真正受益或受损的公司。"
+    "你推的每只股票都有据可查，不拍脑袋，不编代码。"
 )
 
-STOCK_PICKER_TEMPLATE = """请基于以下今日多市场资讯和资金面数据，执行系统性选股分析。
+STOCK_PICKER_TEMPLATE = """从以下资讯中，找出今天值得关注的个股机会和风险。
 
-步骤：
+怎么找：
+- 先看新闻里直接提到了哪些公司
+- 再沿产业链上下推导：供应商、客户、竞争对手、替代品玩家
+- 结合资金流向，优先挑资金在买的板块
+- 别编造新闻里不存在的股票
 
-1. **新闻扫描**：逐条扫描所有新闻，找出被明确提及的所有股票
-2. **产业链扩展**：对每条重大新闻，推导其上游供应商、下游客户、竞争对标、产业链替代标的
-   - 例：「某操作系统获政策支持」→ 核心软件商 → 适配芯片商 → 服务器/PC 整机商 → 行业应用商
-   - 例：「某公司签署大单」→ 该公司上游设备/材料商 → 同行业竞争对手（分流）
-3. **资金面过滤**：结合主力资金流向，优先关注资金持续流入的板块/方向
-4. **分级标注**：
-   - 🔥🔥🔥 核心标的：直接受益/受损，逻辑清晰，短期可见催化
-   - 🔥🔥 关联标的：产业链传导，间接受益
-   - 🔥 观察标的：概念沾边，逻辑较长
-5. **输出结构**：
-   - 每条重大新闻作为 ### 三级标题
-   - 该新闻后用表格列出关联股票：| 股票名称代码 | 关联逻辑 | 方向 | 确定性 |
-   - 🔥🔥🔥（核心）和 🔥🔥（关联）必须放入表格
-   - 🔥（观察）股票在每条新闻末尾列表形式简要提及
-6. **避雷区**：用 ### ⚠️ 避雷 列出今日出现明确利空的个股（减持/业绩暴雷/监管处罚/安全事故）
+怎么标记优先级（别用 emoji，用文字）：
+- 「核心关注」：逻辑直接、短期可能反应的
+- 「可以看看」：产业链传导受益，逻辑成立但稍远
+- 「知道就行」：沾边但逻辑链条长
+
+输出格式：
+- 每条重要新闻用 ### 做标题
+- 新闻下面放表格：| 股票及代码 | 为什么选它 | 看多/看空 | 把握度 |
+- 「核心关注」和「可以看看」放表格里
+- 「知道就行」的放在新闻末尾用 - 简单提一下
+- 如果有利空消息，用 ### 个股风险提示 单独列出（减持/业绩暴雷/监管处罚等）
 
 注意：
-- 不要编造新闻中不存在的股票
-- 每个表格至少要有 3-5 行（显示出产业链推理深度）
-- 如果某条新闻极其重要，可以单独用一整个 ### 板块来深度展开
+- 表格每栏至少 3-5 行，体现产业链推理
+- 每条资讯只用一次，别在不同板块里重复
 
 ---
 数据：
@@ -250,8 +238,13 @@ STOCK_PICKER_TEMPLATE = """请基于以下今日多市场资讯和资金面数�
 #  LLM 输出清洗
 # ============================================================
 
-def _cleanup_report(text):
-    """清洗 LLM 生成的报告：移除 #### 和 *** 标记，保留 ** 加粗。"""
+def _cleanup_report(text, strip_bold=False):
+    """清洗 LLM 生成的报告：移除 #### / *** 标记。
+
+    Args:
+        text: 原始文本
+        strip_bold: 是否移除 ** 加粗标记（选股输出用，主报告保留）
+    """
     import re as _re
 
     # 1. 移除 #### 前缀（四级标题 → 保留其后的内容）
@@ -260,7 +253,11 @@ def _cleanup_report(text):
     # 2. 移除独立的 *** 分隔线（整行只有 ***，允许前后空白）
     text = _re.sub(r'^\s*\*{3}\s*$', '', text, flags=_re.MULTILINE)
 
-    # 3. 清理可能产生的多余空行（连续 3+ 空行 → 2 个空行）
+    # 3. （可选）移除 ** 标记 — 选股表格中 LLM 习惯给每个字段加粗
+    if strip_bold:
+        text = _re.sub(r'\*\*', '', text)
+
+    # 4. 清理可能产生的多余空行（连续 3+ 空行 → 2 个空行）
     text = _re.sub(r'\n{3,}', '\n\n', text)
 
     return text
@@ -312,10 +309,10 @@ def call_llm(news_text):
 
 
 def call_stock_picker(news_text):
-    """调用 LLM 执行产业链选股分析，并清洗输出。"""
+    """调用 LLM 执行产业链选股分析，并清洗输出（含去 **）。"""
     raw = _call_deepseek(STOCK_PICKER_SYSTEM_PROMPT, STOCK_PICKER_TEMPLATE.format(news_text=news_text),
                          temperature=0.3, max_tokens=6144)
-    return _cleanup_report(raw)
+    return _cleanup_report(raw, strip_bold=True)
 
 
 def format_stock_picks(picks_md):
@@ -615,7 +612,7 @@ def markdown_to_html(md):
 # ============================================================
 
 def generate_html_report(report, quotes, news_list, page_url="", page_base_url="",
-                         northbound=None, fund_flow=None):
+                         fund_flow=None):
     """生成暗色 Bloomberg Terminal 风格 HTML 详情页。"""
     today = datetime.now().strftime("%Y-%m-%d")
     today_en = datetime.now().strftime("%B %d, %Y")
@@ -682,26 +679,6 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
                 f'<span class="fp-val" style="color:{color}">{net:+.1f}</span>'
                 f'</div>'
             )
-        fund_panel += '</div></div>'
-
-    if northbound:
-        fund_panel += '<div class="fp"><div class="fp-h">北向资金（近5日 · 亿元）</div><div class="fp-bars">'
-        max_val = max(abs(r.get("net_buy_total", 0)) for r in northbound) if northbound else 1
-        if max_val > 0:
-            for row in northbound:
-                net = row.get("net_buy_total", 0)
-                is_pos = net >= 0
-                pct = min(abs(net) / max_val * 100, 100) if max_val else 0
-                color = "#00c853" if is_pos else "#ff1744"
-                fund_panel += (
-                    f'<div class="fp-bar-row">'
-                    f'<span class="fp-date">{row["date"][-5:]}</span>'
-                    f'<span class="fp-bar-bg"><span class="fp-bar-fill" style="width:{pct}%;background:{color}"></span></span>'
-                    f'<span class="fp-val" style="color:{color}">{net:+.1f}</span>'
-                    f'</div>'
-                )
-        else:
-            fund_panel += '<div class="fp-empty">今日非交易日，暂无北向资金数据</div>'
         fund_panel += '</div></div>'
 
     # ---- 市场统计 ----
@@ -1635,7 +1612,7 @@ def main():
 
     # 2. 新闻 + 资金面
     print("\n▸ 抓取多市场新闻 & 资金面数据...")
-    news_list, northbound, fund_flow = fetch_all_news()
+    news_list, fund_flow = fetch_all_news()
 
     a_news = [n for n in news_list if n.get("market") == "A股" and "error" not in n]
     us_news = [n for n in news_list if n.get("market") == "美股" and "error" not in n]
@@ -1645,19 +1622,13 @@ def main():
         latest = fund_flow[-1]
         direction = "流入" if latest["net_flow"] >= 0 else "流出"
         print(f"  主力资金({latest['date']}): {direction} {abs(latest['net_flow']):.1f}亿")
-    if northbound:
-        latest_nb = northbound[-1]
-        direction = "流入" if latest_nb.get("net_buy_total", 0) >= 0 else "流出"
-        nb_total = abs(latest_nb.get("net_buy_total", 0))
-        if nb_total > 0:
-            print(f"  北向资金({latest_nb['date']}): {direction} {nb_total:.1f}亿")
 
     if not a_news and not us_news and not hk_news:
         print("没有抓取到任何新闻，退出")
         return
 
     # 3. 格式化 & LLM 分析
-    news_text = format_news(news_list, northbound, fund_flow)
+    news_text = format_news(news_list, fund_flow)
     print("\n▸ 生成 AI 市场分析...")
     report = call_llm(news_text)
 
@@ -1708,7 +1679,7 @@ def main():
     print("\n▸ 生成详情页...")
     page_url = f"{page_base_url}report_{today_str}.html"
     html = generate_html_report(report, quotes, news_list, page_url, page_base_url,
-                                northbound, fund_flow)
+                                fund_flow)
     page_url = deploy_github_pages(html)
 
     # 7. PDF
