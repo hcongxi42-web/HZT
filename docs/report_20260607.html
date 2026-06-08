@@ -3,429 +3,505 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MARKET BRIEF - 2026-06-07</title>
+<title>MARKET BRIEF · 2026-06-07</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+/* ============================================================
+   Bloomberg Terminal Dark — Professional Market Intelligence
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-elevated: #1c2333;
+  --border: #21262d;
+  --border-light: #30363d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+  --accent: #ff6b35;
+  --accent-blue: #58a6ff;
+  --green: #3fb950;
+  --red: #f85149;
+  --amber: #d2991d;
+  --purple: #a371f7;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
 body {
-  font-family: 'Noto Sans SC', 'Inter', -apple-system, sans-serif;
-  background: #f7f3ef; color: #1a1a1a; line-height: 1.7;
+  font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
 }
 
-/* ===== 顶部导航栏 (Bloomberg 风格) ===== */
-.top-bar {
-  background: #111; color: #fff; padding: 0;
-  border-bottom: 3px solid #c0392b;
+/* ===== TOP BAR ===== */
+.topbar {
+  background: #000;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
 }
-.top-bar-inner {
-  max-width: 860px; margin: 0 auto; padding: 12px 20px;
-  display: flex; align-items: center; justify-content: space-between;
+.topbar-inner {
+  max-width: 960px; margin:0 auto; padding: 10px 24px;
+  display:flex; align-items:center; justify-content:space-between;
 }
-.brand {
-  font-family: 'Playfair Display', 'Noto Serif SC', Georgia, serif;
-  font-size: 22px; font-weight: 900; letter-spacing: 1px; color: #fff;
+.logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px; font-weight: 700;
+  letter-spacing: 2px; color: var(--text-primary);
 }
-.brand span { color: #c0392b; }
-.top-meta {
-  font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px;
+.logo em { color: var(--accent); font-style: normal; }
+.topbar-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text-muted);
   text-align: right; line-height: 1.5;
 }
 
-/* ===== Ticker 行情条 ===== */
+/* ===== TICKER STRIP ===== */
 .ticker-strip {
-  background: #1a1a1a; border-bottom: 1px solid #333;
-  overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
+  background: #000; border-bottom: 1px solid var(--border);
+  overflow-x: auto; white-space: nowrap;
 }
-.ticker-strip::-webkit-scrollbar { height: 0; }
+.ticker-strip::-webkit-scrollbar { height:0; }
 .ticker-inner {
-  max-width: 860px; margin: 0 auto; padding: 10px 20px;
-  display: flex; gap: 0;
+  max-width: 960px; margin:0 auto; padding: 8px 24px;
+  display:flex; gap:0;
 }
-.ticker {
-  flex: 0 0 auto; padding: 6px 16px; text-align: center;
-  border-right: 1px solid #333; min-width: 110px;
+.tkr {
+  flex:0 0 auto; padding: 6px 18px; text-align:center;
+  border-right: 1px solid var(--border); min-width: 120px;
 }
-.ticker:last-child { border-right: none; }
-.ticker-name {
-  font-size: 10px; color: #888; letter-spacing: 1.5px;
-  text-transform: uppercase; font-weight: 600; margin-bottom: 2px;
+.tkr:last-child { border-right:none; }
+.tkr-n {
+  display:block; font-size:10px; color: var(--text-muted);
+  letter-spacing: 1px; font-weight: 600;
+  text-transform: uppercase; margin-bottom: 3px;
 }
-.ticker-price {
-  font-family: 'Inter', monospace; font-size: 17px; font-weight: 700;
-  color: #fff; font-variant-numeric: tabular-nums;
+.tkr-p {
+  display:block; font-family: 'JetBrains Mono', monospace;
+  font-size: 16px; font-weight: 700; color: var(--text-primary);
 }
-.ticker-change {
-  font-family: 'Inter', monospace; font-size: 12px; font-weight: 600;
-  margin-top: 1px;
+.tkr-c {
+  display:block; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600; margin-top: 2px;
 }
-.ticker.up .ticker-change { color: #e74c3c; }
-.ticker.down .ticker-change { color: #27ae60; }
-.ticker.flat .ticker-change { color: #888; }
+.tkr.up .tkr-c { color: var(--red); }
+.tkr.dn .tkr-c { color: var(--green); }
 
-/* ===== 主标题区 (WSJ 社论风格) ===== */
+/* ===== HISTORY NAV ===== */
+.hnav {
+  max-width:960px; margin:0 auto; padding: 10px 24px;
+  border-bottom: 1px solid var(--border);
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  background: var(--bg-card);
+}
+.hnav-label {
+  font-size:11px; font-weight:700; color: var(--text-muted);
+  letter-spacing:1.5px; text-transform:uppercase; margin-right:6px;
+}
+.hl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:600; color: var(--text-secondary);
+  padding:4px 10px; border-radius:2px;
+  background: var(--bg); border:1px solid var(--border);
+  text-decoration:none; transition: all 0.15s;
+}
+.hl:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ===== MASTHEAD ===== */
 .masthead {
-  max-width: 860px; margin: 0 auto; padding: 36px 20px 24px;
-  border-bottom: 2px solid #1a1a1a; text-align: center;
-}
-
-/* ===== 历史简报导航条 ===== */
-.history-nav {
-  max-width: 860px; margin: 0 auto; padding: 14px 20px;
-  border-bottom: 1px solid #e0dcd5;
-  display: flex; align-items: center; gap: 8px;
-  flex-wrap: wrap; background: #faf8f5;
-}
-.history-label {
-  font-size: 12px; font-weight: 700; color: #888;
-  letter-spacing: 1px; text-transform: uppercase;
-  margin-right: 6px;
-}
-.history-link {
-  font-size: 12px; font-weight: 600; color: #c0392b;
-  padding: 5px 12px; border-radius: 3px;
-  background: #fff; border: 1px solid #e8e4dc;
-  text-decoration: none; transition: all 0.2s;
-}
-.history-link:hover {
-  background: #c0392b; color: #fff; border-color: #c0392b;
-}
-.history-current {
-  background: #c0392b; color: #fff; border-color: #c0392b;
-  cursor: default;
+  max-width:960px; margin:0 auto; padding: 40px 24px 28px;
+  text-align:center; border-bottom: 2px solid var(--border);
 }
 .masthead-date {
-  font-size: 12px; color: #888; letter-spacing: 2px;
-  text-transform: uppercase; font-weight: 500; margin-bottom: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size:12px; color: var(--text-muted);
+  letter-spacing:3px; text-transform:uppercase;
+  font-weight:500; margin-bottom:12px;
 }
 .masthead h1 {
-  font-family: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
-  font-size: 38px; font-weight: 900; color: #1a1a1a;
-  letter-spacing: 2px; line-height: 1.3; margin-bottom: 10px;
-}
-.masthead-sub {
-  font-size: 15px; color: #666; font-weight: 300;
-  font-family: 'Noto Sans SC', 'Inter', sans-serif;
-}
-.masthead-tags {
-  margin-top: 16px; display: flex; justify-content: center; gap: 10px;
-  flex-wrap: wrap;
-}
-.mtag {
-  font-size: 11px; font-weight: 600; letter-spacing: 1px;
-  padding: 4px 14px; border-radius: 2px;
-  text-transform: uppercase;
-}
-.mtag-a { background: #fdecea; color: #c0392b; }
-.mtag-us { background: #eaf0fb; color: #2c5aa0; }
-.mtag-hk { background: #fef9e7; color: #b7950b; }
-
-/* ===== 内容容器 ===== */
-.content { max-width: 860px; margin: 0 auto; padding: 0 20px 40px; }
-
-/* ===== 区块标题 ===== */
-.sec-header {
   font-family: 'Inter', 'Noto Sans SC', sans-serif;
-  font-size: 11px; font-weight: 700; letter-spacing: 3px;
-  text-transform: uppercase; color: #c0392b;
-  padding: 20px 0 10px; margin-top: 28px;
-  border-top: 3px solid #1a1a1a;
-}
-
-/* ===== 走势图区 ===== */
-.charts-row {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
-  margin-top: 16px;
-}
-.chart-cell {
-  background: #fff; border: 1px solid #e0dcd5;
-}
-.chart-label {
-  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; color: #666; text-align: center;
-  padding: 10px 0 4px; border-bottom: 1px solid #f0ece6;
-}
-.chart-cell img { width: 100%; display: block; }
-
-/* ===== AI 分析报告 ===== */
-.report-body { margin-top: 16px; }
-
-.rpt-section { margin-bottom: 28px; }
-.rpt-section:last-child { margin-bottom: 0; }
-
-.rpt-heading {
-  font-family: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
-  font-size: 20px; font-weight: 700; color: #1a1a1a;
-  padding-bottom: 8px; margin-bottom: 14px;
-  border-bottom: 1px solid #d5d0c8;
-}
-
-.rpt-news-item {
-  display: flex; align-items: flex-start; gap: 14px;
-  padding: 14px 18px; margin: 10px 0;
-  background: #fff; border: 1px solid #e8e4dc;
-  border-left: 3px solid #c0392b;
-  transition: box-shadow 0.2s;
-}
-.rpt-news-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.rpt-num {
-  flex-shrink: 0; width: 24px; height: 24px; line-height: 24px;
-  text-align: center; font-family: 'Playfair Display', serif;
-  font-size: 14px; font-weight: 900; color: #c0392b;
-  border: 2px solid #c0392b; border-radius: 50%;
-}
-.rpt-news-text {
-  font-size: 14.5px; line-height: 1.8; color: #2a2a2a;
-}
-.rpt-news-text strong { color: #c0392b; font-weight: 700; }
-
-.rpt-bullet {
-  padding: 6px 18px 6px 32px; margin: 4px 0;
-  position: relative;
-}
-.rpt-bullet::before {
-  content: ''; position: absolute; left: 18px; top: 15px;
-  width: 5px; height: 5px; background: #c0392b;
-}
-.rpt-bullet-text {
-  font-size: 14.5px; line-height: 1.8; color: #2a2a2a;
-}
-.rpt-bullet-text strong { color: #c0392b; }
-
-.rpt-para {
-  font-size: 15px; line-height: 1.9; color: #333;
-  margin: 10px 0; text-align: justify;
-}
-.rpt-para strong { color: #c0392b; }
-
-/* ===== 表格（AI 选股 / 数据）===== */
-.rpt-table-wrapper {
-  overflow-x: auto; margin: 16px 0;
-  -webkit-overflow-scrolling: touch;
-}
-.rpt-table {
-  width: 100%; border-collapse: collapse;
-  font-size: 13.5px; line-height: 1.7;
-  background: #fff; border: 1px solid #e0dcd5;
-}
-.rpt-table thead {
-  background: #1a1a1a; color: #fff;
-}
-.rpt-table th {
-  padding: 10px 12px; font-size: 12px; font-weight: 600;
-  letter-spacing: 0.5px; text-transform: uppercase;
-  border-bottom: 2px solid #c0392b;
-}
-.rpt-table td {
-  padding: 8px 12px; border-bottom: 1px solid #ece8e1;
-  color: #2a2a2a;
-}
-.rpt-table tbody tr:nth-child(even) {
-  background: #faf8f6;
-}
-.rpt-table tbody tr:hover {
-  background: #fdf0ee;
-}
-.rpt-table td strong { color: #c0392b; font-weight: 700; }
-
-/* ===== 页脚 ===== */
-.site-footer {
-  max-width: 860px; margin: 0 auto; padding: 30px 20px 50px;
-  border-top: 3px solid #1a1a1a; text-align: center;
-}
-.footer-brand {
-  font-family: 'Playfair Display', 'Noto Serif SC', serif;
-  font-size: 15px; font-weight: 700; color: #1a1a1a;
+  font-size:36px; font-weight:900; color: var(--text-primary);
   letter-spacing: 1px; margin-bottom: 8px;
 }
+.masthead-sub {
+  font-size:14px; color: var(--text-secondary);
+  font-weight:400; font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+}
+.masthead-tags {
+  margin-top:18px; display:flex; justify-content:center; gap:8px; flex-wrap:wrap;
+}
+.mtag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; font-weight:600; letter-spacing:1.5px;
+  padding:4px 12px; border-radius:2px; text-transform:uppercase;
+}
+.mtag-a { background: rgba(255,107,53,0.12); color: var(--accent); border: 1px solid rgba(255,107,53,0.25); }
+.mtag-us { background: rgba(88,166,255,0.10); color: var(--accent-blue); border: 1px solid rgba(88,166,255,0.20); }
+.mtag-hk { background: rgba(210,153,29,0.10); color: var(--amber); border: 1px solid rgba(210,153,29,0.20); }
+
+/* ===== CONTENT ===== */
+.content { max-width:960px; margin:0 auto; padding: 0 24px 40px; }
+
+/* ===== SECTION HEADER ===== */
+.sec-hdr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; font-weight:700; letter-spacing:4px;
+  text-transform:uppercase; color: var(--accent);
+  padding:24px 0 12px; margin-top:28px;
+  border-top: 2px solid var(--border-light);
+}
+
+/* ===== FUND PANEL ===== */
+.fp-grid {
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap:16px; margin-top:16px;
+}
+.fp {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+}
+.fp-h {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:600; color: var(--text-secondary);
+  letter-spacing:1px; margin-bottom:14px;
+  text-transform:uppercase;
+}
+.fp-bars { display:flex; flex-direction:column; gap:6px; }
+.fp-bar-row {
+  display:flex; align-items:center; gap:10px;
+}
+.fp-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; color: var(--text-muted); width:40px; flex-shrink:0;
+}
+.fp-bar-bg {
+  flex:1; height:6px; background: var(--bg);
+  border-radius: 3px; overflow:hidden;
+}
+.fp-bar-fill {
+  display:block; height:100%; border-radius:3px;
+  transition: width 0.6s ease;
+}
+.fp-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:12px; font-weight:700; width:55px; text-align:right; flex-shrink:0;
+}
+.fp-empty {
+  font-size:12px; color: var(--text-muted);
+  padding: 8px 0;
+}
+
+/* ===== CHARTS ROW ===== */
+.charts-row {
+  display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;
+  margin-top:14px;
+}
+.ch-cell {
+  background: var(--bg-card); border: 1px solid var(--border);
+}
+.ch-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; font-weight:700; letter-spacing:1px;
+  color: var(--text-secondary); text-align:center;
+  padding: 8px 0 4px; border-bottom: 1px solid var(--border);
+  text-transform:uppercase;
+}
+.ch-cell img { width:100%; display:block; filter: brightness(0.9); }
+
+/* ===== REPORT BODY ===== */
+.report-body { margin-top:18px; }
+
+.sec { margin-bottom:24px; }
+.sec:last-child { margin-bottom:0; }
+
+.sec-h {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size:18px; font-weight:700; color: var(--text-primary);
+  padding-bottom: 8px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* ---- News items ---- */
+.ni {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:12px 16px; margin:8px 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  transition: border-color 0.2s;
+}
+.ni:hover { border-left-color: var(--accent-blue); }
+.ni-num {
+  flex-shrink:0; width:22px; height:22px; line-height:22px;
+  text-align:center; font-family: 'JetBrains Mono', monospace;
+  font-size:12px; font-weight:700; color: var(--accent);
+  border: 1px solid var(--border-light); border-radius:2px;
+}
+.ni-text { font-size:14px; line-height:1.7; color: var(--text-primary); }
+.ni-text strong { color: var(--accent); font-weight:700; }
+
+/* ---- Bullets ---- */
+.bi {
+  padding:5px 18px 5px 28px; margin:3px 0; position:relative;
+  font-size:14px; line-height:1.7; color: var(--text-secondary);
+}
+.bi::before {
+  content:''; position:absolute; left:16px; top:13px;
+  width:4px; height:4px; background: var(--accent); opacity:0.7;
+}
+.bi strong { color: var(--accent-blue); }
+
+/* ---- Paragraphs ---- */
+.para {
+  font-size:14.5px; line-height:1.8; color: var(--text-secondary);
+  margin:8px 0;
+}
+.para strong { color: var(--text-primary); }
+
+/* ---- Tables ---- */
+.tbl-wrap {
+  overflow-x:auto; margin:14px 0;
+  border: 1px solid var(--border);
+}
+.tbl {
+  width:100%; border-collapse:collapse;
+  font-size:13px; line-height:1.6;
+  background: var(--bg-card);
+}
+.tbl thead {
+  background: var(--bg-elevated);
+}
+.tbl th {
+  padding: 10px 12px; font-family: 'JetBrains Mono', 'Inter', sans-serif;
+  font-size:11px; font-weight:700; letter-spacing:0.5px;
+  color: var(--text-secondary); text-transform:uppercase;
+  border-bottom: 1px solid var(--border-light);
+  white-space:nowrap;
+}
+.tbl td {
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+.tbl tbody tr:hover {
+  background: rgba(255,107,53,0.04);
+}
+.tbl td strong { color: var(--accent); font-weight:700; }
+
+/* ---- Chart images ---- */
+.chart-img {
+  margin: 14px 0; background: var(--bg-card);
+  border: 1px solid var(--border); display:inline-block; max-width:100%;
+}
+.chart-img img {
+  max-width:600px; width:100%; height:auto; display:block;
+}
+
+/* ===== FOOTER ===== */
+.site-footer {
+  max-width:960px; margin:0 auto; padding: 28px 24px 48px;
+  border-top: 2px solid var(--border); text-align:center;
+}
+.footer-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:13px; font-weight:700; color: var(--text-primary);
+  letter-spacing:2px; margin-bottom:10px;
+}
 .footer-info {
-  font-size: 11px; color: #999; line-height: 2; letter-spacing: 0.3px;
+  font-size:11px; color: var(--text-muted); line-height:2;
+  font-family: 'JetBrains Mono', monospace;
 }
 .footer-disclaimer {
-  font-size: 10px; color: #bbb; margin-top: 12px;
-  padding-top: 12px; border-top: 1px solid #e0dcd5;
-  line-height: 1.8;
+  font-size:10px; color: var(--text-muted); margin-top:14px;
+  padding-top:14px; border-top: 1px solid var(--border);
+  line-height:1.8;
 }
 .online-link {
-  display: inline-block; margin-top: 14px;
-  padding: 10px 28px; background: #c0392b; color: #fff;
-  font-size: 13px; font-weight: 600; letter-spacing: 1px;
-  text-decoration: none; border-radius: 3px;
+  display:inline-block; margin-top:14px;
+  padding: 10px 24px; background: var(--accent); color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size:12px; font-weight:600; letter-spacing:1.5px;
+  text-decoration:none; border-radius:2px;
+  text-transform:uppercase;
   transition: background 0.2s;
 }
-.online-link:hover { background: #a93226; }
+.online-link:hover { background: #e85d2c; }
 
-/* ===== 响应式 ===== */
-@media (max-width: 600px) {
-  .masthead h1 { font-size: 28px; }
-  .top-bar-inner { flex-direction: column; gap: 4px; text-align: center; }
-  .top-meta { text-align: center; }
-  .ticker-inner { padding: 8px 12px; }
-  .ticker { min-width: 90px; padding: 6px 10px; }
-  .ticker-price { font-size: 15px; }
-  .charts-row { grid-template-columns: 1fr; }
-  .content { padding: 0 14px 30px; }
-  .rpt-heading { font-size: 18px; }
-  .rpt-news-item { padding: 10px 12px; }
-  .masthead { padding: 24px 14px 18px; }
+/* ===== RESPONSIVE ===== */
+@media (max-width: 680px) {
+  .masthead h1 { font-size:26px; }
+  .topbar-inner { flex-direction:column; gap:4px; text-align:center; }
+  .topbar-meta { text-align:center; }
+  .ticker-inner { padding:6px 12px; }
+  .tkr { min-width:100px; padding:6px 12px; }
+  .tkr-p { font-size:14px; }
+  .charts-row { grid-template-columns:1fr; }
+  .content { padding:0 14px 30px; }
+  .sec-h { font-size:16px; }
+  .ni { padding:10px 12px; }
+  .fp-grid { grid-template-columns:1fr; }
+  .chart-img img { max-width:100%; }
 }
 </style>
 </head>
 <body>
 
-<!-- 顶部导航 -->
-<div class="top-bar">
-  <div class="top-bar-inner">
-    <div class="brand">MARKET<span>BRIEF</span></div>
-    <div class="top-meta">Sunday, June 07, 2026<br>11:45 CST</div>
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">MARKET<em>//</em>BRIEF</div>
+    <div class="topbar-meta">Sunday<br>12:05 CST</div>
   </div>
 </div>
 
-<!-- 行情条 -->
+<!-- TICKER STRIP -->
 <div class="ticker-strip">
-  <div class="ticker-inner"><div class="ticker down"><div class="ticker-name">上证指数</div><div class="ticker-price">4027.74</div><div class="ticker-change">&#9660; -0.74%</div></div><div class="ticker down"><div class="ticker-name">深证成指</div><div class="ticker-price">15314.70</div><div class="ticker-change">&#9660; -2.21%</div></div><div class="ticker down"><div class="ticker-name">创业板指</div><div class="ticker-price">3957.93</div><div class="ticker-change">&#9660; -3.20%</div></div></div>
+  <div class="ticker-inner"><div class="tkr dn"><span class="tkr-n">上证指数</span><span class="tkr-p">4027.74</span><span class="tkr-c">▼ -0.74%</span></div><div class="tkr dn"><span class="tkr-n">深证成指</span><span class="tkr-p">15314.70</span><span class="tkr-c">▼ -2.21%</span></div><div class="tkr dn"><span class="tkr-n">创业板指</span><span class="tkr-p">3957.93</span><span class="tkr-c">▼ -3.20%</span></div><div class="tkr up"><span class="tkr-n">恒生指数</span><span class="tkr-p">24961.95</span><span class="tkr-c">▲ +0.00%</span></div><div class="tkr up"><span class="tkr-n">纳斯达克</span><span class="tkr-p">22484.07</span><span class="tkr-c">▲ +0.00%</span></div></div>
 </div>
 
-<!-- 历史简报导航 -->
-<div class="history-nav">
-  <span class="history-label">📅 历史简报</span>
-  <a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260606.html">06月06日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260605.html">06月05日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260604.html">06月04日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260603.html">06月03日</a><a class="history-link" href="https://hcongxi42-web.github.io/HZT/report_20260602.html">06月02日</a>
+<!-- HISTORY NAV -->
+<div class="hnav">
+  <span class="hnav-label">HISTORY</span>
+  <a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260606.html">06月06日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260605.html">06月05日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260604.html">06月04日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260603.html">06月03日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260602.html">06月02日</a>
 </div>
 
-<!-- 标题区 -->
+<!-- MASTHEAD -->
 <div class="masthead">
-  <div class="masthead-date">2026-06-07 星期日</div>
-  <h1>每日股市简报</h1>
-  <div class="masthead-sub">AI-Powered Daily Market Intelligence</div>
+  <div class="masthead-date">2026-06-07 · 星期日</div>
+  <h1>每日市场情报</h1>
+  <div class="masthead-sub">INSTITUTIONAL · MARKET · INTELLIGENCE</div>
   <div class="masthead-tags">
-    <span class="mtag mtag-a">A股 15 条</span>
+    <span class="mtag mtag-a">A-SHARE · 46</span>
+    <span class="mtag mtag-us">US · 24</span>
+    <span class="mtag mtag-hk">HK · 3</span>
   </div>
 </div>
 
 <div class="content">
 
-  <!-- 走势图 -->
-  <div class="sec-header">INTRADAY CHARTS</div>
-  <div class="charts-row"><div class="chart-cell"><div class="chart-label">上证指数</div><img src="https://image.sinajs.cn/newchart/min/n/sh000001.gif" alt="上证指数" onerror="this.parentElement.style.display='none'"></div><div class="chart-cell"><div class="chart-label">深证成指</div><img src="https://image.sinajs.cn/newchart/min/n/sz399001.gif" alt="深证成指" onerror="this.parentElement.style.display='none'"></div></div>
+  <!-- FUND FLOW PANEL -->
+  <div class="sec-hdr">CAPITAL FLOWS</div>
+  <div class="fp-grid"><div class="fp"><div class="fp-h">主力资金流向（近5日 · 亿元）</div><div class="fp-bars"><div class="fp-bar-row"><span class="fp-date">06-01</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:26.91545574636724%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-73.3</span></div><div class="fp-bar-row"><span class="fp-date">06-02</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:44.98385439600764%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+122.6</span></div><div class="fp-bar-row"><span class="fp-date">06-03</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:9.680023484514898%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+26.4</span></div><div class="fp-bar-row"><span class="fp-date">06-04</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:17.385879935417588%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-47.4</span></div><div class="fp-bar-row"><span class="fp-date">06-05</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:100.0%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-272.5</span></div></div></div><div class="fp"><div class="fp-h">北向资金（近5日 · 亿元）</div><div class="fp-bars"><div class="fp-empty">今日非交易日，暂无北向资金数据</div></div></div></div>
 
-  <!-- AI 报告 -->
-  <div class="sec-header">MARKET ANALYSIS</div>
-  <div class="report-body"><div class="rpt-section">
-<h3 class="rpt-heading">每日股市简报</h3>
-<p class="rpt-para"><strong>日期：</strong> 2026年6月7日</p>
-<p class="rpt-para"><strong>分析师：</strong> 资深金融分析团队</p>
+  <!-- INTRADAY CHARTS -->
+  <div class="sec-hdr">INTRADAY</div>
+  <div class="charts-row"><div class="ch-cell"><div class="ch-label">上证指数</div><img src="https://image.sinajs.cn/newchart/min/n/sh000001.gif" alt="上证指数" loading="lazy" onerror="this.parentElement.style.display='none'"></div><div class="ch-cell"><div class="ch-label">深证成指</div><img src="https://image.sinajs.cn/newchart/min/n/sz399001.gif" alt="深证成指" loading="lazy" onerror="this.parentElement.style.display='none'"></div></div>
+
+  <!-- AI ANALYSIS -->
+  <div class="sec-hdr">ANALYSIS</div>
+  <div class="report-body"><div class="sec">
+<h3 class="sec-h">机构级《每日市场情报》</h3>
+<p class="para"><strong>日期：2026-06-07</strong></p>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">📈 市场总览</h3>
-<p class="rpt-para">本周最后一个交易日（6月7日），A股市场在政策面暖风频吹的背景下呈现出企稳修复迹象。监管层关于建设一流投资机构的定调以及对算力基础设施的利好部署，为市场提供了长期制度红利与主题投资的双重支撑。宏观层面，外汇储备创近十年新高，彰显了人民币资产的稳健“压舱石”作用，有效对冲了外部流动性的潜在压力。</p>
+<div class="sec">
+<h3 class="sec-h">1. 资金面信号：🚨 明确「防守」</h3>
+<p class="para">主力资金连续两日大幅净流出，且呈加速态势，今日净流出高达 <strong>272.52亿元</strong>，是近5日单日流出之最。北向资金连续5日「零操作」，处于完全离场观望状态。这并非简单的震荡洗盘，而是机构在「黑色星期五」后的<strong>一致性避险操作</strong>，仓位正在向少数高确定性防御资产集中。</p>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">📰 重要新闻 TOP 5</h3>
-<p class="rpt-para"><strong>1. 监管释放积极信号：加快建设一流投资机构</strong></p>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>内容摘要：</strong> 证监会主席吴清最新定调，明确了建设一流投资机构的四大方向。</div></div>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响简析：</strong> 此举有望加速机构化进程，引导长线资金入市，对提升市场定价效率和稳定性构成长期利好。</div></div>
-<p class="rpt-para"><strong>2. 外储规模创近十年新高，经济“护城河”加深</strong></p>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>内容摘要：</strong> 5月末外汇储备升至3.44万亿美元，环比增长0.93%，连续19个月增持黄金。</div></div>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响简析：</strong> 超预期且创纪录的外储数据强力提振了市场信心，降低了资本外流担忧，为国内货币政策保持独立性提供了坚实基础。</div></div>
-<p class="rpt-para"><strong>3. 中信证券研报频出：看好超跌成长与先进封装</strong></p>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>内容摘要：</strong> 中信证券指出需重视新能源、化工、有色等板块的超跌性价比，同时明确看好玻璃基载板产业链的未来机遇。</div></div>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响简析：</strong> 头部卖方对超跌周期股发出看多信号，或引导市场资金进行高低切换；玻璃基板作为算力芯片先进封装新赛道，短期热度有望持续。</div></div>
-<p class="rpt-para"><strong>4. 算力基础设施获新突破与政策加码</strong></p>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>内容摘要：</strong> 全球首个“预制算力中心底座”正式投用，且周末消息面显示算力获国务院重磅部署。</div></div>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响简析：</strong> 硬件层的降本增效加上政策层的顶层推动，算力板块有望脱离单纯的概念炒作，进入实质性的业绩兑现阶段。</div></div>
-<p class="rpt-para"><strong>5. 房地产市场托底信号明确</strong></p>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>内容摘要：</strong> 上海“住房收购置换”试点将于二季度扩围，房源将用于保障房。</div></div>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>影响简析：</strong> 该政策标志着楼市去库存进入实操阶段，有助于缓解部分房企的资金压力，但市场更需关注后续落地规模与实际效果。</div></div>
+<div class="sec">
+<h3 class="sec-h">2. A股主线扫描</h3>
+<div class="bi"><strong>主线一：AI算力硬件（HBM/先进封装/玻璃基板）</strong></div>
+<div class="bi"><strong>驱动</strong>：英伟达CEO黄仁勋释放“内存短缺将持续数年”的尖锐信号，并与三星、SK海力士密集会面，点燃HBM及先进封装细分赛道稀缺性炒作。</div>
+<div class="bi"><strong>判断</strong>：<strong>逻辑最硬，但交易拥挤</strong>。基本面共识最强，但「中信证券」提示，AI商业化闭环远未完成，股价波动将极其剧烈。这是高波动赛道，可持续性取决于即将公布的英伟达公告是否超预期。</div>
+<div class="bi"><strong>主线二：资源品与新能源的“性价比修复”</strong></div>
+<div class="bi"><strong>驱动</strong>：「中信证券」等Top机构明确喊话，关注新能源、化工、有色在超跌后跌出的“性价比”。</div>
+<div class="bi"><strong>判断</strong>：<strong>左侧布局机会，但催化剂未至</strong>。这是基于估值的防御型配置建议，而非进攻信号。其转机被机构定性为取决于「霍尔木兹海峡通航」这一宏观变量，目前逻辑尚不顺畅，反转持续性强弱待观察。</div>
+<div class="bi"><strong>主线三：高股息防御（银行）</strong></div>
+<div class="bi"><strong>驱动</strong>：市场风险偏好骤降，叠加分红季来临，资金涌入银行股寻求确定性。「中国银行」创年内新高是典型标志。</div>
+<div class="bi"><strong>判断</strong>：<strong>短期避险情绪放大器</strong>。只要市场对其他成长主线信心不足，银行股的资金虹吸效应就会持续。这不是进攻，是纯粹的“蹲下防守”。</div>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">🔎 个股聚焦</h3>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>玻璃基载板概念股：</strong> 受中信证券研报及先进封装技术路线推动，该细分赛道个股预计将迎来短线关注窗口。投资者需甄别具备真实技术储备的标的，避免纯概念追高。</div></div>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>重大资产重组终止标的：</strong> 消息面提及有公司重大资产重组终止，相关个股复牌后可能存在补跌或情绪宣泄压力，短期应注意回避此类不确定性风险。</div></div>
+<div class="sec">
+<h3 class="sec-h">3. 跨市场联动：负面传导主导</h3>
+<p class="para">美股的「黑色星期五」正直接冲击A股风险偏好。非农数据爆表导致加息预期猛升，将导致全球成长股（尤其是高估值AI）估值承压。港股 「领益智造」「仙工智能」虽通过聆讯，但在当前环境下，大型IPO更多被解读为对存量流动性的“抽血”，而不是牛市的兴奋剂。唯一的正向映射是英伟达产业链（HBM、玻璃基板），属于紧张情绪下的结构性亮点。</p>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">🧠 市场情绪</h3>
-<p class="rpt-para"><strong>定性：中性偏乐观</strong></p>
-<div class="rpt-bullet"><div class="rpt-bullet-text"><strong>理由：</strong> 尽管盘面热点轮动依然较快，但市场底部区域的心理共识正在增强。吴清的积极定调与创纪录的外储数据，构成了情绪层面的“定心丸”。中信证券对超跌板块的调整看法，也在一定程度上反映出机构对当前估值水平进入合理区间的认可。不过，南方汛情的升级以及个别重组失败案例，依旧是压制短期风险偏好的局部扰动因素。</div></div>
+<div class="sec">
+<h3 class="sec-h">4. 重要舆情 TOP 8</h3>
+<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>美国5月非农爆表 (17.2万)</strong>：远超预期，年内加息概率飚至七成，全球风险资产定价之锚急升。【<strong>🔴利空</strong>：高估值成长股】</div></div>
+<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>英伟达CEO：内存短缺持续数年</strong>：将与三星/SK海力士公告合作，存储芯片战略地位空前提升。【<strong>🟢利好</strong>：「HBM」及存储产业链】</div></div>
+<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>中信证券：霍尔木兹海峡是非AI板块转机临界点</strong>：顶级机构将「海峡通航」列为顺周期板块重启的“发令枪”，暗示当前最大宏观风险点。【<strong>🟡中性</strong>：点出核心问题与机会】</div></div>
+<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>京东与腾讯合作AI Agent</strong>：应用端正在寻求突破，但短期对业绩影响极小。【<strong>🟡中性</strong>：对AI应用情绪有小幅提振】</div></div>
+<div class="ni"><span class="ni-num">5</span><div class="ni-text"><strong>新宙邦与宁德时代签30万吨电解液大单</strong>：锁定了锂电龙头的远期需求，夯实部分环节基本面。【<strong>🟢利好</strong>：「新宙邦」及电解液产业链】</div></div>
+<div class="ni"><span class="ni-num">6</span><div class="ni-text"><strong>伊朗起草海峡收费条例</strong>：地缘风险复杂化，通胀与航运成本压力增加，压制风险偏好。【<strong>🔴利空</strong>：全球顺周期与航运股波动】</div></div>
+<div class="ni"><span class="ni-num">7</span><div class="ni-text"><strong>派瑞股份被ST，唯特偶澄清不到1%营收</strong>：监管重拳与概念股证伪同时进行，打击短线炒作风气，加速资金流向绩优股。【<strong>🔴利空</strong>：「微盘股」「纯概念炒作」品种】</div></div>
+<div class="ni"><span class="ni-num">8</span><div class="ni-text"><strong>A股千亿市值公司一年增66家</strong>：市场结构正在重塑，龙头化、大市值化趋势加速，资金向头部集中。【<strong>🟡中性</strong>：印证结构性分化格局】</div></div>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">🔭 明日展望</h3>
-<p class="rpt-para">预判明日市场将延续<strong>结构性修复</strong>行情。</p>
-<div class="rpt-news-item"><span class="rpt-num">1</span><div class="rpt-news-text"><strong>指数层面：</strong> 在外储数据利好的加持下，大盘有望维持红盘震荡，但上攻力度取决于量能能否有效放大。</div></div>
-<div class="rpt-news-item"><span class="rpt-num">2</span><div class="rpt-news-text"><strong>板块方向：</strong> 短期内“算力基建”与“超跌反弹”可能成为双主线。一方面，利好频出的算力、玻璃基板等科技成长方向具备高弹性；另一方面，中信证券点名的新能源、有色等周期赛道若出现资金流入，将夯实指数反弹基础。</div></div>
-<div class="rpt-news-item"><span class="rpt-num">3</span><div class="rpt-news-text"><strong>风险提示：</strong> 需警惕南方汛情对农业及水利板块的脉冲式影响，以及部分高位个股在消息真空期的获利回吐压力。</div></div>
+<div class="sec">
+<h3 class="sec-h">5. 情绪温度计：😟 **谨慎**</h3>
+<p class="para"><strong>理由</strong>：资金面出现近月来未见的大规模净流出，北向完全休克；消息面美股暴跌的寒意叠加国内概念股被严查的警告，形成了“内外交困”的压力。虽然AI算力硬件逻辑未被证伪，但已进入高波动的泡沫化交易阶段，无法支撑全市场情绪。机构一致转向“防御”、“性价比”话术，实为避险信号。</p>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">📌 每日精选个股（AI 选股）</h3>
-<p class="rpt-para">好的，资深量化选股分析师已就位。我将对今日新闻进行深度扫描与供应链推理，识别具有交易机会的个股。</p>
+<div class="sec">
+<h3 class="sec-h">6. 明日推演 (2026-06-08)</h3>
+<div class="bi"><strong>情景一：【惯性下杀，寻找支撑】(概率 60%)</strong></div>
+<div class="bi"><strong>盘面</strong>：消化美股暴跌情绪，沪指、创业板指低开。热门AI算力股出现巨量分歧，部分高位股补跌。资金进一步涌向「银行」、「电力」等极致防御板块。</div>
+<div class="bi"><strong>变量</strong>：关注英伟达与三星/SK海力士的官方公告。若无超预期内容，HBM板块可能“见光死”，引发科技股二次探底。</div>
+<div class="bi"><strong>情景二：【利空出尽，缩量震荡】(概率 30%)</strong></div>
+<div class="bi"><strong>盘面</strong>：市场认为非农冲击是一次性事件，或等待中国央行释放应对信号。指数低开后小幅回稳，成交额从高位萎缩。新能源、有色板块有零星的“捡便宜”资金试探。</div>
+<div class="bi"><strong>关键</strong>：盘中必须出现机构认可的领头羊板块（如「锂电」龙头因大单走强）带动人气，否则弱势震荡最终仍可能走弱。</div>
+<div class="bi"><strong>情景三：【黑天鹅发酵，情绪崩坏】(概率 10%)</strong></div>
+<div class="bi"><strong>触发条件</strong>：伊朗正式发布并执行严厉的「海峡收费条例」，导致全球通胀恐慌升级，美股盘前期货再度暴跌。</div>
+<div class="bi"><strong>盘面</strong>：A股将出现系统性风险释放，所有周期和成长板块无一幸免，只有「黄金」等极少数避险资产能逆市。</div>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">新闻标题：中信证券：当前需要重视新能源、化工、有色、电力设备跌出的性价比 (2026-06-07)</h3>
-<p class="rpt-para">此条新闻虽未点名具体个股，但明确指出了四大板块的整体性机会。基于产业链逻辑，我们推理以下核心标的：</p>
-<div class="rpt-table-wrapper"><table class="rpt-table"><thead><tr><th style="text-align:left">股票名称/代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">利好类型</th><th style="text-align:left">强度</th><th style="text-align:left">周期</th></tr></thead><tbody><tr><td style="text-align:left">**宁德时代 (300750)**</td><td style="text-align:left">**新能源**板块绝对龙头，动力电池全球市占率第一，跌出性价比后是机构回补首选。</td><td style="text-align:left">🔥 强势利好 (板块策略驱动)</td><td style="text-align:left">⭐⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**万华化学 (600309)**</td><td style="text-align:left">**化工**板块龙头，MDI全球巨头，行业景气度触底反弹预期强，高壁垒带来的性价比凸显。</td><td style="text-align:left">🔥 强势利好 (板块策略驱动)</td><td style="text-align:left">⭐⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**紫金矿业 (601899)**</td><td style="text-align:left">**有色**板块核心，铜、金等多金属矿企，显著受益于全球资源品价格上涨和避险需求，业绩弹性大。</td><td style="text-align:left">🔥 强势利好 (板块策略驱动)</td><td style="text-align:left">⭐⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**国电南瑞 (600406)**</td><td style="text-align:left">**电力设备**核心龙头，电网自动化及特高压技术领先，是国家电网投资和新型电力系统建设的直接受益者。</td><td style="text-align:left">🔥 强势利好 (板块策略驱动)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**先导智能 (300450)**</td><td style="text-align:left">宁德时代**核心锂电池设备供应商**。新能源板块受重视，龙头扩产预期将直接利好上游设备商。</td><td style="text-align:left">🔥 强势利好 (供应链推理)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**华友钴业 (603799)**</td><td style="text-align:left">宁德时代**上游资源/前驱体供应商**，有色与新能源双重属性，受益于板块情绪回暖及钴、镍等资源品价格联动。</td><td style="text-align:left">🔥 强势利好 (供应链推理)</td><td style="text-align:left">⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**恩捷股份 (002812)**</td><td style="text-align:left">宁德时代**核心锂电池隔膜供应商**，作为湿法隔膜龙头，其业绩弹性与下游新能源车景气度高度相关。</td><td style="text-align:left">🔥 强势利好 (供应链推理)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr></tbody></table></div>
-<p class="rpt-para"><strong>3星及以下股票：</strong></p>
-<p class="rpt-para">天齐锂业 (002466)、赣锋锂业 (002460)、阳光电源 (300274)、特变电工 (600089)、合盛硅业 (603260)</p>
+<div class="sec">
+<h3 class="sec-h">📌 产业链选股（AI 驱动）</h3>
+<p class="para">好的，我将以产业链逻辑见长的量化选股专家身份，基于今日资讯与资金面数据，进行系统性选股分析。</p>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">新闻标题：中信证券：看好玻璃基载板产业链未来的发展及投资机会 (2026-06-07)</h3>
-<p class="rpt-para">券商明确点名了“玻璃基载板”这一前沿技术方向，是对先进封装产业链的重要指引。</p>
-<div class="rpt-table-wrapper"><table class="rpt-table"><thead><tr><th style="text-align:left">股票名称/代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">利好类型</th><th style="text-align:left">强度</th><th style="text-align:left">周期</th></tr></thead><tbody><tr><td style="text-align:left">**沃格光电 (603773)**</td><td style="text-align:left">国内**玻璃基载板**核心参与者，在玻璃基miniled背光和直显领域有深度布局并实现量产，概念最纯正。</td><td style="text-align:left">🔥 强势利好 (直接点名技术方向)</td><td style="text-align:left">⭐⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**五方光电 (002962)**</td><td style="text-align:left">精密光电薄膜元器件制造商，产品可用于光通信和半导体封装领域，是**玻璃基载板产业链上游材料**的潜在受益者。</td><td style="text-align:left">🔥 强势利好 (供应链推理)</td><td style="text-align:left">⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**帝尔激光 (300776)**</td><td style="text-align:left">光伏激光设备龙头，其激光技术在玻璃通孔(TGV)制程上具有潜在应用前景，是**玻璃基载板关键设备供应商**。</td><td style="text-align:left">🔥 强势利好 (供应链推理)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**大族激光 (002008)**</td><td style="text-align:left">国内激光设备平台型龙头，其激光加工设备可用于玻璃基板的切割、打孔等，是**明确的设备供应商**。</td><td style="text-align:left">🔥 强势利好 (供应链推理)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**德龙激光 (688170)**</td><td style="text-align:left">专注于精密激光加工，其激光微加工设备在玻璃、陶瓷等脆性材料领域有成熟应用，是**核心制程设备商**。</td><td style="text-align:left">🔥 强势利好 (供应链推理)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr></tbody></table></div>
-<p class="rpt-para"><strong>3星及以下股票：</strong></p>
-<p class="rpt-para">赛微电子 (300456)、凯盛科技 (600552)</p>
+<div class="sec">
+<h3 class="sec-h">⚠️ 重要宏观环境与资金面背景</h3>
+<p class="para">在分析具体机会前，需明确当前市场核心矛盾与资金状态：</p>
+<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>宏观压制</strong>：美国5月非农数据爆表，美联储降息预期消退，加息概率飙升至七成，导致美股“黑色星期五”。这对全球成长股估值，尤其是A股AI等科技板块形成情绪压制。</div></div>
+<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>地缘风险</strong>：霍尔木兹海峡局势依然紧张，伊朗起草收费条例，通胀与紧缩预期升温。这被中信证券解读为非AI板块转机的临界点。</div></div>
+<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>资金面偏空</strong>：6月5日主力资金大幅净流出272.52亿元，显示市场整体风险偏好降低，资金从前期热门赛道流出。</div></div>
+<div class="ni"><span class="ni-num">4</span><div class="ni-text"><strong>防御风格切换</strong>：从资金流向看，银行等高股息防御板块获得资金流入，与科技股流出形成跷跷板效应。分析机会时，需特别关注估值与业绩的匹配度，回避纯概念炒作。</div></div>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">新闻标题：用于保障房，上海“住房收购置换”试点二季度开始扩围 (2026-06-07)</h3>
-<p class="rpt-para">上海作为一线城市，其房地产政策对全国具有风向标意义，收购存量房用于保障房将直接利好相关产业链。</p>
-<div class="rpt-table-wrapper"><table class="rpt-table"><thead><tr><th style="text-align:left">股票名称/代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">利好类型</th><th style="text-align:left">强度</th><th style="text-align:left">周期</th></tr></thead><tbody><tr><td style="text-align:left">**万科A (000002)**</td><td style="text-align:left">**房地产**行业龙头，在上海有大量项目储备，存量房收购政策有助于其盘活资产、改善现金流，是最大受益者之一。</td><td style="text-align:left">⚡ 事件驱动 (政策利好)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**保利发展 (600048)**</td><td style="text-align:left">大型央企房地产开发商，在上海市场占有率高，信用背书强，更有机会成为政府收购合作方。</td><td style="text-align:left">⚡ 事件驱动 (政策利好)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**东方雨虹 (002271)**</td><td style="text-align:left">**房地产后周期建材**龙头，防水材料市占率第一。保障房建设及存量房翻新将直接拉动防水、涂料等需求。</td><td style="text-align:left">⚡ 事件驱动 (供应链推理)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**北新建材 (000786)**</td><td style="text-align:left">**房地产后周期建材**核心公司，石膏板龙头。保障房项目开工和旧房翻新对石膏板、龙骨等建材需求有明显增量。</td><td style="text-align:left">⚡ 事件驱动 (供应链推理)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**中国建筑 (601668)**</td><td style="text-align:left">全球最大工程承包商之一，将直接承接大量保障性住房的建设任务，是增量市场的主要受益者。</td><td style="text-align:left">⚡ 事件驱动 (需求增量)</td><td style="text-align:left">⭐⭐⭐</td><td style="text-align:left">短期</td></tr></tbody></table></div>
-<p class="rpt-para"><strong>3星及以下股票：</strong></p>
-<p class="rpt-para">金地集团 (600383)、招商蛇口 (001979)、三棵树 (603737)、伟星新材 (002372)</p>
+<div class="sec">
+<h3 class="sec-h">英伟达产业链催化：新一代存储与封装技术路线图</h3>
+<p class="para">#### 重大新闻背景</p>
+<p class="para">英伟达CEO黄仁勋近期密集会晤SK集团、三星电子等存储与半导体巨头，并明确表示“内存短缺问题将持续数年”。同时，中信证券发布研报看好玻璃基载板产业链。这清晰地勾勒出以英伟达为首的AI算力巨头正在为下一代技术（如HBM、玻璃基板）锁定长期产能，整个产业链面临技术迭代和供应紧张的双重催化。</p>
+<p class="para">#### 产业链传导与标的分析</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**🔥🔥🔥 通富微电 (002156.SZ)**</td><td style="text-align:left">**HBM封装核心**：内存短缺直接指向HBM（高带宽内存）供不应求。通富微电是AMD的核心封测厂，并具备HBM封装技术，是AI芯片封装链最直接的A股映射标的。</td><td style="text-align:left">受益</td><td style="text-align:left">高</td></tr><tr><td style="text-align:left">**🔥🔥🔥 雅克科技 (002409.SZ)**</td><td style="text-align:left">**HBM前驱体材料**：内存短缺将驱动HBM产能大幅扩张。公司是SK海力士、三星电子等的核心前驱体材料供应商，直接受益于大客户扩产。</td><td style="text-align:left">受益</td><td style="text-align:left">高</td></tr><tr><td style="text-align:left">**🔥🔥 晶方科技 (603005.SH)**</td><td style="text-align:left">**玻璃基板封装**：中信证券研报点明的技术方向。公司是专注于先进封装（特别是CIS封装）的龙头企业，其在玻璃晶圆级封装领域有深厚技术积累，是玻璃基载板技术路径的直接相关标的。</td><td style="text-align:left">受益</td><td style="text-align:left">高</td></tr><tr><td style="text-align:left">**🔥🔥 沃格光电 (603773.SH)**</td><td style="text-align:left">**TGV玻璃基板**：玻璃基载板的核心技术是TGV（玻璃通孔）。公司是国内少数掌握TGV技术的厂商，并已进行产能布局，是概念契合度最高的标的之一。</td><td style="text-align:left">受益</td><td style="text-align:left">高</td></tr><tr><td style="text-align:left">**🔥🔥 联瑞新材 (688300.SH)**</td><td style="text-align:left">**封装用填料**：无论是传统载板还是玻璃基载板，都需要用到球形硅微粉等填料。公司是高端封装填料的国内龙头，其产品也是HBM封装的关键材料之一。</td><td style="text-align:left">受益</td><td style="text-align:left">高</td></tr></tbody></table></div>
+<div class="bi"><strong>🔥 观察标的 (概念沾边)</strong>：`大族激光 (002008.SZ)` (TGV钻孔设备)、`帝尔激光 (300776.SZ)` (TGV激光设备)、`兴森科技 (002436.SZ)` (IC载板，技术关联)。</div>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">新闻标题：吴清，周末发声！国常会，重磅部署！算力，大利好！重大资产重组，终止！影响一周市场的十大消息 (2026-06-07) - 算力部分</h3>
-<p class="rpt-para">新闻摘要明确提到“算力，大利好！”，并结合“算力普惠”的表述，指向算力基础设施和国产化方向。</p>
-<div class="rpt-table-wrapper"><table class="rpt-table"><thead><tr><th style="text-align:left">股票名称/代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">利好类型</th><th style="text-align:left">强度</th><th style="text-align:left">周期</th></tr></thead><tbody><tr><td style="text-align:left">**工业富联 (601138)**</td><td style="text-align:left">**AI算力**服务器及云计算设备制造龙头，为全球主要云服务商提供核心算力硬件，直接受益于算力投资扩张。</td><td style="text-align:left">🔥 强势利好 (政策利好)</td><td style="text-align:left">⭐⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**中科曙光 (603019)**</td><td style="text-align:left">**国产算力**中坚力量，高端服务器、超算领域龙头，同时参股海光信息，是国产算力替代的核心标的。</td><td style="text-align:left">🔥 强势利好 (政策利好)</td><td style="text-align:left">⭐⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**浪潮信息 (000977)**</td><td style="text-align:left">国内最大的AI服务器制造商之一，算力基础设施建设的直接受益方，JDM模式与互联网大客户深度绑定。</td><td style="text-align:left">🔥 强势利好 (政策利好)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**紫光股份 (000938)**</td><td style="text-align:left">旗下新华三集团是ICT基础设施及AI服务器的重要供应商，与华为等共同推动算力网络建设。</td><td style="text-align:left">🔥 强势利好 (政策利好)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**光迅科技 (002281)**</td><td style="text-align:left">光模块/光器件核心供应商，算力中心内部及之间高速互联的**必需品**，800G等高速率光模块需求旺盛。</td><td style="text-align:left">🔥 强势利好 (供应链推理)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr></tbody></table></div>
-<p class="rpt-para"><strong>3星及以下股票：</strong></p>
-<p class="rpt-para">中兴通讯 (000063)、寒武纪 (688256)、海光信息 (688041)、中际旭创 (300308)、新易盛 (300502)</p>
+<div class="sec">
+<h3 class="sec-h">🔥🔥 新能源产业链大单：电解液环节底部信号明确</h3>
+<p class="para">#### 重大新闻背景</p>
+<p class="para"><strong>新宙邦 (300037.SZ)</strong> 公告与宁德时代签订电解液合作协议，预计2026-2028年采购量合计<strong>30万吨</strong>。这是一个非常明确的巨额长单，不仅锁定了供应，更锁定了未来几年的行业需求。结合中信证券研报提到的“重视新能源跌出的性价比”，此订单可能成为电解液乃至锂电材料板块的边际改善信号。</p>
+<p class="para">#### 产业链传导与标的分析</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**🔥🔥🔥 新宙邦 (300037.SZ)**</td><td style="text-align:left">**直接签署方**：长单锁定了未来3年核心客户的需求，对稳定产能利用率、摊薄成本有重大意义，是行业底部的确定性利好。</td><td style="text-align:left">受益</td><td style="text-align:left">极高</td></tr><tr><td style="text-align:left">**🔥🔥 天赐材料 (002709.SZ)**</td><td style="text-align:left">**行业竞争对手/替代逻辑**：作为全球电解液龙头，行业老二的巨量长单，意味着行业出清可能接近尾声，头部企业份额将进一步集中。天赐材料同样将受益于行业景气度修复。</td><td style="text-align:left">受益</td><td style="text-align:left">高</td></tr><tr><td style="text-align:left">**🔥🔥 永太科技 (002326.SZ)**</td><td style="text-align:left">**上游材料供应商**：新宙邦、天赐材料扩产需要大量锂盐和添加剂，永太科技是重要的LiFSI、VC等核心原料供应商，下游长单锁定将直接传导致其产品需求。</td><td style="text-align:left">受益</td><td style="text-align:left">高</td></tr><tr><td style="text-align:left">**🔥🔥 天华新能 (300390.SZ)**</td><td style="text-align:left">**上游材料供应商**：公司是电池级氢氧化锂的重要生产商，电解液需求的最终源头是锂电池，大单增强了整个锂电产业链的需求确定性，提振上游锂盐需求预期。</td><td style="text-align:left">受益</td><td style="text-align:left">中</td></tr><tr><td style="text-align:left">**🔥 石大胜华 (603026.SH)**</td><td style="text-align:left">**溶剂供应商**：是电解液溶剂（DMC等）的头部生产商，是产业链最上游一环，间接受益于下游需求提振。</td><td style="text-align:left">受益</td><td style="text-align:left">中</td></tr></tbody></table></div>
+<div class="bi"><strong>🔥 观察标的 (概念沾边)</strong>：`江特电机 (002176.SZ)` (锂矿)、`天际股份 (002759.SZ)` (六氟磷酸锂)。</div>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">新闻标题：5月末外储余额保持升势 & 黄金储备连续19个月增加 (合并分析多条同类新闻)</h3>
-<p class="rpt-para">外汇储备规模创近十年新高，且央行连续19个月增持黄金，这一趋势利好黄金板块和人民币资产。</p>
-<div class="rpt-table-wrapper"><table class="rpt-table"><thead><tr><th style="text-align:left">股票名称/代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">利好类型</th><th style="text-align:left">强度</th><th style="text-align:left">周期</th></tr></thead><tbody><tr><td style="text-align:left">**山东黄金 (600547)**</td><td style="text-align:left">**黄金**矿产龙头，黄金储量及产量均居国内前列。央行持续购金增强市场对金价的信心，公司业绩弹性极大。</td><td style="text-align:left">🔥 强势利好 (基本面与政策共振)</td><td style="text-align:left">⭐⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**中金黄金 (600489)**</td><td style="text-align:left">央企背景的大型黄金生产商，矿金产量稳定。直接受益于金价中枢上移带来的盈利能力提升。</td><td style="text-align:left">🔥 强势利好 (基本面与政策共振)</td><td style="text-align:left">⭐⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**紫金矿业 (601899)**</td><td style="text-align:left">既是铜业巨头，也是快速成长的重要黄金生产商，双重受益于宏观利好，经营安全垫厚。</td><td style="text-align:left">🔥 强势利好 (双主线利好)</td><td style="text-align:left">⭐⭐⭐⭐⭐</td><td style="text-align:left">中期</td></tr><tr><td style="text-align:left">**银泰黄金 (000975)**</td><td style="text-align:left">盈利能力突出的黄金生产商，旗下黑河银泰等矿山品位高、成本低，在金价上涨周期中利润释放更为充分。</td><td style="text-align:left">🔥 强势利好 (高弹性)</td><td style="text-align:left">⭐⭐⭐⭐</td><td style="text-align:left">短期</td></tr><tr><td style="text-align:left">**中国平安 (601318)**</td><td style="text-align:left">外储增加及人民币汇率稳定预期利好**金融**和**保险**等人民币核心资产，作为保险龙头，其投资收益和估值均有望受益。</td><td style="text-align:left">⚡ 事件驱动 (宏观联动)</td><td style="text-align:left">⭐⭐⭐</td><td style="text-align:left">短期</td></tr></tbody></table></div>
-<p class="rpt-para"><strong>3星及以下股票：</strong></p>
-<p class="rpt-para">赤峰黄金 (600988)、湖南黄金 (002155)、招商银行 (600036)</p>
+<div class="sec">
+<h3 class="sec-h">🔥🔥 地缘与宏观避险逻辑：非AI板块的转机</h3>
+<p class="para">#### 重大新闻背景</p>
+<p class="para">中信证券策略报告明确指出：“霍尔木兹海峡通航是A股非AI板块转机的临界点”。伊朗起草“海峡收费条例”，美国非农数据超预期强化加息预期压降成长股估值，都指向市场风格可能向通胀受益、高股息和战略资源方向切换。资金面显示银行ETF获净流入即是佐证。</p>
+<p class="para">#### 板块逻辑与标的分析</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票名称代码</th><th style="text-align:left">关联逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">确定性</th></tr></thead><tbody><tr><td style="text-align:left">**🔥🔥🔥 招商银行 (600036.SH)**</td><td style="text-align:left">**防御+高股息**：市场风险偏好下降时，资金寻求防御。银行业（特别高股息银行）是典型的避风港。主力资金已连续流入银行板块。招行是优质银行代表。</td><td style="text-align:left">受益</td><td style="text-align:left">高</td></tr><tr><td style="text-align:left">**🔥🔥 中国海油 (600938.SH)**</td><td style="text-align:left">**通胀收益/地缘风险对冲**：霍尔木兹海峡通行费预期和地缘冲突是油价的核心支撑。原油价格上涨将直接提振业绩，是典型的地缘风险对冲和通胀受益标的。</td><td style="text-align:left">受益</td><td style="text-align:left">中</td></tr><tr><td style="text-align:left">**🔥🔥 中远海能 (600026.SH)**</td><td style="text-align:left">**航运成本传导**：海峡通行费用下降的消息是该逻辑的“现在时”，预期中的收费条例则是“未来时”。无论费用涨跌，地缘风险本身就会推高油运运价和保险费率，增加运力紧张预期。</td><td style="text-align:left">受益</td><td style="text-align:left">中</td></tr><tr><td style="text-align:left">**🔥🔥 紫金矿业 (601899.SH)**</td><td style="text-align:left">**避险+通胀受益**：非农数据后金价承压，但长期地缘风险和通胀预期仍是金价支撑。中信同时看好“有色”性价比。紫金矿业作为综合性矿企，兼具黄金和铜等工业金属，能平抑单一品种波动。</td><td style="text-align:left">受益</td><td style="text-align:left">中</td></tr><tr><td style="text-align:left">**🔥 中国银行 (601988.SH)**</td><td style="text-align:left">**高股息防御**：新闻直接提及“中国银行年内新高”，是银行板块资金流入的标志性事件，受益逻辑与招商银行一致，属于跟随性标的。</td><td style="text-align:left">受益</td><td style="text-align:left">中</td></tr></tbody></table></div>
 </div>
-<div class="rpt-section">
-<h3 class="rpt-heading">📊 技术分析图</h3>
-<p class="rpt-para"><strong>**宁德时代 300750.SZ</strong>（⭐⭐⭐⭐⭐）</p>
-<p class="rpt-para">![**宁德时代 技术分析](https://hcongxi42-web.github.io/HZT/charts/300750_SZ_20260607.png)</p>
-<p class="rpt-para"><strong>**万华化学 600309.SH</strong>（⭐⭐⭐⭐⭐）</p>
-<p class="rpt-para">![**万华化学 技术分析](https://hcongxi42-web.github.io/HZT/charts/600309_SH_20260607.png)</p>
-<p class="rpt-para"><strong>**紫金矿业 601899.SH</strong>（⭐⭐⭐⭐⭐）</p>
-<p class="rpt-para">![**紫金矿业 技术分析](https://hcongxi42-web.github.io/HZT/charts/601899_SH_20260607.png)</p>
-<p class="rpt-para"><strong>**国电南瑞 600406.SH</strong>（⭐⭐⭐⭐）</p>
-<p class="rpt-para">![**国电南瑞 技术分析](https://hcongxi42-web.github.io/HZT/charts/600406_SH_20260607.png)</p>
-<p class="rpt-para"><strong>**先导智能 300450.SZ</strong>（⭐⭐⭐⭐）</p>
-<p class="rpt-para">![**先导智能 技术分析](https://hcongxi42-web.github.io/HZT/charts/300450_SZ_20260607.png)</p>
-<p class="rpt-para"><strong>**恩捷股份 002812.SZ</strong>（⭐⭐⭐⭐）</p>
-<p class="rpt-para">![**恩捷股份 技术分析](https://hcongxi42-web.github.io/HZT/charts/002812_SZ_20260607.png)</p>
-<p class="rpt-para"><strong>**沃格光电 603773.SH</strong>（⭐⭐⭐⭐⭐）</p>
-<p class="rpt-para">![**沃格光电 技术分析](https://hcongxi42-web.github.io/HZT/charts/603773_SH_20260607.png)</p>
-<p class="rpt-para"><strong>**帝尔激光 300776.SZ</strong>（⭐⭐⭐⭐）</p>
-<p class="rpt-para">![**帝尔激光 技术分析](https://hcongxi42-web.github.io/HZT/charts/300776_SZ_20260607.png)</p>
+<div class="sec">
+<h3 class="sec-h">⚠️ 避雷区：今日明确利空个股</h3>
+<p class="para">以下个股基于今日公告及新闻，存在明确利空或重大不确定性风险，应规避：</p>
+<div class="bi"><strong>派瑞股份 (300831.SZ)</strong>：因年报、半年报虚假记载，收到行政处罚事先告知书，即将被实施“<strong>ST</strong>”（其他风险警示）。<strong>（监管处罚/风险警示）</strong></div>
+<div class="bi"><strong>杰普特 (688025.SH)</strong>：股东拟合计减持不超1.53%股份。<strong>（股东减持）</strong></div>
+<div class="bi"><strong>孚能科技 (688567.SH)</strong>：股东拟合计减持不超2%股份。<strong>（股东减持）</strong></div>
+<div class="bi"><strong>佳华科技 (688051.SH)</strong>：筹划逾半年的上市后首次重组事项宣告<strong>折戟</strong>。<strong>（重大利空）</strong></div>
+<div class="bi"><strong>唯特偶 (301319.SZ)</strong>：主动公告澄清，公司在光模块及先进封装领域的营收占比贡献率均<strong>不到1%</strong>，并提示短期股价上涨幅度较大，或存在非理性炒作情形。<strong>（概念炒作证伪）</strong></div>
+<div class="bi"><strong>恒星科技 (002132.SZ)</strong>：发布异常波动公告，明确澄清不涉及机械设备业务，且光纤及黄金业务对公司影响<strong>极小</strong>。<strong>（概念炒作证伪）</strong></div>
+<div class="bi"><strong>泰坦股份 (003036.SZ)</strong>：针对市场热炒的“电子布织机”概念，公告澄清产品仍处于研发阶段，存在研发失败风险，<strong>不会对近期业绩产生任何影响</strong>。<strong>（概念炒作证伪）</strong></div>
 </div></div>
 
 </div>
 
 <div class="site-footer">
-  <div class="footer-brand">MARKET BRIEF</div>
-  <a class="online-link" href="https://hcongxi42-web.github.io/HZT/report_20260607.html">查看在线版本</a>
+  <div class="footer-logo">MARKET//BRIEF</div>
+  <a class="online-link" href="https://hcongxi42-web.github.io/HZT/report_20260607.html">VIEW ONLINE</a>
   <div class="footer-info">
-    Data: CLS / East Money / Sina Finance<br>
-    AI Analysis by Tongyi Qwen
+    DATA · East Money / Sina Finance<br>
+    AI · DeepSeek V4
   </div>
   <div class="footer-disclaimer">
-    本报告由 AI 自动生成，仅供参考，不构成任何投资建议。<br>
-    市场有风险，投资需谨慎。
+    本报告由 AI 自动生成，仅供研究参考，不构成任何投资建议。<br>
+    市场有风险，投资需谨慎。PAST PERFORMANCE IS NOT INDICATIVE OF FUTURE RESULTS.
   </div>
 </div>
 
