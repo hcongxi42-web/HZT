@@ -251,18 +251,21 @@ STOCK_PICKER_TEMPLATE = """请基于以下今日多市场资讯和资金面数�
 # ============================================================
 
 def _cleanup_report(text):
-    """清洗 LLM 生成的报告：移除 #### 标签和 *** 分隔线。"""
+    """清洗 LLM 生成的报告：移除 #### / *** / ** 标记。"""
     import re as _re
 
-    # 1. 移除 #### 前缀（四级标题 → 保留其后的内容）
-    #    "#### **市场总览**"  →  "**市场总览**"
-    #    "#### 普通标题"     →  "普通标题"
+    # 1. 移除 ** 标记（加粗符号，保留中间文字）
+    #    "**绿的谐波 (688017)**"  →  "绿的谐波 (688017)"
+    #    "**核心供应商：**"        →  "核心供应商："
+    text = _re.sub(r'\*\*', '', text)
+
+    # 2. 移除 #### 前缀（四级标题 → 保留其后的内容）
     text = _re.sub(r'^####\s+', '', text, flags=_re.MULTILINE)
 
-    # 2. 移除独立的 *** 分隔线（整行只有 ***，允许前后空白）
+    # 3. 移除独立的 *** 分隔线（整行只有 ***，允许前后空白）
     text = _re.sub(r'^\s*\*{3}\s*$', '', text, flags=_re.MULTILINE)
 
-    # 3. 清理可能产生的多余空行（连续 3+ 空行 → 2 个空行）
+    # 4. 清理可能产生的多余空行（连续 3+ 空行 → 2 个空行）
     text = _re.sub(r'\n{3,}', '\n\n', text)
 
     return text
@@ -314,9 +317,10 @@ def call_llm(news_text):
 
 
 def call_stock_picker(news_text):
-    """调用 LLM 执行产业链选股分析。"""
-    return _call_deepseek(STOCK_PICKER_SYSTEM_PROMPT, STOCK_PICKER_TEMPLATE.format(news_text=news_text),
-                          temperature=0.3, max_tokens=6144)
+    """调用 LLM 执行产业链选股分析，并清洗输出。"""
+    raw = _call_deepseek(STOCK_PICKER_SYSTEM_PROMPT, STOCK_PICKER_TEMPLATE.format(news_text=news_text),
+                         temperature=0.3, max_tokens=6144)
+    return _cleanup_report(raw)
 
 
 def format_stock_picks(picks_md):
@@ -730,25 +734,25 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
 <title>MARKET BRIEF · {today}</title>
 <style>
 /* ============================================================
-   Bloomberg Terminal Dark — Professional Market Intelligence
+   Institutional Research — Clean Light Theme
    ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
 
 :root {{
-  --bg: #131a24;
-  --bg-card: #1c2533;
-  --bg-elevated: #243041;
-  --border: #2a3543;
-  --border-light: #374557;
-  --text-primary: #edf2f8;
-  --text-secondary: #b0b9c5;
-  --text-muted: #6e7887;
-  --accent: #ff6b35;
-  --accent-blue: #58a6ff;
-  --green: #3fb950;
-  --red: #f85149;
-  --amber: #d2991d;
-  --purple: #a371f7;
+  --bg: #f7f8fa;
+  --bg-card: #ffffff;
+  --bg-elevated: #eef0f4;
+  --border: #dde1e8;
+  --border-light: #e4e7ed;
+  --text-primary: #1a1d24;
+  --text-secondary: #4e5460;
+  --text-muted: #9096a2;
+  --accent: #e85d2c;
+  --accent-blue: #2070cc;
+  --green: #1a8a3f;
+  --red: #d63031;
+  --amber: #b8860b;
+  --purple: #7c3aed;
 }}
 
 * {{ margin:0; padding:0; box-sizing:border-box; }}
@@ -763,9 +767,10 @@ body {{
 
 /* ===== TOP BAR ===== */
 .topbar {{
-  background: #000;
+  background: #fff;
   border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }}
 .topbar-inner {{
   max-width: 960px; margin:0 auto; padding: 10px 24px;
@@ -785,7 +790,7 @@ body {{
 
 /* ===== TICKER STRIP ===== */
 .ticker-strip {{
-  background: #000; border-bottom: 1px solid var(--border);
+  background: #fff; border-bottom: 1px solid var(--border);
   overflow-x: auto; white-space: nowrap;
 }}
 .ticker-strip::-webkit-scrollbar {{ height:0; }}
@@ -842,11 +847,11 @@ body {{
   padding:4px 8px; border-radius:2px;
   background: var(--bg); border:1px solid var(--border);
   outline:none; transition: border-color 0.15s;
-  color-scheme: dark;
+  color-scheme: light;
 }}
 .hl-date:focus {{ border-color: var(--accent); }}
 .hl-date::-webkit-calendar-picker-indicator {{
-  filter: invert(0.7); cursor:pointer;
+  cursor:pointer;
 }}
 .hl-go {{
   font-family: 'JetBrains Mono', monospace;
@@ -959,7 +964,7 @@ body {{
   padding: 8px 0 4px; border-bottom: 1px solid var(--border);
   text-transform:uppercase;
 }}
-.ch-cell img {{ width:100%; display:block; filter: brightness(0.9); }}
+.ch-cell img {{ width:100%; display:block; }}
 
 /* ===== REPORT BODY ===== */
 .report-body {{ margin-top:18px; }}
