@@ -574,13 +574,21 @@ def markdown_to_html(md):
         sections.append(current_section)
 
     # 渲染
+    import hashlib as _hl
     html_parts = []
-    for sec in sections:
-        html_parts.append('<div class="sec">')
+    for sec_idx, sec in enumerate(sections):
+        sec_title = sec.get("title", "")
+        # 生成唯一 section ID（基于标题 hash）
+        sec_id = _hl.md5(sec_title.encode()).hexdigest()[:10] if sec_title else f"s{sec_idx}"
+        html_parts.append(f'<div class="sec" data-section-id="{sec_id}">')
         if sec["title"]:
             clean_title = re.sub(r"^[一二三四五六七八九十]+[、．.]?\s*", "", sec["title"])
-            # 移除 emoji 前缀做样式
-            html_parts.append(f'<h3 class="sec-h">{clean_title}</h3>')
+            html_parts.append(
+                f'<h3 class="sec-h">'
+                f'<button class="fav-btn" data-sid="{sec_id}" '
+                f'title="收藏此条分析" onclick="toggleFav(this)">☆</button>'
+                f'{clean_title}</h3>'
+            )
         for item in sec["content"]:
             typ = item[0]
             if typ == "ol":
@@ -1097,6 +1105,89 @@ body {{
   .ni {{ padding:10px 12px; }}
   .fp-grid {{ grid-template-columns:1fr; }}
   .chart-img img {{ max-width:100%; }}
+  .fav-panel {{ display:none; }}
+}}
+
+/* ===== FAVORITES PANEL ===== */
+.fav-btn {{
+  display:inline-block; background:none; border:none;
+  font-size:16px; cursor:pointer; padding:0 6px; margin-right:2px;
+  color: var(--text-muted); transition: all 0.2s;
+  vertical-align: middle; line-height:1;
+}}
+.fav-btn:hover {{ color: var(--amber); transform: scale(1.2); }}
+.fav-btn.on {{ color: var(--amber); }}
+
+.fav-panel {{
+  max-width:960px; margin:0 auto; padding: 0 24px 32px;
+}}
+.fav-panel-inner {{
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-top: 3px solid var(--amber);
+  border-radius: 0 0 4px 4px;
+}}
+.fav-panel-hdr {{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 20px; border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:700; color: var(--text-secondary);
+  letter-spacing:1.5px; text-transform:uppercase;
+}}
+.fav-panel-hdr em {{ color: var(--amber); font-style:normal; }}
+.fav-count {{ font-size:11px; color: var(--text-muted); }}
+.fav-toggle {{
+  background:none; border:none; color: var(--text-muted);
+  font-size:18px; cursor:pointer; padding:0 4px; line-height:1;
+  transition: color 0.15s;
+}}
+.fav-toggle:hover {{ color: var(--text-primary); }}
+.fav-empty {{
+  text-align:center; padding: 24px; color: var(--text-muted);
+  font-size:13px;
+}}
+.fav-list {{ display:flex; flex-direction:column; }}
+.fav-item {{
+  display:flex; align-items:flex-start; gap:10px;
+  padding:10px 20px; border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}}
+.fav-item:last-child {{ border-bottom:none; }}
+.fav-item:hover {{ background: var(--bg); }}
+.fav-item-date {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; color: var(--text-muted); flex-shrink:0;
+  min-width:42px; padding-top:2px;
+}}
+.fav-item-title {{
+  flex:1; font-size:13px; font-weight:600; color: var(--text-primary);
+  cursor:pointer; line-height:1.5;
+}}
+.fav-item-title:hover {{ color: var(--accent); }}
+.fav-item-del {{
+  background:none; border:1px solid var(--border); color: var(--text-muted);
+  font-size:10px; cursor:pointer; padding:2px 8px; border-radius:2px;
+  flex-shrink:0; transition: all 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+}}
+.fav-item-del:hover {{ color: var(--red); border-color: var(--red); }}
+
+/* ===== FAV TOAST ===== */
+.fav-toast {{
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background: var(--bg-elevated); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius:4px;
+  padding:8px 20px; font-size:12px; font-weight:600;
+  z-index:999; opacity:0; transition: opacity 0.3s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08); pointer-events:none;
+}}
+.fav-toast.show {{ opacity:1; }}
+
+@media (max-width: 640px) {{
+  .fav-item {{ padding:10px 12px; gap:6px; }}
+  .fav-item-date {{ min-width:36px; font-size:9px; }}
+  .fav-item-title {{ font-size:12px; }}
+  .fav-panel-hdr {{ padding:10px 14px; }}
+  .fav-panel {{ padding: 0 14px 24px; }}
 }}
 </style>
 </head>
@@ -1161,6 +1252,173 @@ body {{
     市场有风险，投资需谨慎。PAST PERFORMANCE IS NOT INDICATIVE OF FUTURE RESULTS.
   </div>
 </div>
+
+<!-- ══════════════ 自选新闻面板 ══════════════ -->
+<div class="fav-panel" id="favPanel">
+  <div class="fav-panel-inner">
+    <div class="fav-panel-hdr">
+      <span>⭐ 自选新闻 · <em id="favCount">0</em></span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="fav-count" id="favSummary"></span>
+        <button class="fav-toggle" id="favToggle" title="收起面板" onclick="toggleFavPanel()">▾</button>
+      </div>
+    </div>
+    <div class="fav-list" id="favList">
+      <div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 收藏提示浮层 ══════════════ -->
+<div class="fav-toast" id="favToast"></div>
+
+<script>
+// ── 自选新闻 · localStorage 持久化 ──
+const STORAGE_KEY = 'market_brief_favs';
+
+function getFavs() {{
+  try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }}
+  catch(e) {{ return []; }}
+}}
+function saveFavs(favs) {{
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(favs));
+  renderFavPanel();
+  updateAllStarBtns();
+}}
+
+// ── 收藏 / 取消收藏 ──
+function toggleFav(btn) {{
+  const sid = btn.getAttribute('data-sid');
+  const sec = document.querySelector(`[data-section-id="${{sid}}"]`);
+  if (!sec) return;
+  const title = (sec.querySelector('.sec-h')?.textContent || '').replace(/^☆/, '').replace(/^★/, '').trim();
+  const date = '{today}';
+  const html = sec.outerHTML;
+
+  let favs = getFavs();
+  const idx = favs.findIndex(f => f.id === sid);
+  if (idx >= 0) {{
+    favs.splice(idx, 1);
+    showToast('已取消收藏');
+  }} else {{
+    favs.push({{ id: sid, date: date, title: title, html: html, saved_at: new Date().toISOString() }});
+    showToast('已加入自选 ⭐');
+  }}
+  saveFavs(favs);
+}}
+
+// ── 删除收藏项 ──
+function delFav(sid) {{
+  let favs = getFavs();
+  favs = favs.filter(f => f.id !== sid);
+  saveFavs(favs);
+  showToast('已删除');
+}}
+
+// ── 跳转到收藏项所在报告 ──
+function gotoFav(sid) {{
+  const favs = getFavs();
+  const f = favs.find(x => x.id === sid);
+  if (!f) return;
+  // 如果当前页面已有该 section，直接滚动
+  const local = document.querySelector(`[data-section-id="${{sid}}"]`);
+  if (local) {{
+    local.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+    local.style.boxShadow = '0 0 0 3px var(--amber)';
+    setTimeout(() => local.style.boxShadow = '', 2000);
+  }} else {{
+    // 跨报告跳转：构造 URL（同域名下按日期命名规则）
+    const reportUrl = window.location.href.replace(/report_\d{{8}}\.html/, 'report_' + f.date.replace(/-/g, '') + '.html');
+    window.location.href = reportUrl + '#' + sid;
+  }}
+}}
+
+// ── 渲染底部自选面板 ──
+function renderFavPanel() {{
+  const favs = getFavs();
+  const countEl = document.getElementById('favCount');
+  const listEl = document.getElementById('favList');
+  const summaryEl = document.getElementById('favSummary');
+  const panel = document.getElementById('favPanel');
+
+  if (countEl) countEl.textContent = favs.length + '条';
+  if (summaryEl) summaryEl.textContent = favs.length ? favs.map(f => f.date.slice(5)).join(' · ') : '';
+  if (panel && favs.length > 0) panel.style.display = 'block';
+  else if (panel && favs.length === 0) panel.style.display = 'none';
+
+  if (!listEl) return;
+  if (favs.length === 0) {{
+    listEl.innerHTML = '<div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>';
+    return;
+  }}
+  // 最新在前
+  const sorted = [...favs].reverse();
+  listEl.innerHTML = sorted.map(f => `
+    <div class="fav-item">
+      <span class="fav-item-date">${{f.date.slice(5)}}</span>
+      <span class="fav-item-title" onclick="gotoFav('${{f.id}}')" title="点击跳转到该条分析">${{f.title}}</span>
+      <button class="fav-item-del" onclick="delFav('${{f.id}}')">✕ 删除</button>
+    </div>
+  `).join('');
+}}
+
+// ── 更新所有 ☆ 按钮状态 ──
+function updateAllStarBtns() {{
+  const favs = getFavs();
+  const favIds = new Set(favs.map(f => f.id));
+  document.querySelectorAll('.fav-btn').forEach(btn => {{
+    const sid = btn.getAttribute('data-sid');
+    if (favIds.has(sid)) {{
+      btn.textContent = '★';
+      btn.classList.add('on');
+    }} else {{
+      btn.textContent = '☆';
+      btn.classList.remove('on');
+    }}
+  }});
+}}
+
+// ── 收起/展开面板 ──
+function toggleFavPanel() {{
+  const list = document.getElementById('favList');
+  const toggle = document.getElementById('favToggle');
+  if (list.style.display === 'none') {{
+    list.style.display = '';
+    toggle.textContent = '▾';
+  }} else {{
+    list.style.display = 'none';
+    toggle.textContent = '▸';
+  }}
+}}
+
+// ── Toast 提示 ──
+function showToast(msg) {{
+  const toast = document.getElementById('favToast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._tid);
+  toast._tid = setTimeout(() => toast.classList.remove('show'), 1500);
+}}
+
+// ── 初始化 ──
+(function initFavs() {{
+  renderFavPanel();
+  updateAllStarBtns();
+  // 处理跨页面锚点跳转
+  const hash = window.location.hash;
+  if (hash) {{
+    const target = document.querySelector(`[data-section-id="${{hash.slice(1)}}"]`);
+    if (target) {{
+      setTimeout(() => {{
+        target.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+        target.style.boxShadow = '0 0 0 3px var(--amber)';
+        setTimeout(() => target.style.boxShadow = '', 2500);
+      }}, 300);
+    }}
+  }}
+}})();
+</script>
 
 </body>
 </html>"""
