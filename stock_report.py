@@ -23,6 +23,19 @@ from news_fetcher import fetch_all_news_flat
 
 
 # ============================================================
+#  工具函数
+# ============================================================
+
+def get_session_label():
+    """根据当前时间判断报告场次。"""
+    hour = datetime.now().hour
+    if hour < 12:
+        return "早报", "am"
+    else:
+        return "晚报", "pm"
+
+
+# ============================================================
 #  指数行情抓取
 # ============================================================
 
@@ -84,6 +97,26 @@ def fetch_all_news():
     return articles, fund_flow
 
 
+def _fmt_time_short(time_str):
+    """将各种时间格式统一为 MM-DD HH:MM 短格式。"""
+    if not time_str:
+        return ""
+    import re as _re
+    # 2026-06-09 10:55:00 → 06-09 10:55
+    m = _re.match(r'\d{4}-(\d{2}-\d{2})\s+(\d{2}:\d{2})', time_str)
+    if m:
+        return f"{m.group(1)} {m.group(2)}"
+    # 06-09 10:55 → 原样
+    m = _re.match(r'\d{2}-\d{2}\s+\d{2}:\d{2}', time_str)
+    if m:
+        return time_str[:11]
+    # 2026/06/09 10:55 → 06-09 10:55
+    m = _re.match(r'\d{4}/(\d{2}/\d{2})\s+(\d{2}:\d{2})', time_str)
+    if m:
+        return f"{m.group(1).replace('/', '-')} {m.group(2)}"
+    return time_str[:11] if len(time_str) >= 11 else time_str
+
+
 def format_news(news_list, fund_flow=None):
     """将多市场新闻和资金面数据格式化为 LLM 可读文本。"""
     today_str = datetime.now().strftime("%Y-%m-%d")
@@ -123,20 +156,19 @@ def format_news(news_list, fund_flow=None):
         if not articles:
             continue
         lines.append(f"\n## {mkt_name} ({len(articles)}条)")
-        # 按来源分组
-        sources = {}
-        for a in articles:
-            src = a.get("source", "?")
-            sources.setdefault(src, []).append(a)
 
         for i, a in enumerate(articles[:30], 1):
             title = a.get("title", "")
             summary = a.get("summary", "")
             time_str = a.get("time", "")
             src = a.get("source", "")
-            news_type = a.get("type", "")
+            short_time = _fmt_time_short(time_str)
 
-            line = f"{i}. [{time_str}] [{src}] {title}"
+            # 格式：[来源] MM-DD HH:MM : 标题
+            if short_time:
+                line = f"{i}. [{src}] {short_time} : {title}"
+            else:
+                line = f"{i}. [{src}] {title}"
             lines.append(line)
             # 摘要（如果与标题不同且有内容）
             if summary and summary != title and len(summary) > 10:
@@ -612,8 +644,8 @@ def markdown_to_html(md):
 # ============================================================
 
 def generate_html_report(report, quotes, news_list, page_url="", page_base_url="",
-                         fund_flow=None):
-    """生成暗色 Bloomberg Terminal 风格 HTML 详情页。"""
+                         fund_flow=None, session_label="早报", session_slug="am"):
+    """生成 Bloomberg Terminal 风格 HTML 详情页。"""
     today = datetime.now().strftime("%Y-%m-%d")
     today_en = datetime.now().strftime("%B %d, %Y")
     now_str = datetime.now().strftime("%H:%M")
@@ -621,6 +653,7 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     weekday_cn = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
     weekday = weekday_names[datetime.now().weekday()]
     wk_cn = weekday_cn[datetime.now().weekday()]
+    fav_date_key = f"{today}_{session_slug}"  # 用于收藏唯一标识
 
     # ---- 历史简报导航 ----
     history_links_html = ""
@@ -711,7 +744,7 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MARKET BRIEF · {today}</title>
+<title>MARKET BRIEF · {today} {session_label}</title>
 <style>
 /* ============================================================
    Institutional Research — Clean Light Theme
@@ -1186,7 +1219,7 @@ body {{
 
 <!-- MASTHEAD -->
 <div class="masthead">
-  <div class="masthead-date">{today} · {wk_cn}</div>
+  <div class="masthead-date">{today} · {wk_cn} · {session_label}</div>
   <h1>每日市场情报</h1>
   <div class="masthead-sub">INSTITUTIONAL · MARKET · INTELLIGENCE</div>
   <div class="masthead-tags">
@@ -1247,6 +1280,9 @@ body {{
 <script>
 // ── 自选新闻 · localStorage 持久化 ──
 const STORAGE_KEY = 'market_brief_favs';
+const FAV_DATE_KEY = '{fav_date_key}';
+const FAV_DATE = '{today}';
+const FAV_SESSION = '{session_label}';
 
 function getFavs() {{
   try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }}
@@ -1258,40 +1294,57 @@ function saveFavs(favs) {{
   updateAllStarBtns();
 }}
 
+// ── 从 sec-h 提取纯文本标题（排除 ☆ 按钮文字）──
+function getTitleFromSec(sid) {{
+  const sec = document.querySelector(`[data-section-id="${{sid}}"]`);
+  if (!sec) return '';
+  const hEl = sec.querySelector('.sec-h');
+  if (!hEl) return '';
+  const btn = hEl.querySelector('.fav-btn');
+  const btnText = btn ? btn.textContent : '';
+  return (hEl.textContent || '').replace(btnText, '').trim();
+}}
+
+// ── 构造唯一 ID（日期 + 场次 + section hash）──
+function makeFavId(sid) {{
+  return FAV_DATE_KEY + '_' + sid;
+}}
+
 // ── 收藏 / 取消收藏 ──
 function toggleFav(btn) {{
   const sid = btn.getAttribute('data-sid');
+  const favId = makeFavId(sid);
+  const title = getTitleFromSec(sid);
+  if (!title) return;
   const sec = document.querySelector(`[data-section-id="${{sid}}"]`);
-  if (!sec) return;
-  const title = (sec.querySelector('.sec-h')?.textContent || '').replace(/^☆/, '').replace(/^★/, '').trim();
-  const date = '{today}';
-  const html = sec.outerHTML;
+  const html = sec ? sec.outerHTML : '';
 
   let favs = getFavs();
-  const idx = favs.findIndex(f => f.id === sid);
+  const idx = favs.findIndex(f => f.id === favId);
   if (idx >= 0) {{
     favs.splice(idx, 1);
     showToast('已取消收藏');
   }} else {{
-    favs.push({{ id: sid, date: date, title: title, html: html, saved_at: new Date().toISOString() }});
+    favs.push({{ id: favId, sid: sid, date: FAV_DATE, session: FAV_SESSION, title: title, html: html, saved_at: new Date().toISOString() }});
     showToast('已加入自选 ⭐');
   }}
   saveFavs(favs);
 }}
 
-// ── 删除收藏项 ──
-function delFav(sid) {{
+// ── 删除收藏项（按完整 id 精确删除）──
+function delFav(favId) {{
   let favs = getFavs();
-  favs = favs.filter(f => f.id !== sid);
+  favs = favs.filter(f => f.id !== favId);
   saveFavs(favs);
   showToast('已删除');
 }}
 
 // ── 跳转到收藏项所在报告 ──
-function gotoFav(sid) {{
+function gotoFav(favId) {{
   const favs = getFavs();
-  const f = favs.find(x => x.id === sid);
+  const f = favs.find(x => x.id === favId);
   if (!f) return;
+  const sid = f.sid || '';
   // 如果当前页面已有该 section，直接滚动
   const local = document.querySelector(`[data-section-id="${{sid}}"]`);
   if (local) {{
@@ -1299,8 +1352,9 @@ function gotoFav(sid) {{
     local.style.boxShadow = '0 0 0 3px var(--amber)';
     setTimeout(() => local.style.boxShadow = '', 2000);
   }} else {{
-    // 跨报告跳转：构造 URL（同域名下按日期命名规则）
-    const reportUrl = window.location.href.replace(/report_\d{{8}}\.html/, 'report_' + f.date.replace(/-/g, '') + '.html');
+    // 跨报告跳转：拼接日期对应的报告 URL
+    const dateDigits = f.date.replace(/-/g, '');
+    const reportUrl = window.location.href.replace(/report_[^/]+\\.html/, 'report_' + dateDigits + '.html');
     window.location.href = reportUrl + '#' + sid;
   }}
 }}
@@ -1314,7 +1368,7 @@ function renderFavPanel() {{
   const panel = document.getElementById('favPanel');
 
   if (countEl) countEl.textContent = favs.length + '条';
-  if (summaryEl) summaryEl.textContent = favs.length ? favs.map(f => f.date.slice(5)).join(' · ') : '';
+  if (summaryEl) summaryEl.textContent = favs.length ? favs.map(f => f.date.slice(5) + (f.session === '晚报' ? '晚' : '早')).join(' · ') : '';
   if (panel && favs.length > 0) panel.style.display = 'block';
   else if (panel && favs.length === 0) panel.style.display = 'none';
 
@@ -1327,20 +1381,21 @@ function renderFavPanel() {{
   const sorted = [...favs].reverse();
   listEl.innerHTML = sorted.map(f => `
     <div class="fav-item">
-      <span class="fav-item-date">${{f.date.slice(5)}}</span>
+      <span class="fav-item-date">${{f.date.slice(5)}}${{f.session === '晚报' ? '晚' : '早'}}</span>
       <span class="fav-item-title" onclick="gotoFav('${{f.id}}')" title="点击跳转到该条分析">${{f.title}}</span>
       <button class="fav-item-del" onclick="delFav('${{f.id}}')">✕ 删除</button>
     </div>
   `).join('');
 }}
 
-// ── 更新所有 ☆ 按钮状态 ──
+// ── 更新所有 ☆ 按钮状态（按当前报告的日期+场次匹配）──
 function updateAllStarBtns() {{
   const favs = getFavs();
-  const favIds = new Set(favs.map(f => f.id));
+  const favIdSet = new Set(favs.map(f => f.id));
   document.querySelectorAll('.fav-btn').forEach(btn => {{
     const sid = btn.getAttribute('data-sid');
-    if (favIds.has(sid)) {{
+    const favId = makeFavId(sid);
+    if (favIdSet.has(favId)) {{
       btn.textContent = '★';
       btn.classList.add('on');
     }} else {{
@@ -1452,13 +1507,19 @@ def generate_pdf(html_path):
 #  GitHub Pages 部署
 # ============================================================
 
-def deploy_github_pages(html_content):
-    """将 HTML 写入 docs/ 目录。"""
+def deploy_github_pages(html_content, session_slug="am"):
+    """将 HTML 写入 docs/ 目录，同时生成主文件和场次文件。"""
     today = datetime.now().strftime("%Y%m%d")
     os.makedirs("docs", exist_ok=True)
 
+    # 主文件（最新报告，向后兼容）
     report_path = f"docs/report_{today}.html"
     with open(report_path, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    # 场次文件（早报/晚报独立保存，不被覆盖）
+    session_path = f"docs/report_{today}_{session_slug}.html"
+    with open(session_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
     # index.html → 最新报告
@@ -1483,7 +1544,7 @@ def deploy_github_pages(html_content):
 #  推送通知
 # ============================================================
 
-def send_wechat(report, quotes, news_list, page_url):
+def send_wechat(report, quotes, news_list, page_url, session_label="早报"):
     """通过 Server酱 推送微信消息 — 预览卡片式设计。"""
     send_key = os.environ.get("SERVERCHAN_KEY", "")
     if not send_key:
@@ -1493,7 +1554,7 @@ def send_wechat(report, quotes, news_list, page_url):
     today_cn = datetime.now().strftime("%Y年%m月%d日")
     weekday_names = ["一", "二", "三", "四", "五", "六", "日"]
     wk = weekday_names[datetime.now().weekday()]
-    title = f"📈 每日市场情报 | {today_cn} 周{wk}"
+    title = f"📈 每日市场情报 · {session_label} | {today_cn} 周{wk}"
 
     # ============================================================
     #  预览卡片式推送 — 手机上看到的是干净的信息卡 + 显眼的跳转按钮
@@ -1601,7 +1662,8 @@ def send_webhook(text):
 # ============================================================
 
 def main():
-    print(f"[{datetime.now()}] 开始生成每日市场情报...")
+    session_label, session_slug = get_session_label()
+    print(f"[{datetime.now()}] 开始生成每日市场情报（{session_label}）...")
     print()
 
     # 1. 行情
@@ -1679,8 +1741,8 @@ def main():
     print("\n▸ 生成详情页...")
     page_url = f"{page_base_url}report_{today_str}.html"
     html = generate_html_report(report, quotes, news_list, page_url, page_base_url,
-                                fund_flow)
-    page_url = deploy_github_pages(html)
+                                fund_flow, session_label=session_label, session_slug=session_slug)
+    page_url = deploy_github_pages(html, session_slug=session_slug)
 
     # 7. PDF
     print("▸ 生成 PDF...")
@@ -1690,7 +1752,7 @@ def main():
     # 8. 保存 Markdown
     report_file = f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
     with open(report_file, "w", encoding="utf-8") as f:
-        f.write(f"# 每日市场情报 - {datetime.now().strftime('%Y-%m-%d')}\n\n")
+        f.write(f"# 每日市场情报 - {datetime.now().strftime('%Y-%m-%d')} {session_label}\n\n")
         f.write(report)
     print(f"Markdown 报告: {report_file}")
 
@@ -1702,7 +1764,7 @@ def main():
             f.write(f"page_url={page_url}\n")
 
     # 10. 推送
-    send_wechat(report, quotes, news_list, page_url)
+    send_wechat(report, quotes, news_list, page_url, session_label=session_label)
     send_webhook(report)
 
     print(f"\n[{datetime.now()}] 完成")
