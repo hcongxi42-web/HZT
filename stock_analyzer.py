@@ -370,7 +370,7 @@ def generate_chart(stock_name, stock_code, df, output_path):
 def parse_stock_picks(picks_md):
     """
     从 LLM 的 Markdown 选股输出中，提取值得画图的股票列表。
-    适配新格式：「核心关注」「可以看看」级别 + 表格中的代码。
+    适配新格式：「核心关注」「可以看看」级别 + 表格中的代码 + 把握度列。
     返回: [(name, code, stars, logic), ...]
     """
     if not picks_md:
@@ -378,8 +378,21 @@ def parse_stock_picks(picks_md):
 
     results = []
     lines = picks_md.split("\n")
+    current_section_priority = 0  # 0=未进入任何板块, 3=核心关注, 2=可以看看, 1=知道就行
+
     for line in lines:
-        # 找股票代码：支持 000001.SH、000001、（000001）等格式
+        # ── 跟踪 ### 标题，确定当前板块优先级 ──
+        stripped = line.strip()
+        if stripped.startswith("###") or stripped.startswith("##"):
+            if "核心关注" in stripped:
+                current_section_priority = 3
+            elif "可以看看" in stripped:
+                current_section_priority = 2
+            elif "知道就行" in stripped or "风险提示" in stripped:
+                current_section_priority = 1
+            continue
+
+        # ── 找股票代码 ──
         code_match = re.search(r"(\d{6})(?:\.(?:SH|SZ|BJ))?", line, re.IGNORECASE)
         if not code_match:
             continue
@@ -394,22 +407,40 @@ def parse_stock_picks(picks_md):
         else:
             continue
 
-        # 找股票名称（代码前面的中文）
-        name_match = re.search(r"([^|\d\s][^|\d(]*?)\s*[\(（]?\d{6}", line)
+        # ── 找股票名称 ──
+        name_match = re.search(r"([^|\d\s（）()、，。\n][^|\d（）()\n]*?)\s*[\(（]?\d{6}", line)
         name = name_match.group(1).strip() if name_match else ""
 
-        # 优先级：核心关注 = 3, 可以看看 = 2, 知道就行 = 1, 表格中出现 = 2(默认)
+        # ── 确定优先级 ──
+        is_table_row = "|" in line
+        priority = current_section_priority if current_section_priority > 0 else (2 if is_table_row else 0)
+
+        # ── 从表格「把握度」列提取置信度，调整优先级 ──
+        if is_table_row:
+            cells = [c.strip() for c in line.split("|")[1:-1]]
+            if len(cells) >= 4:
+                # 表格列: 股票及代码 | 为什么选它 | 看多/看空 | 把握度
+                confidence_col = cells[-1]
+                if confidence_col and "高" in confidence_col and "低" not in confidence_col:
+                    # 把握度「高」→ 至少值得画图
+                    priority = max(priority, 2)
+                elif confidence_col and "低" in confidence_col:
+                    # 把握度「低」→ 不值得画图
+                    priority = min(priority, 1)
+            elif cells:
+                # 列数较少时退而求其次：任何单元格带「高」都升权
+                confidence_col = cells[-1]
+                if confidence_col and "高" in confidence_col and "低" not in confidence_col:
+                    priority = max(priority, 2)
+
+        # ── 特殊信号：行内显式标注 ──
         if "核心关注" in line:
             priority = 3
         elif "可以看看" in line:
             priority = 2
         elif "知道就行" in line:
             priority = 1
-        else:
-            # 在表格行中但没明确标注 → 默认中等优先级
-            priority = 2 if "|" in line else 0
 
-        # 优先画高优先级的（>= 2），最多 8 只
         if priority >= 2:
             results.append((name, code, priority, ""))
 

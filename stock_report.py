@@ -27,8 +27,12 @@ from news_fetcher import fetch_all_news_flat
 # ============================================================
 
 def get_session_label():
-    """根据当前时间判断报告场次。"""
-    hour = datetime.now().hour
+    """根据北京时间判断报告场次（A股交易时段）。"""
+    try:
+        from zoneinfo import ZoneInfo
+        hour = datetime.now(ZoneInfo("Asia/Shanghai")).hour
+    except Exception:
+        hour = (datetime.utcnow().hour + 8) % 24
     if hour < 12:
         return "早报", "am"
     else:
@@ -291,6 +295,35 @@ def _cleanup_report(text, strip_bold=False):
 
     # 4. 清理可能产生的多余空行（连续 3+ 空行 → 2 个空行）
     text = _re.sub(r'\n{3,}', '\n\n', text)
+
+    return text
+
+
+def _highlight_inline(text):
+    """为关键判断词添加彩色高亮标记。
+
+    覆盖：利好/利空/中性、市场体温、主力态度等。
+    返回带 <mark class="mk-*"> 的 HTML 片段。
+    """
+    import re as _re
+
+    # 利好 / 利空 / 中性（颜色标签）
+    text = _re.sub(r'(利好)', r'<mark class="mk-bullish">\1</mark>', text)
+    text = _re.sub(r'(利空)', r'<mark class="mk-bearish">\1</mark>', text)
+    text = _re.sub(r'(?<![a-zA-Z\d])中性(?![a-zA-Z\d])',
+                   r'<mark class="mk-neutral">中性</mark>', text)
+
+    # 市场体温
+    text = _re.sub(r'(偏热)', r'<mark class="mk-hot">\1</mark>', text)
+    text = _re.sub(r'(偏暖)', r'<mark class="mk-warm">\1</mark>', text)
+    text = _re.sub(r'(偏冷)', r'<mark class="mk-cool">\1</mark>', text)
+    text = _re.sub(r'(?<![a-zA-Z\d])冰点(?![a-zA-Z\d])',
+                   r'<mark class="mk-ice">冰点</mark>', text)
+
+    # 主力态度
+    text = _re.sub(r'(进攻)', r'<mark class="mk-bullish">\1</mark>', text)
+    text = _re.sub(r'(防守)', r'<mark class="mk-bearish">\1</mark>', text)
+    text = _re.sub(r'(观望)', r'<mark class="mk-neutral">\1</mark>', text)
 
     return text
 
@@ -580,19 +613,19 @@ def markdown_to_html(md):
         # 有序列表
         ol_match = re.match(r"^(\d+)\.\s+(.+)$", line)
         if ol_match:
-            current_section["content"].append(("ol", ol_match.group(1), ol_match.group(2)))
+            current_section["content"].append(("ol", ol_match.group(1), _highlight_inline(ol_match.group(2))))
             continue
 
         # 无序列表
         ul_match = re.match(r"^[-*]\s+(.+)$", line)
         if ul_match:
-            current_section["content"].append(("ul", ul_match.group(1)))
+            current_section["content"].append(("ul", _highlight_inline(ul_match.group(1))))
             continue
 
         if line == "---":
             continue
 
-        current_section["content"].append(("p", line))
+        current_section["content"].append(("p", _highlight_inline(line)))
 
     if current_section["title"] or current_section["content"]:
         sections.append(current_section)
@@ -1008,7 +1041,7 @@ body {{
   border: 1px solid var(--border-light); border-radius:2px;
 }}
 .ni-text {{ font-size:14px; line-height:1.7; color: var(--text-primary); }}
-.ni-text strong {{ color: var(--accent); font-weight:700; }}
+.ni-text strong {{ color: var(--accent); font-weight:700; background: rgba(232,93,44,0.05); padding: 0 2px; }}
 
 /* ---- Bullets ---- */
 .bi {{
@@ -1019,14 +1052,45 @@ body {{
   content:''; position:absolute; left:16px; top:13px;
   width:4px; height:4px; background: var(--accent); opacity:0.7;
 }}
-.bi strong {{ color: var(--accent-blue); }}
+.bi strong {{ color: var(--accent-blue); font-weight: 700; background: rgba(32,112,204,0.05); padding: 0 2px; }}
 
 /* ---- Paragraphs ---- */
 .para {{
   font-size:14.5px; line-height:1.8; color: var(--text-secondary);
   margin:8px 0;
 }}
-.para strong {{ color: var(--accent); font-weight: 700; }}
+.para strong {{ color: var(--accent); font-weight: 700; background: rgba(232,93,44,0.06); padding: 0 2px; border-radius: 1px; }}
+
+/* ---- Color highlight marks ---- */
+mark {{ background: transparent; }}
+.mk-bullish {{
+  color: var(--green); font-weight: 700;
+  background: rgba(26,138,63,0.08); padding: 1px 5px; border-radius: 2px;
+}}
+.mk-bearish {{
+  color: var(--red); font-weight: 700;
+  background: rgba(214,48,49,0.08); padding: 1px 5px; border-radius: 2px;
+}}
+.mk-neutral {{
+  color: var(--text-muted); font-weight: 600;
+  background: rgba(144,150,162,0.08); padding: 1px 5px; border-radius: 2px;
+}}
+.mk-hot {{
+  color: var(--red); font-weight: 700;
+  background: rgba(214,48,49,0.06); padding: 0 3px; border-radius: 2px;
+}}
+.mk-warm {{
+  color: var(--amber); font-weight: 700;
+  background: rgba(184,134,11,0.06); padding: 0 3px; border-radius: 2px;
+}}
+.mk-cool {{
+  color: var(--accent-blue); font-weight: 600;
+  background: rgba(32,112,204,0.06); padding: 0 3px; border-radius: 2px;
+}}
+.mk-ice {{
+  color: var(--purple); font-weight: 700;
+  background: rgba(124,58,237,0.06); padding: 0 3px; border-radius: 2px;
+}}
 
 /* ---- Tables ---- */
 .tbl-wrap {{
