@@ -7,7 +7,6 @@
 import json
 import os
 import re
-import urllib.parse
 import urllib.request
 import urllib.error
 from datetime import datetime, timedelta
@@ -181,23 +180,6 @@ def format_news(news_list, fund_flow=None):
     return "\n".join(lines)
 
 
-def format_news_brief(news_list):
-    """轻量版新闻摘要——用于微信推送等短场景。"""
-    lines = [f">>> {datetime.now().strftime('%Y-%m-%d')} 多市场资讯 <<<"]
-    markets = {"A股": [], "美股": [], "港股": []}
-    for a in news_list:
-        mkt = a.get("market", "")
-        if mkt in markets:
-            markets[mkt].append(a)
-
-    for mkt, articles in markets.items():
-        if articles:
-            lines.append(f"\n【{mkt} TOP 8】")
-            for i, a in enumerate(articles[:8], 1):
-                lines.append(f"{i}. {a.get('title','')[:60]}")
-    return "\n".join(lines)
-
-
 # ============================================================
 #  LLM 分析 — 提示词
 # ============================================================
@@ -212,10 +194,10 @@ USER_PROMPT_TEMPLATE = """基于以下资讯，写一份简短的盘中情报，
 
 结构：
 - 资金面：1-2 句判断主力态度（进攻/防守/观望），提到关键数据支撑
-- 主线扫描：今天最值得关注的 2-3 条方向，每条一两句话点出逻辑和持续性
+- 主线扫描：今天最值得关注的 3-5 条方向，点出方向的逻辑和持续性
 - 跨市场：美股/港股如有异动，说一下对 A 股可能的传导
-- 要闻速览：挑最重要的 6-8 条新闻，每条一行，标利好/利空/中性
-- 市场体温：给一个整体判断（偏热/偏暖/中性/偏冷/冰点），理由一句
+- 要闻速览：挑最重要的 8-10 条新闻，每条一行，标利好/利空/中性
+- 市场体温：给一个整体判断（偏热/偏暖/中性/偏冷/冰点），给出合理的逻辑推导和数据支持
 - 明天怎么看：2-3 种可能的情景推演
 
 风格：
@@ -243,25 +225,26 @@ STOCK_PICKER_SYSTEM_PROMPT = (
 STOCK_PICKER_TEMPLATE = """从以下资讯中，找出今天值得关注的个股机会和风险。
 
 怎么找：
-- 先看新闻里直接提到了哪些公司
+- 先看新闻里直接提到了哪些公司，如果有直接提及，分析这个新闻对公司的影响
 - 再沿产业链上下推导：供应商、客户、竞争对手、替代品玩家
 - 结合资金流向，优先挑资金在买的板块
-- 别编造新闻里不存在的股票
+- 禁止编造新闻里不存在的股票
 
 怎么标记优先级（别用 emoji，用文字）：
-- 「核心关注」：逻辑直接、短期可能反应的
+- 「超核心关注」：公司位于产业链中的卡脖子环节，缺少了这个公司或其产品，会剧烈影响整个产业链的运作
+- 「核心关注」：逻辑直接、短期可能反应到产业链
 - 「可以看看」：产业链传导受益，逻辑成立但稍远
 - 「知道就行」：沾边但逻辑链条长
 
 输出格式：
 - 每条重要新闻用 ### 做标题
 - 新闻下面放表格：| 股票及代码 | 为什么选它 | 看多/看空 | 把握度 |
-- 「核心关注」和「可以看看」放表格里
+- 「超核心关注」、「核心关注」和「可以看看」放表格里
 - 「知道就行」的放在新闻末尾用 - 简单提一下
 - 如果有利空消息，用 ### 个股风险提示 单独列出（减持/业绩暴雷/监管处罚等）
 
 注意：
-- 表格每栏至少 3-5 行，体现产业链推理
+- 表格每栏至少 3-5 行（可以更多），体现产业链推理
 - 每条资讯只用一次，别在不同板块里重复
 
 ---
@@ -698,18 +681,20 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
                 f'<a class="hl" href="{page_base_url}report_{d.strftime("%Y%m%d")}.html">'
                 f'{label}</a>'
             )
-        # 日期选择器：跳转到任意历史简报
+        # 日期选择器 + 早报/晚报切换按钮
         today_str = datetime.now().strftime("%Y-%m-%d")
+        am_active = " active" if session_slug == "am" else ""
+        pm_active = " active" if session_slug == "pm" else ""
         history_links_html += (
             f'<span class="hnav-spacer"></span>'
             f'<input type="date" id="historyPicker" class="hl-date" '
             f'value="{today_str}" max="{today_str}" min="2025-01-01" '
             f'title="选择日期查看历史简报">'
-            f'<button class="hl-go" onclick="'
-            f'var d=document.getElementById(\'historyPicker\').value;'
-            f'if(d){{var p=d.split(\'-\');'
-            f'window.location.href=\'{page_base_url}report_\'+p[0]+p[1]+p[2]+\'.html\'}}'
-            f'">GO</button>'
+            f'<button class="hl-go" onclick="goToDate()">GO</button>'
+            f'<span class="session-toggle">'
+            f'<button class="st-btn{am_active}" id="stAm" onclick="switchSession(\'am\')">早报</button>'
+            f'<button class="st-btn{pm_active}" id="stPm" onclick="switchSession(\'pm\')">晚报</button>'
+            f'</span>'
         )
 
     # ---- 行情条 ----
@@ -908,6 +893,27 @@ body {{
   letter-spacing: 1px;
 }}
 .hl-go:hover {{ background: #e85d2c; }}
+
+/* ---- Session toggle (早报/晚报) ---- */
+.session-toggle {{
+  display: inline-flex; border: 1px solid var(--border);
+  border-radius: 2px; overflow: hidden; margin-left: 2px;
+}}
+.st-btn {{
+  font-family: 'JetBrains Mono', 'Inter', sans-serif;
+  font-size: 11px; font-weight: 600;
+  padding: 4px 12px; background: var(--bg);
+  border: none; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s;
+  border-right: 1px solid var(--border);
+}}
+.st-btn:last-child {{ border-right: none; }}
+.st-btn.active {{
+  background: var(--accent); color: #fff;
+}}
+.st-btn:hover:not(.active) {{
+  color: var(--accent); background: var(--bg-elevated);
+}}
 
 /* ===== MASTHEAD ===== */
 .masthead {{
@@ -1348,6 +1354,29 @@ const FAV_DATE_KEY = '{fav_date_key}';
 const FAV_DATE = '{today}';
 const FAV_SESSION = '{session_label}';
 
+// ── 早报 / 晚报 切换 ──
+let CURRENT_SESSION = '{session_slug}';
+
+function switchSession(session) {{
+  if (session === CURRENT_SESSION) return;
+  CURRENT_SESSION = session;
+  document.getElementById('stAm').classList.toggle('active', session === 'am');
+  document.getElementById('stPm').classList.toggle('active', session === 'pm');
+  const picker = document.getElementById('historyPicker');
+  if (picker && picker.value) {{
+    const p = picker.value.split('-');
+    window.location.href = '{page_base_url}report_' + p[0] + p[1] + p[2] + '_' + session + '.html';
+  }}
+}}
+
+function goToDate() {{
+  const d = document.getElementById('historyPicker').value;
+  if (d) {{
+    const p = d.split('-');
+    window.location.href = '{page_base_url}report_' + p[0] + p[1] + p[2] + '_' + CURRENT_SESSION + '.html';
+  }}
+}}
+
 function getFavs() {{
   try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }}
   catch(e) {{ return []; }}
@@ -1605,123 +1634,6 @@ def deploy_github_pages(html_content, session_slug="am"):
 
 
 # ============================================================
-#  推送通知
-# ============================================================
-
-def send_wechat(report, quotes, news_list, page_url, session_label="早报"):
-    """通过 Server酱 推送微信消息 — 预览卡片式设计。"""
-    send_key = os.environ.get("SERVERCHAN_KEY", "")
-    if not send_key:
-        print("未设置 SERVERCHAN_KEY，跳过微信推送")
-        return
-
-    today_cn = datetime.now().strftime("%Y年%m月%d日")
-    weekday_names = ["一", "二", "三", "四", "五", "六", "日"]
-    wk = weekday_names[datetime.now().weekday()]
-    title = f"📈 每日市场情报 · {session_label} | {today_cn} 周{wk}"
-
-    # ============================================================
-    #  预览卡片式推送 — 手机上看到的是干净的信息卡 + 显眼的跳转按钮
-    # ============================================================
-    desp_lines = []
-
-    # ── 顶部行情快照 ──
-    desp_lines.append("## 📊 行情快照\n")
-    desp_lines.append("| 指数 | 最新价 | 涨跌 |")
-    desp_lines.append("|:---|---:|:---:|")
-    for q in quotes:
-        change = q["change"]
-        if change.startswith("+"):
-            arrow = "▲"
-        elif change.startswith("-") and change != "--":
-            arrow = "▼"
-        else:
-            arrow = "─"
-        desp_lines.append(f"| **{q['name']}** | `{q['price']}` | {arrow} {change} |")
-    desp_lines.append("")
-
-    # ── AI 一句话摘要 ──
-    # 从报告中提取第一段非空行作为摘要（去除 ** 标记以适配微信）
-    summary_line = ""
-    for line in report.strip().split("\n"):
-        stripped = line.strip()
-        if stripped and not stripped.startswith("#") and not stripped.startswith(">") and len(stripped) > 10:
-            summary_line = stripped[:200].replace("**", "")
-            break
-    if summary_line:
-        desp_lines.append("---\n")
-        desp_lines.append("### 🤖 AI 摘要\n")
-        desp_lines.append(f"> {summary_line}\n")
-
-    # ── 统计数据条 ──
-    a_count = sum(1 for a in news_list if a.get("market") == "A股")
-    us_count = sum(1 for a in news_list if a.get("market") == "美股")
-    hk_count = sum(1 for a in news_list if a.get("market") == "港股")
-    desp_lines.append(
-        f"📰 A股 `{a_count}` · 美股 `{us_count}` · 港股 `{hk_count}` · "
-        f"共 `{len(news_list)}` 条资讯\n"
-    )
-
-    # ── 期货/资金简况（如果有） ──
-    # 这部分信息已经在行情表中体现，不重复
-
-    # ── CTA 跳转按钮区域 — 整段视觉焦点 ──
-    desp_lines.append("---\n")
-    desp_lines.append("## 🔗 查看完整报告\n")
-    if page_url:
-        desp_lines.append(f">>> **[👆 点击此处查看完整报告 👆]({page_url})** <<<\n")
-        desp_lines.append(f"📋 报告内容：AI 市场分析 · 产业链选股 · 技术图表 · 资金面面板\n")
-        desp_lines.append(f"🔗 `{page_url}`\n")
-    else:
-        desp_lines.append("> ⚠️ 报告链接暂未生成\n")
-
-    # ── 底部信息 ──
-    desp_lines.append("---\n")
-    desp_lines.append(f"🕐 {today_cn} 周{wk} · DeepSeek V4 自动生成 · 仅供参考不构成投资建议")
-
-    desp = "\n".join(desp_lines)
-
-    # ── 发送 ──
-    url = f"https://sctapi.ftqq.com/{send_key}.send"
-    payload = urllib.parse.urlencode({"title": title, "desp": desp}).encode("utf-8")
-    req = urllib.request.Request(url, data=payload, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode())
-        if data.get("code") == 0:
-            print("微信推送成功")
-        else:
-            print(f"微信推送失败: {data.get('message', '')}")
-    except Exception as e:
-        print(f"微信推送失败: {e}")
-
-
-def send_webhook(text):
-    """推送 Webhook（钉钉/飞书/企业微信）。"""
-    webhook_url = os.environ.get("WEBHOOK_URL", "")
-    if not webhook_url:
-        return
-    if "qyapi.weixin" in webhook_url:
-        payload = json.dumps({"msgtype": "markdown", "markdown": {"content": text[:4096]}})
-    elif "dingtalk" in webhook_url:
-        payload = json.dumps({"msgtype": "markdown", "markdown": {"title": "市场情报", "text": text[:4096]}})
-    elif "feishu" in webhook_url or "larksuite" in webhook_url:
-        payload = json.dumps({"msg_type": "text", "content": {"text": text[:4096]}})
-    else:
-        payload = json.dumps({"text": text[:4096]})
-
-    req = urllib.request.Request(
-        webhook_url, data=payload.encode("utf-8"),
-        headers={"Content-Type": "application/json"}, method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            print(f"Webhook 推送成功: {resp.status}")
-    except Exception as e:
-        print(f"Webhook 推送失败: {e}")
-
-
-# ============================================================
 #  主流程
 # ============================================================
 
@@ -1826,10 +1738,6 @@ def main():
         with open(github_output, "a") as f:
             f.write(f"report_file={report_file}\n")
             f.write(f"page_url={page_url}\n")
-
-    # 10. 推送
-    send_wechat(report, quotes, news_list, page_url, session_label=session_label)
-    send_webhook(report)
 
     print(f"\n[{datetime.now()}] 完成")
 

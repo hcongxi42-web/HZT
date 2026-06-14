@@ -453,7 +453,7 @@ def parse_stock_picks(picks_md):
             unique.append(item)
 
     print(f"[StockPicker] 解析到 {len(unique)} 只股票: {[r[1] for r in unique]}")
-    return unique[:8]  # 最多分析 8 只
+    return unique[:15]  # 最多分析 15 只
 
 
 # ============ 主入口 ============
