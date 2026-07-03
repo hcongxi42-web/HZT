@@ -1719,7 +1719,7 @@ function showToast(msg) {{
 #  PDF 生成
 # ============================================================
 
-def cleanup_old_files(days=7):
+def cleanup_old_files(days=7, max_per_run=50):
     """清理旧的图表和 PDF 文件，避免 docs/ 目录膨胀导致 Pages 部署失败。
 
     通过文件名中的日期判断新旧（GitHub Actions checkout 不保留原始 mtime，
@@ -1728,6 +1728,7 @@ def cleanup_old_files(days=7):
     保留逻辑：
       - charts/: 删除文件名中日期超过 `days` 天的 PNG 文件
       - pdf/:    删除文件名中日期超过 `days` 天的 PDF（保留 latest.pdf）
+      - max_per_run: 单次最多删除数量，防止首次运行产生超大 commit
     """
     import glob as _glob
     import re as _re
@@ -1736,6 +1737,10 @@ def cleanup_old_files(days=7):
     cutoff = today - timedelta(days=days)
     cutoff_date = cutoff.date()
     total_removed = 0
+    skipped = 0
+
+    # 先收集所有待删除文件，按日期从旧到新排序
+    to_delete = []
 
     for subdir, pattern, date_re in [
         # charts:  000002_SZ_20260528.png → 2026-05-28
@@ -1762,14 +1767,22 @@ def cleanup_old_files(days=7):
                 continue
 
             if file_date < cutoff_date:
-                try:
-                    os.remove(fp)
-                    total_removed += 1
-                except OSError:
-                    pass
+                to_delete.append((file_date, fp))
+
+    # 从最旧的文件开始删，限制单次数量
+    to_delete.sort(key=lambda x: x[0])
+    for _, fp in to_delete[:max_per_run]:
+        try:
+            os.remove(fp)
+            total_removed += 1
+        except OSError:
+            pass
+
+    skipped = max(0, len(to_delete) - total_removed)
 
     if total_removed > 0:
-        print(f"[Cleanup] 已清理 {total_removed} 个旧文件 (>{days}天, cutoff={cutoff_date})")
+        print(f"[Cleanup] 已清理 {total_removed} 个旧文件 (>{days}天, cutoff={cutoff_date})"
+              + (f", 剩余 {skipped} 个将在后续运行中逐步清理" if skipped else ""))
     else:
         print(f"[Cleanup] 无需清理 (>{days}天, cutoff={cutoff_date})")
 
