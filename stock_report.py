@@ -1722,31 +1722,56 @@ function showToast(msg) {{
 def cleanup_old_files(days=7):
     """清理旧的图表和 PDF 文件，避免 docs/ 目录膨胀导致 Pages 部署失败。
 
+    通过文件名中的日期判断新旧（GitHub Actions checkout 不保留原始 mtime，
+    所有签出文件的 mtime 都是 checkout 时间，用 mtime 判断不可靠）。
+
     保留逻辑：
-      - charts/: 删除超过 `days` 天的 PNG 文件
-      - pdf/:    删除超过 `days` 天的 PDF（保留 latest.pdf）
+      - charts/: 删除文件名中日期超过 `days` 天的 PNG 文件
+      - pdf/:    删除文件名中日期超过 `days` 天的 PDF（保留 latest.pdf）
     """
     import glob as _glob
-    import time as _time
+    import re as _re
 
-    now = _time.time()
-    cutoff = now - days * 86400
+    today = datetime.now()
+    cutoff = today - timedelta(days=days)
+    cutoff_date = cutoff.date()
     total_removed = 0
 
-    for subdir, pattern in [("charts", "*.png"), ("pdf", "股市简报_*.pdf")]:
+    for subdir, pattern, date_re in [
+        # charts:  000002_SZ_20260528.png → 2026-05-28
+        ("charts", "*.png", r'_(\d{4})(\d{2})(\d{2})\.png$'),
+        # pdf:     股市简报_2026-06-25_0020.pdf → 2026-06-25
+        ("pdf", "股市简报_*.pdf", r'(\d{4}-\d{2}-\d{2})_\d{4}\.pdf$'),
+    ]:
         dir_path = os.path.join("docs", subdir)
         if not os.path.isdir(dir_path):
             continue
         for fp in _glob.glob(os.path.join(dir_path, pattern)):
+            filename = os.path.basename(fp)
+            m = _re.search(date_re, filename)
+            if not m:
+                continue
             try:
-                if os.path.getmtime(fp) < cutoff:
+                if '-' in m.group(1):
+                    file_date = datetime.strptime(m.group(1), '%Y-%m-%d').date()
+                else:
+                    file_date = datetime.strptime(
+                        m.group(1) + m.group(2) + m.group(3), '%Y%m%d'
+                    ).date()
+            except (ValueError, IndexError):
+                continue
+
+            if file_date < cutoff_date:
+                try:
                     os.remove(fp)
                     total_removed += 1
-            except OSError:
-                pass
+                except OSError:
+                    pass
 
     if total_removed > 0:
-        print(f"[Cleanup] 已清理 {total_removed} 个旧文件 (>{days}天)")
+        print(f"[Cleanup] 已清理 {total_removed} 个旧文件 (>{days}天, cutoff={cutoff_date})")
+    else:
+        print(f"[Cleanup] 无需清理 (>{days}天, cutoff={cutoff_date})")
 
 
 def generate_pdf(html_path):
