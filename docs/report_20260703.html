@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MARKET BRIEF · 2026-07-03 早报</title>
+<title>MARKET BRIEF · 2026-07-03 晚报</title>
 <style>
 /* ============================================================
    Institutional Research — Clean Light Theme
@@ -487,6 +487,18 @@ mark { background: transparent; }
 }
 .fav-item-del:hover { color: var(--red); border-color: var(--red); }
 
+/* ---- Fav action buttons ---- */
+.fav-act-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:9px; font-weight:600; letter-spacing:0.5px;
+  padding:2px 8px; border-radius:2px;
+  background: var(--bg); border:1px solid var(--border);
+  color: var(--text-muted); cursor:pointer;
+  transition: all 0.15s; white-space:nowrap;
+}
+.fav-act-btn:hover { color: var(--accent); border-color: var(--accent); }
+.fav-act-del:hover { color: var(--red); border-color: var(--red); }
+
 /* ===== FAV TOAST ===== */
 .fav-toast {
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
@@ -513,29 +525,29 @@ mark { background: transparent; }
 <div class="topbar">
   <div class="topbar-inner">
     <div class="logo">MARKET<em>//</em>BRIEF</div>
-    <div class="topbar-meta">Friday<br>00:14 CST</div>
+    <div class="topbar-meta">Friday<br>09:29 CST</div>
   </div>
 </div>
 
 <!-- TICKER STRIP -->
 <div class="ticker-strip">
-  <div class="ticker-inner"><div class="tkr dn"><span class="tkr-n">上证指数</span><span class="tkr-p">4028.90</span><span class="tkr-c">▼ -2.03%</span></div><div class="tkr dn"><span class="tkr-n">深证成指</span><span class="tkr-p">15498.81</span><span class="tkr-c">▼ -3.85%</span></div><div class="tkr dn"><span class="tkr-n">创业板指</span><span class="tkr-p">4017.27</span><span class="tkr-c">▼ -5.71%</span></div><div class="tkr up"><span class="tkr-n">恒生指数</span><span class="tkr-p">23055.03</span><span class="tkr-c">▲ +0.00%</span></div><div class="tkr up"><span class="tkr-n">纳斯达克</span><span class="tkr-p">22484.07</span><span class="tkr-c">▲ +0.00%</span></div></div>
+  <div class="ticker-inner"><div class="tkr up"><span class="tkr-n">上证指数</span><span class="tkr-p">4043.64</span><span class="tkr-c">▲ +0.37%</span></div><div class="tkr up"><span class="tkr-n">深证成指</span><span class="tkr-p">15597.51</span><span class="tkr-c">▲ +0.64%</span></div><div class="tkr up"><span class="tkr-n">创业板指</span><span class="tkr-p">4019.93</span><span class="tkr-c">▲ +0.07%</span></div><div class="tkr up"><span class="tkr-n">恒生指数</span><span class="tkr-p">23350.03</span><span class="tkr-c">▲ +0.00%</span></div><div class="tkr up"><span class="tkr-n">纳斯达克</span><span class="tkr-p">22484.07</span><span class="tkr-c">▲ +0.00%</span></div></div>
 </div>
 
 <!-- HISTORY NAV -->
 <div class="hnav">
   <span class="hnav-label">HISTORY</span>
-  <a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260702.html">07月02日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260701.html">07月01日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260630.html">06月30日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260629.html">06月29日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260628.html">06月28日</a><span class="hnav-spacer"></span><input type="date" id="historyPicker" class="hl-date" value="2026-07-03" max="2026-07-03" min="2025-01-01" title="选择日期查看历史简报"><button class="hl-go" onclick="goToDate()">GO</button><span class="session-toggle"><button class="st-btn active" id="stAm" onclick="switchSession('am')">早报</button><button class="st-btn" id="stPm" onclick="switchSession('pm')">晚报</button></span>
+  <a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260702.html">07月02日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260701.html">07月01日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260630.html">06月30日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260629.html">06月29日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260628.html">06月28日</a><span class="hnav-spacer"></span><input type="date" id="historyPicker" class="hl-date" value="2026-07-03" max="2026-07-03" min="2025-01-01" title="选择日期查看历史简报"><button class="hl-go" onclick="goToDate()">GO</button><span class="session-toggle"><button class="st-btn" id="stAm" onclick="switchSession('am')">早报</button><button class="st-btn active" id="stPm" onclick="switchSession('pm')">晚报</button></span>
 </div>
 
 <!-- MASTHEAD -->
 <div class="masthead">
-  <div class="masthead-date">2026-07-03 · 星期五 · 早报</div>
+  <div class="masthead-date">2026-07-03 · 星期五 · 晚报</div>
   <h1>每日市场情报</h1>
   <div class="masthead-sub">INSTITUTIONAL · MARKET · INTELLIGENCE</div>
   <div class="masthead-tags">
-    <span class="mtag mtag-a">A-SHARE · 41</span>
-    <span class="mtag mtag-us">US · 24</span>
+    <span class="mtag mtag-a">A-SHARE · 37</span>
+    <span class="mtag mtag-us">US · 25</span>
     <span class="mtag mtag-hk">HK · 12</span>
   </div>
 </div>
@@ -544,7 +556,7 @@ mark { background: transparent; }
 
   <!-- FUND FLOW PANEL -->
   <div class="sec-hdr">CAPITAL FLOWS</div>
-  <div class="fp-grid"><div class="fp"><div class="fp-h">主力资金流向（近5日 · 亿元）</div><div class="fp-bars"><div class="fp-bar-row"><span class="fp-date">06-26</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:100.0%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-364.3</span></div><div class="fp-bar-row"><span class="fp-date">06-29</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:1.3066512942984982%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+4.8</span></div><div class="fp-bar-row"><span class="fp-date">06-30</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:50.68214883746466%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+184.6</span></div><div class="fp-bar-row"><span class="fp-date">07-01</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:46.16102555656207%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-168.2</span></div><div class="fp-bar-row"><span class="fp-date">07-02</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:91.06755606796783%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-331.8</span></div></div></div></div>
+  <div class="fp-grid"><div class="fp"><div class="fp-h">主力资金流向（近5日 · 亿元）</div><div class="fp-bars"><div class="fp-bar-row"><span class="fp-date">06-29</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:1.4348153730218538%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+4.8</span></div><div class="fp-bar-row"><span class="fp-date">06-30</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:55.65335342878674%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+184.6</span></div><div class="fp-bar-row"><span class="fp-date">07-01</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:50.688771665410705%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-168.2</span></div><div class="fp-bar-row"><span class="fp-date">07-02</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:100.0%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-331.8</span></div><div class="fp-bar-row"><span class="fp-date">07-03</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:10.408440090429542%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+34.5</span></div></div></div></div>
 
   <!-- INTRADAY CHARTS -->
   <div class="sec-hdr">INTRADAY</div>
@@ -553,83 +565,79 @@ mark { background: transparent; }
   <!-- AI ANALYSIS -->
   <div class="sec-hdr">ANALYSIS</div>
   <div class="report-body"><div class="sec" data-section-id="s0">
-<p class="para">资金面：主力连续两天大逃杀，昨天净流出331亿，这种体量就是典型的“缩头”姿态，大资金在抢跑避险，今天开盘大概率惯性承压。</p>
-<p class="para">主线扫描：</p>
-<div class="bi"><strong>「脑机接口」</strong>：大湾区产创联盟成立，首批124家成员，产业化落地加速。这是0到1的赛道，政策点火，逻辑硬，但业绩兑现期长，适合当题材看，注意脉冲后的分化。</div>
-<div class="bi"><strong>「芯片国产替代」</strong>：信建投喊半导体设备2028规模翻倍，加上三星搞量子光刻、国内碳纤维设备国产化率95%，内外共振。但现在美股半导体暴跌，今天A股这边会有情绪压制，跌不深就是检验成色的机会。</div>
-<div class="bi"><strong>「光伏逆变器」</strong>：美国禁令传闻砸出深坑。这种消息面杀跌，如果盘中急跌反而是短线的“黄金坑”，因为实质落地需要时间，恐慌过度就有差价。</div>
-<div class="bi"><strong>「低空经济」</strong>：媒体在讨论“降温”，说明第一阶段炒作结束，进入去伪存真的冷静期。逻辑在，但下一波得靠订单和业绩催化的公司才能走出来。</div>
-<div class="bi"><strong>「消费电子新变化」</strong>：索尼2028年取消实体光盘，全数字化。这对「数字发行」和「云游戏」是长期<mark class="mk-bullish">利好</mark>，产业链变革刚刚开始，可以当潜伏方向。</div>
-<p class="para">跨市场：</p>
-<p class="para">昨晚美股道指涨超1%创新高，但半导体指数暴跌超5%，这是典型的“弃科技、买价值”的轮动。A股今天科技股开盘会直接吃面。另一头，非农爆冷，美联储加息预期推迟到12月，美元跌，黄金涨超2%。这对A股不是坏事，外部紧缩压力缓一缓，给了我们政策空间，但传导需要时间，先看情绪。</p>
-<p class="para">要闻速览：</p>
-<div class="bi">美国6月非农仅增5.7万，远逊预期 [<mark class="mk-bullish">利好</mark>，加息预期降温]</div>
-<div class="bi">美股半导体指数暴跌超5%，存储、芯片板块重挫 [<mark class="mk-bearish">利空</mark>，情绪传导]</div>
-<div class="bi">索尼2028年取消PS游戏实体光盘，全面转向数字 [<mark class="mk-neutral">中性</mark>，产业链变局]</div>
-<div class="bi">大湾区脑机接口产创联盟成立，首批124家成员 [<mark class="mk-bullish">利好</mark>，产业加速]</div>
-<div class="bi">信建投：全球半导体设备2028市场规模有望较2025翻倍 [<mark class="mk-bullish">利好</mark>，但要看下游脸色]</div>
-<div class="bi">万科任命新任总裁黄宇，曾任深圳金融办副主任 [<mark class="mk-bullish">利好</mark>，化险攻坚]</div>
-<div class="bi">三星光刻技术引入量子，推动芯片密度突破 [<mark class="mk-neutral">中性</mark>，概念催化]</div>
-<div class="bi">美国拟禁止进口中国光伏逆变器传闻引爆板块下跌 [<mark class="mk-bearish">利空</mark>，等待澄清]</div>
-<div class="bi">国家医保局上线“医保找药”功能，覆盖全国 [<mark class="mk-bullish">利好</mark>，便民]</div>
-<div class="bi">进口乙肝疫苗正式重返中国，广东已开打 [<mark class="mk-bullish">利好</mark>，疫苗市场扩容]</div>
-<p class="para">市场体温：<mark class="mk-neutral">中性</mark><mark class="mk-cool">偏冷</mark>。主力连砸两天，外有美股科技暴跌传导，市场缺乏领头羊，今天大概率是个低开探底的日子。但非农弱了，加息预期降温，流动性预期改善，也不至于崩。现在就是等恐慌盘杀出来，看承接的成色。</p>
-<p class="para">明天怎么看：</p>
-<div class="bi">情景一（概率较大）：低开消化美股冲击，杀出恐慌盘后，部分资金抄底被错杀的国产替代和逆变器方向，指数走个V或L，整体缩量弱震荡。</div>
-<div class="bi">情景二（小概率）：恐慌蔓延，半导体、光伏等连杀，再叠加主力大撤退，直接击穿关键支撑，那就得管住手，等下一个<mark class="mk-ice">冰点</mark>。</div>
-<div class="bi">情景三（理想化）：开盘一步到位，然后资金猛攻脑机接口、风电这些有独立逻辑的方向，成功激活市场情绪，走成转折点。这需要极大的合力和决心，先当剧本看，别急着抢跑。</div>
+<p class="para"><strong>资金面</strong>：主力在<mark class="mk-neutral">观望</mark>，不是<mark class="mk-bullish">进攻</mark>。前两日跑了近500亿，今天早盘只回流34亿，流入流出绝对值都很小，典型的防御性缓冲。没看到主动<mark class="mk-bullish">进攻</mark>信号。</p>
+<p class="para"><strong>主线扫描</strong>：</p>
+<div class="bi">「人形机器人」：来福谐波盘中涨超50%，埃斯顿4天3板，今天封板率70.8%、160只涨停里这条线最猛。逻辑是AI向下游硬件扩散，短期情绪强，但得看明天有没有接力，今天涨停的票明天不能高开低走。</div>
+<div class="bi">「美丽中国」政策线：新能源汽车下乡、绿色家电下乡、海上风电监管、煤电控量，盘后文件一出来，明天新能源汽车+绿电大概率高开。这条线的持续性看政策落地节奏，短期能撑2-3天。</div>
+<div class="bi">「AI算力链」：品高股份中标AI模型调度项目，澜起科技PCIe 6.x芯片在送样测试，这条线有订单和数据支撑，属于中期逻辑，不是纯炒作。</div>
+<p class="para"><strong>跨市场</strong>：港股恒指涨1.28%，恒生科技涨1%，紫金矿业、翰森制药领涨，港股今天给A股的是<mark class="mk-warm">偏暖</mark>传导。美股那边，美银说了美股资金流出创3个月新高172亿美元，对A股影响不大，但提醒海外风险偏好在收缩。</p>
+<p class="para"><strong>要闻速览</strong>：</p>
+<div class="bi">美国银行：美股出现三个多月来最大资金流出（<mark class="mk-bearish">利空</mark>美股情绪）</div>
+<div class="bi">国务院：开展新能源汽车、绿色智能家电下乡（<mark class="mk-bullish">利好</mark>新能源车和家电）</div>
+<div class="bi">三部门：调整车船税优惠，纯电乘用车不征车船税（<mark class="mk-neutral">中性</mark>偏好新能源车）</div>
+<div class="bi">油价迎近6年最大降幅，92号汽油每升降0.75元（<mark class="mk-bullish">利好</mark>消费和出行链）</div>
+<div class="bi">央行：下周1万亿逆回购到期，7月6日再操作1万亿（<mark class="mk-neutral">中性</mark>，流动性平稳）</div>
+<div class="bi">英国6月服务业PMI终值48.8，德国新车登记增15.7%（欧洲经济喜忧参半，<mark class="mk-neutral">中性</mark>）</div>
+<div class="bi">花旗：布伦特原油或跌至60美元，高温推升美国电价涨超240%（油价下行<mark class="mk-bullish">利好</mark>中下游，<mark class="mk-bearish">利空</mark>石油股）</div>
+<div class="bi">美诺华：签10亿高端制剂基地项目（<mark class="mk-bullish">利好</mark>，但需看回款）</div>
+<div class="bi">华银电力：半年业绩预减73%以上（<mark class="mk-bearish">利空</mark>电力股，火电受限）</div>
+<div class="bi">特朗普称与北约关系荒谬，欧洲央行拉加德不排除离职投身政坛（地缘风险偏好扰动，<mark class="mk-neutral">中性</mark>偏空）</div>
+<p class="para"><strong>市场体温</strong>：<mark class="mk-warm">偏暖</mark>。涨停160只、封板率70.8%，成交3.2万亿，数据上看有明显赚钱效应。机器人线把人气拉起来了，指数虽然冲高回落，但板块轮动顺畅。要注意的是，这种热度是靠题材炒作撑的，主力资金没跟上，所以<mark class="mk-warm">偏暖</mark>不<mark class="mk-hot">偏热</mark>。</p>
+<p class="para"><strong>明天怎么看</strong>：</p>
+<div class="bi">大概率走法：机器人线分化，前排继续顶，后排回落。新能源车+绿电借政策高开，能不能守住要看盘中是否有资金接力，高开低走别意外。</div>
+<div class="bi">偏强走法：主力从<mark class="mk-neutral">观望</mark>转为<mark class="mk-bullish">进攻</mark>，净流入放大到百亿级，机器人线不崩，新能车接力，指数再收阳线，成交维持在3万亿。</div>
+<div class="bi">偏弱走法：主力资金继续不跟，机器人获利盘砸出来，新能车高开被摁，封板率降到60%以下，市场重新回到等待信号的<mark class="mk-neutral">观望</mark>状态。</div>
 </div>
 <div class="sec" data-section-id="1091887a41">
 <h3 class="sec-h"><button class="fav-btn" data-sid="1091887a41" title="收藏此条分析" onclick="toggleFav(this)">☆</button>📌 产业链选股（AI 驱动）</h3>
 </div>
-<div class="sec" data-section-id="3c59423c95">
-<h3 class="sec-h"><button class="fav-btn" data-sid="3c59423c95" title="收藏此条分析" onclick="toggleFav(this)">☆</button>半年度业绩预告密集披露，上游资源品与化工龙头业绩兑现</h3>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">盐湖股份 (000792)</td><td style="text-align:left">新闻直接提及，预告上半年净利润达60亿元，业绩大幅兑现。受益于钾肥和锂盐的高景气度，处于资源品上游环节，利润集中释放。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">华峰化学 (002064)</td><td style="text-align:left">新闻直接提及，预告净利润16.80亿元。作为己二酸和氨纶龙头，其业绩增长验证了化工中游细分领域的景气度，在产业链中占有重要位置。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">恒力石化 (600346)</td><td style="text-align:left">虽未在本文预告，但同属大炼化龙头。资源品高景气向下游传导，炼化环节库存收益和价差有望扩大，是资源品逻辑的延伸。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">天赐材料 (002709)</td><td style="text-align:left">盐湖股份的下游，锂电池电解液核心供应商。上游锂资源业绩爆发反映了锂电产业链上游的旺盛需求，但需注意成本传导是否顺畅。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">卓然股份 (688121)</td><td style="text-align:left">化工行业高景气度会刺激资本开支，公司是大型炼化设备供应商，将直接受益于化工企业扩产和设备更新需求，逻辑稍远但成立。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/000792_SZ_20260703.png" alt="盐湖股份 000792.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002064_SZ_20260703.png" alt="华峰化学 002064.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="sec" data-section-id="777b3cf4d5">
+<h3 class="sec-h"><button class="fav-btn" data-sid="777b3cf4d5" title="收藏此条分析" onclick="toggleFav(this)">☆</button>美丽中国建设“十五五”规划发布：推广绿色生活方式，发展可再生能源</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">三峡能源 (600905)</td><td style="text-align:left">规划明确“加强海上风电开发建设活动监管”，同时提出全面提升可再生能源电力消费比重。作为海上风电和新能源发电运营龙头，公司将直接受益于新一轮政策驱动的装机增长与绿电消费提升。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">明阳智能 (601615)</td><td style="text-align:left">海上风电开发被重点提及，有望带动新一轮海上风电装机需求。公司是国内海上风电整机及核心零部件（叶片、齿轮箱）的龙头供应商，是产业链上游的关键卡脖子环节。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">格力电器 (000651)</td><td style="text-align:left">规划明确开展“绿色智能家电下乡”活动。作为白电龙头企业，其高能效空调、智能家电产品与政策导向高度契合，有望通过渠道下沉进一步打开农村市场。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">比亚迪 (002594)</td><td style="text-align:left">规划同时提出“新能源汽车下乡”与“推广新能源车充绿电”。公司作为国内新能源车全产业链龙头，车型矩阵覆盖广泛的下沉市场，将成为此次下乡活动最直接的受益整车厂商。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">伟星新材 (002372)</td><td style="text-align:left">规划提出开展“绿色建材下乡”活动。公司是国内PPR管材管件龙头，产品属于绿色环保建材，品牌和渠道优势显著。建材下乡政策有助于其加速拓展乡镇市场。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<p class="para"><span style="color:#d63031;font-weight:600;">⚠️ 注：K线图仅保留近7天，历史图表将自动清理。如需长期保存，请右键另存为。</span></p>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600905_SH_20260703.png" alt="三峡能源 600905.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601615_SH_20260703.png" alt="明阳智能 601615.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/000651_SZ_20260703.png" alt="格力电器 000651.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002594_SZ_20260703.png" alt="比亚迪 002594.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="bi">知道就行：规划要求“合理控制煤电装机规模和发电量”，对华能国际、大唐发电等传统火电占比较高的企业构成长期结构性<mark class="mk-bearish">利空</mark>。</div>
 </div>
-<div class="sec" data-section-id="fa485b4aff">
-<h3 class="sec-h"><button class="fav-btn" data-sid="fa485b4aff" title="收藏此条分析" onclick="toggleFav(this)">☆</button>索尼2028年取消实体光盘，游戏分发全面转向数字化</h3>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">顺网科技 (300113)</td><td style="text-align:left">网吧及游戏数字分发平台龙头。实体光盘退出加速了游戏分发渠道的数字化，公司的云游戏和数字娱乐平台作为替代渠道，流量和价值将得到强化。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">完美世界 (002624)、三七互娱 (002555)</td><td style="text-align:left">国内头部游戏研发和发行商。实体媒介彻底消失后，发行成本降低，且所有收入将直接来自数字版销售，利润率有望改善。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">中青宝 (300052)</td><td style="text-align:left">拥有“云中快游”等云游戏平台。实体光盘的消亡是云游戏无介质化趋势的终极体现，云游戏服务商作为新一代分发入口，其战略价值将重新被评估。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">中科金财 (002657)</td><td style="text-align:left">曾为游戏公司提供光盘等物理媒介的复制、印刷和包装服务。索尼的决策是行业风向标，物理媒介业务面临彻底萎缩，是明确的利空。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">盛天网络 (300494)</td><td style="text-align:left">数字娱乐平台，拥有云机房技术和“随乐游”云游戏平台，与顺网科技业务逻辑类似，同属数字分发渠道受益方。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/300113_SZ_20260703.png" alt="顺网科技 300113.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002624_SZ_20260703.png" alt="完美世界 002624.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002555_SZ_20260703.png" alt="三七互娱 002555.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002657_SZ_20260703.png" alt="中科金财 002657.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="bi">知道就行: 索尼此决定对渠道零售商如大型商超的游戏光盘业务有边缘性负面影响，但A股缺乏直接对应的大型线下游戏零售标的。</div>
+<div class="sec" data-section-id="ad3ac2791d">
+<h3 class="sec-h"><button class="fav-btn" data-sid="ad3ac2791d" title="收藏此条分析" onclick="toggleFav(this)">☆</button>人形机器人概念爆发，特斯拉产业链与国产减速器公司领涨</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">埃斯顿 (002747)</td><td style="text-align:left">新闻直接提及“4天3板”。公司是国内工业机器人及核心零部件（控制器、伺服系统）龙头，正积极布局人形机器人关节模组，是最核心的国产替代标的。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">绿的谐波 (688017)</td><td style="text-align:left">新闻提及港股“来福谐波一度涨超50%”，波动直接关联谐波减速器赛道。绿的谐波作为国内谐波减速器绝对龙头，是该领域卡脖子的核心环节，几乎为所有国产机器人厂商供货。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">拓普集团 (601689)</td><td style="text-align:left">公司是特斯拉核心供应商，已切入特斯拉人形机器人直线执行器和旋转执行器业务，并实现量产。人形机器人产业链爆发时，作为直接绑定终端龙头的供应商，将最先受益于量产预期。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">双环传动 (002472)</td><td style="text-align:left">直接竞争对手是日发精机（直线涨停）和杭齿前进（直线涨停）所在的齿轮/减速器赛道。公司是国内精密传动齿轮龙头，正在积极研发RV减速器和谐波减速器，有望在国产机器人产业链扩张中分享份额。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">汇川技术 (300124)</td><td style="text-align:left">直接竞争对手是雷赛智能（直线涨停）和大洋电机（直线涨停）所在的伺服系统/电机赛道。公司是国内伺服系统和控制器的绝对龙头，其技术积累与人形机器人所需的运动控制系统高度同源。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002747_SZ_20260703.png" alt="埃斯顿 002747.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/688017_SH_20260703.png" alt="绿的谐波 688017.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601689_SH_20260703.png" alt="拓普集团 601689.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002472_SZ_20260703.png" alt="双环传动 002472.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
 </div>
-<div class="sec" data-section-id="4eba474700">
-<h3 class="sec-h"><button class="fav-btn" data-sid="4eba474700" title="收藏此条分析" onclick="toggleFav(this)">☆</button>星光刻技术引入量子计算，半导体制造工艺或迎重大突破</h3>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">国盾量子 (688027)</td><td style="text-align:left">量子计算/通信核心标的。三星作为半导体巨头，将量子技术引入光刻仿真的核心环节，验证了量子计算在解决工业难题上的实用价值，是产业化的强心剂。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">华大九天 (301269)</td><td style="text-align:left">国内EDA（电子设计自动化）龙头，光刻仿真软件是EDA的核心工具之一。新闻指明的新方向可能催生技术迭代需求，龙头公司最先感知并布局。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">北方华创 (002371)、中微公司 (688012)</td><td style="text-align:left">国内半导体设备双雄。任何光刻和仿真的技术进步，最终都要落实到芯片制造工艺和良率提升上，将驱动更先进工艺的设备采购需求。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">中芯国际 (688981)</td><td style="text-align:left">先进逻辑芯片代工龙头。如果三星将该技术应用于先进制程研发并取得成功，可以提升行业整体的研发效率，缩短追赶路径，对先进制程追赶者是长期利好。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">概伦电子 (688206)</td><td style="text-align:left">另一家EDA厂商，同样涉及工艺仿真和良率提升解决方案。与华大九天逻辑类似，是产业技术路线变革的潜在受益者，但确定性稍弱。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/688027_SH_20260703.png" alt="国盾量子 688027.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/301269_SZ_20260703.png" alt="华大九天 301269.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002371_SZ_20260703.png" alt="北方华创 002371.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="bi">知道就行: 三星自身以及台积电等代工巨头是此技术的直接推动者，但国内无直接代工对标。整条逻辑链是从量子技术出发，传导至EDA软件，最终到半导体设备和制造。</div>
+<div class="sec" data-section-id="4688b54f71">
+<h3 class="sec-h"><button class="fav-btn" data-sid="4688b54f71" title="收藏此条分析" onclick="toggleFav(this)">☆</button>部门调整车船税优惠政策：取消部分新能源车免税待遇</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">比亚迪 (002594)</td><td style="text-align:left">政策2027年起取消纯电动商用车、插混及燃料电池商用车免税。公司作为国内最大的新能源乘用车及商用车制造商，商用车销量将受到新增税收成本的直接冲击，削弱终端价格竞争力。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">宇通客车 (600066)</td><td style="text-align:left">公司以新能源客车为主营业务。纯电动商用车免税政策取消，将直接增加其终端客户的采购成本，压制市场需求，属于产业链中直接面对政策利空的整车厂。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">亿华通 (688339)</td><td style="text-align:left">政策取消燃料电池商用车免征车船税。公司是国内燃料电池发动机系统龙头，下游厂商成本增加将传导至上游，影响其订单和产品定价，是产业链关键系统级供应商。</td><td style="text-align:left">看空</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">宁德时代 (300750)</td><td style="text-align:left">作为纯电动和插混商用车动力电池主供商，整车终端需求若受政策压制，将导致对上游电池的采购需求放缓。逻辑是下游需求受损向上游的传导。</td><td style="text-align:left">看空</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600066_SH_20260703.png" alt="宇通客车 600066.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="bi">知道就行：政策明确指出“纯电动乘用车、燃料电池乘用车不属于车船税的征税范围，不征收车船税”，因此对特斯拉、蔚来、理想、小鹏等以乘用车为主的品牌影响甚微。</div>
 </div>
-<div class="sec" data-section-id="521593ef1e">
-<h3 class="sec-h"><button class="fav-btn" data-sid="521593ef1e" title="收藏此条分析" onclick="toggleFav(this)">☆</button>大湾区脑机接口产创联盟成立，产业五年目标指向千亿集群</h3>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">创新医疗 (002173)</td><td style="text-align:left">通过参股博灵脑机介入脑机接口技术，是A股中涉足该领域较深的公司。区域性产业联盟成立及政策加持，直接催化相关概念股的市场关注度。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">三博脑科 (301293)</td><td style="text-align:left">临床神经专科医疗集团，新闻提到广东多家医院已开设脑机接口病房。公司作为医疗服务的提供方和应用场景的开拓者，是产业链下游的关键环节。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">冠昊生物 (300238)</td><td style="text-align:left">再生医学材料及脑科修复耗材龙头。脑机接口作为侵入式技术，在植入、修复和生物相容性方面有根本要求，公司处在技术实现的核心交叉领域。</td><td style="text-align:left">看多</td><td style="text-align:left">可议看看</td></tr><tr><td style="text-align:left">寒武纪 (688256)</td><td style="text-align:left">AI芯片龙头，是脑机接口信号处理与分析不可或缺的算力基础。产业爆发将显著拉动对专用AI算力芯片的需求，是产业链上游的卡脖子环节。</td><td style="text-align:left">看多</td><td style="text-align:left">可议看看</td></tr><tr><td style="text-align:left">机器人 (300024)</td><td style="text-align:left">脑机接口是机器人和义肢控制的终极交互方式。联盟成立加速技术融合，对布局康复机器人、智能假肢的公司构成远期应用场景落地的催化。</td><td style="text-align:left">看多</td><td style="text-align:left">可议看看</td></tr></tbody></table></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002173_SZ_20260703.png" alt="创新医疗 002173.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/301293_SZ_20260703.png" alt="三博脑科 301293.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="sec" data-section-id="af9c02899e">
+<h3 class="sec-h"><button class="fav-btn" data-sid="af9c02899e" title="收藏此条分析" onclick="toggleFav(this)">☆</button>国内汽柴油价格刷新年内最大降幅，三连降后重回“6元时代”</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">顺丰控股 (002352)</td><td style="text-align:left">公司是国内最大的综合物流服务商之一，拥有庞大的自营车队。汽柴油价格大幅下降，将直接降低其运输成本，改善下半年利润率。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">中国国航 (601111)</td><td style="text-align:left">航油成本是航空公司最主要的成本项（占比约30%-40%）。油价大幅下跌将显著缓解其成本压力，是逻辑最直接的受益方。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">招商南油 (601975)</td><td style="text-align:left">公司是内贸油品运输龙头，其船舶使用的柴油燃料成本占比较高。油价下跌使其连接产业链下游的运输环节成本下降。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">广汇汽车 (600297)</td><td style="text-align:left">油价大幅下降可降低潜在购车者的用车成本顾虑，有助于提振燃油车消费信心，改善经销商库存和销售压力。逻辑是消费刺激下的间接受益。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002352_SZ_20260703.png" alt="顺丰控股 002352.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601111_SH_20260703.png" alt="中国国航 601111.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="bi">知道就行：花旗银行预测“布伦特原油或跌至每桶60美元”，进一步加强了油价下行预期，对航空、物流等板块形成持续的宏观<mark class="mk-bullish">利好</mark>支撑。</div>
 </div>
-<div class="sec" data-section-id="851ef0cc06">
-<h3 class="sec-h"><button class="fav-btn" data-sid="851ef0cc06" title="收藏此条分析" onclick="toggleFav(this)">☆</button>碳纤维产业迈向高端化，中复神鹰世界级产线集中投产</h3>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">中复神鹰 (688295)</td><td style="text-align:left">新闻直接报道的标的，3条高性能碳纤维产线集中投产，核心装备国产化率达95%。作为卡脖子材料实现国产替代并规模化扩张的标杆，地位强化。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">光威复材 (300699)</td><td style="text-align:left">另一碳纤维龙头。中复神鹰的壮大，证明了国产碳纤维行业的整体竞争力，行业龙二同样受益于进口替代和应用领域拓宽的市场扩容。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">中简科技 (300777)</td><td style="text-align:left">聚焦航空航天用高端碳纤维。新闻中提及T1200级超高强度碳纤维量产，标志着行业技术迈向新高度，进一步打开高端国防和航天市场想象空间。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">金风科技 (002202)、明阳智能 (601615)</td><td style="text-align:left">下游风电整机商。新闻明确指出新能源（风电叶片）是主要应用领域，碳纤维规模化生产将降低成本，便于在大型叶片上更广泛应用，作为降本受益方。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">中航高科 (600862)</td><td style="text-align:left">航空复合材料核心供应商。碳纤维是航空航天复合材料的核心原料，上游高性能纤维的国产化保供和降本，将直接利好下游的预浸料和复材构件制造商。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/688295_SH_20260703.png" alt="中复神鹰 688295.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/300699_SZ_20260703.png" alt="光威复材 300699.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/300777_SZ_20260703.png" alt="中简科技 300777.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-</div>
-<div class="sec" data-section-id="b982ae55a5">
-<h3 class="sec-h"><button class="fav-btn" data-sid="b982ae55a5" title="收藏此条分析" onclick="toggleFav(this)">☆</button>AI 3D大模型公司获游戏厂商批量入股，技术落地加速</h3>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">三七互娱 (002555)、巨人网络 (002558)</td><td style="text-align:left">新闻直接提及为参投方。投资顶尖3D大模型公司，意在降本增效，将AI生成3D技术整合进游戏开发流程中，是降本逻辑的直接参与者。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">完美世界 (002624)</td><td style="text-align:left">同为研发投入巨大的头部游戏公司。竞争对手和同行拥抱新技术的举动，将倒逼其他头部厂商加速跟进，其在研项目最有望率先受益于3D AI工具的赋能。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">昆仑万维 (300418)</td><td style="text-align:left">旗下拥有天工AI，在AIGC大模型和应用领域布局广泛。3D大模型是AIGC的重要分支，行业融资热潮提升整体板块的热度与估值中枢。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">首都在线 (300846)</td><td style="text-align:left">向游戏公司提供云服务和AI推理算力。3D模型的生成和训练需要巨大算力支持，游戏厂商大规模应用AI将直接拉动对第三方GPU和渲染算力的需求。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">优刻得 (688158)</td><td style="text-align:left">公有云及混合云服务商，为多家游戏和AI公司提供底层算力支撑。与首都在线逻辑类似，是AI 3D内容生成爆发式增长的底层基础设施受益方。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
-</div>
-<div class="sec" data-section-id="38ac4afc2b">
-<h3 class="sec-h"><button class="fav-btn" data-sid="38ac4afc2b" title="收藏此条分析" onclick="toggleFav(this)">☆</button>海上风电转向“深蓝”，十五五规划明确装机目标</h3>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">东方电缆 (603606)、中天科技 (600522)</td><td style="text-align:left">海底电缆双寡头。“深远海风电开发”是核心要求，海域越远，离岸距离越长，单GW海缆价值量越高，是产业链中价值壁垒最高、技术门槛“卡脖子”的环节。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">海力风电 (301155)</td><td style="text-align:left">海上风电桩基和塔筒龙头。深远海风电意味着海深风大，对超大、超深的导管架和单桩需求急剧增加，公司产品直接对应这一增量市场。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">明阳智能 (601615)、电气风电 (688660)</td><td style="text-align:left">大兆瓦海上风机整机厂，尤其是明阳智能在双馈和漂浮式技术上有深厚积累。深远海风电（>50km，>30m水深）必须采用漂浮式等新技术，先发优势明显。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">天顺风能 (002531)</td><td style="text-align:left">风塔及叶片制造商，在海上风电设有产能基地。深远海风电的推进将带来整个海上风电装机的量增，作为上游部件供应商直接受益于总量扩张。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">宝胜股份 (600973)</td><td style="text-align:left">同样是海缆供应商，但市场份额和超高压技术领先性略逊于东方电缆和中天科技。作为第二梯队的海缆企业，同样会从市场蛋糕做大中分得一杯羹。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/603606_SH_20260703.png" alt="东方电缆 603606.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="sec" data-section-id="a09d403037">
+<h3 class="sec-h"><button class="fav-btn" data-sid="a09d403037" title="收藏此条分析" onclick="toggleFav(this)">☆</button>极端热浪席卷美国：电网承压，数据中心耗电引争议</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">英维克 (002837)</td><td style="text-align:left">新闻提及“硅谷数据中心正在成为美国最不受欢迎的邻居”和AI高电费问题，以及超高温导致电网紧急。这逻辑上强化了市场对高效温控和节能技术需求的预期。公司是国内数据中心及储能温控龙头，直接受益于全球算力基础设施的散热升级。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">巨星科技 (002444)</td><td style="text-align:left">美国多地突破历史高温纪录，1.8亿人受影响，将直接拉动空调、风扇、移动式空调等防暑降温产品的出口需求。公司是北美家装工具及电器的重要ODM/OEM供应商。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">华能国际 (600011)</td><td style="text-align:left">新闻提及美国高温加剧供电压力，需启用柴油机、天然气发电机备用。指向了发电和备用电源需求，逻辑上对国内发电设备和电力运维企业有情绪映射。但A股火电股与国内政策“合理控制煤电”相悖。</td><td style="text-align:left">看空</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002837_SZ_20260703.png" alt="英维克 002837.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="bi">知道就行：酷暑天气<mark class="mk-bullish">利好</mark>制冷剂（巨化股份）、空调（美的集团）等板块的逻辑链条较长，但可作为题材热度观察。</div>
 </div>
 <div class="sec" data-section-id="bb0b02c95c">
 <h3 class="sec-h"><button class="fav-btn" data-sid="bb0b02c95c" title="收藏此条分析" onclick="toggleFav(this)">☆</button>个股风险提示</h3>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">万科A (000002)</td><td style="text-align:left">新任总裁曾任地方金融办副主任，而非传统地产开发背景。这强烈暗示万科当前阶段的核心任务已从“开发销售”彻底转向“化解风险、资产盘活、与金融机构协调”。公司治理和战略方向出现根本性动摇，前景不确定性极高。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">保利发展 (600048)、招商蛇口 (001979)</td><td style="text-align:left">万科作为过去多年的行业标杆和管理高地，其内部变动会引发市场对整个地产国企板块治理和风险隔离的重新审视。短期内，作为同行的可比地产龙头，其估值会受情绪压制。</td><td style="text-align:left">看空</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">东方雨虹 (002271)、科顺股份 (300737)</td><td style="text-align:left">防水建材龙头，直接深度配套万科。如果万科战略收缩，聚焦存量资产处理而非新开工，将直接影响未来的采购量和工程款支付。作为供应商，其收入和应收账款风险加剧。</td><td style="text-align:left">看空</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">特斯拉供应链（如宁德时代、拓普集团等）</td><td style="text-align:left">特斯拉Q2交付超预期但股价反跌7.5%，这是一个典型的多头陷阱或“利好出尽”信号。且新闻提到公司开始严格管控员工AI工具使用成本，暗示对短期内通过AI实现运营质变不抱幻想，并将极致成本管控放在首位，这股压力会向上游供应商传导。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">光伏逆变器板块（如阳光电源、锦浪科技、固德威等）</td><td style="text-align:left">新闻提及美国拟全面禁止进口中国逆变器的传闻已引发板块连续下跌。作为外销依赖度较高、且面临贸易摩擦风险的环节，在传闻澄清前，政治风险溢价将急剧升高。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr></tbody></table></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">华银电力 (600744)</td><td style="text-align:left">公司预告半年度净利润同比下降73%-78%，主因是湖南丰水期水电激增压缩火电空间，叠加电力现货市场价格走低。属直接业绩暴雷。</td><td style="text-align:left">看空</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">海鸥股份 (603269)</td><td style="text-align:left">公司控股股东及实控人之一金敖大拟减持不超过3%股份。大额减持计划通常对股价造成直接负面压力。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">艾艾精工 (603580)</td><td style="text-align:left">公司发布异常波动公告，主动提示商誉减值风险及新能源电池配件业务营收环比下滑72.12%的业绩下滑风险。连板后的利空公告是短期高风险信号。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">有研粉材 (688456)</td><td style="text-align:left">股东拟通过询价方式转让公司总股本4.99%的股份。大额转让虽非直接减持，但会增加市场流通盘，同样构成供给压力。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600744_SH_20260703.png" alt="华银电力 600744.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/603269_SH_20260703.png" alt="海鸥股份 603269.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/603580_SH_20260703.png" alt="艾艾精工 603580.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+</div>
+<div class="sec" data-section-id="28064e112b">
+<h3 class="sec-h"><button class="fav-btn" data-sid="28064e112b" title="收藏此条分析" onclick="toggleFav(this)">☆</button>澜起科技：PCIe6.x/CXL3.x Retimer芯片配合客户测试</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">澜起科技 (688008)</td><td style="text-align:left">新闻直接提及公司。公司是内存接口芯片全球龙头，其PCIe Retimer芯片是AI服务器、数据中心内部高速数据传输的关键卡脖子芯片。送样测试进展是公司AI赛道布局的核心催化剂。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">沪电股份 (002463)</td><td style="text-align:left">作为澜起芯片的下游，是AI服务器及高速网络设备PCB板的核心供应商。Retimer芯片测试推进意味着配套的高速PCB需求确定性增强。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">三星电子 (港股: 三星)</td><td style="text-align:left">市场新闻提及Meta可能向三星下单超10万亿韩元AI芯片。澜起的Retimer芯片是保证这些AI算力芯片高效互联的关键部件，若三星AI芯片放量，澜起将间接受益。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
 </div></div>
 
 </div>
@@ -653,9 +661,15 @@ mark { background: transparent; }
     <div class="fav-panel-hdr">
       <span>⭐ 自选新闻 · <em id="favCount">0</em></span>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="fav-count" id="favSummary"></span>
+        <span class="fav-count" id="favSize" title="localStorage 占用"></span>
+        <button class="fav-act-btn" onclick="exportFavs()" title="导出收藏为 JSON 文件">↗导出</button>
+        <button class="fav-act-btn" onclick="importFavs()" title="从 JSON 文件导入收藏（合并去重）">↘导入</button>
+        <button class="fav-act-btn fav-act-del" onclick="clearAllFavs()" title="清空全部收藏">清空</button>
         <button class="fav-toggle" id="favToggle" title="收起面板" onclick="toggleFavPanel()">▾</button>
       </div>
+    </div>
+    <div id="favActions" style="padding:6px 20px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);">
+      收藏仅保存索引（不存HTML）· 上限 200 条 · 跨报告跳转需联网 · 可导出备份
     </div>
     <div class="fav-list" id="favList">
       <div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>
@@ -667,14 +681,18 @@ mark { background: transparent; }
 <div class="fav-toast" id="favToast"></div>
 
 <script>
-// ── 自选新闻 · localStorage 持久化 ──
-const STORAGE_KEY = 'market_brief_favs';
-const FAV_DATE_KEY = '2026-07-03_am';
+// ═══════════════════════════════════════════════════════════════
+//  自选新闻 · localStorage 持久化（轻量版）
+//  只存元数据索引，不存 HTML 副本 — 跨报告跳转时从源文件加载。
+// ═══════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'market_brief_favs_v2';  // v2: 不再存储 html 字段
+const MAX_FAVS = 200;
+const FAV_DATE_KEY = '2026-07-03_pm';
 const FAV_DATE = '2026-07-03';
-const FAV_SESSION = '早报';
+const FAV_SESSION = '晚报';
 
 // ── 早报 / 晚报 切换 ──
-let CURRENT_SESSION = 'am';
+let CURRENT_SESSION = 'pm';
 
 function switchSession(session) {
   if (session === CURRENT_SESSION) return;
@@ -696,17 +714,69 @@ function goToDate() {
   }
 }
 
+// ── 读写 localStorage（带错误处理 + 旧格式迁移）──
 function getFavs() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-  catch(e) { return []; }
-}
-function saveFavs(favs) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(favs));
-  renderFavPanel();
-  updateAllStarBtns();
+  try {
+    let raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!Array.isArray(raw)) return [];
+    // 迁移 v1 → v2: 丢弃 html 字段，只保留元数据
+    let migrated = false;
+    raw = raw.map(f => {
+      if (f.html !== undefined) { migrated = true; }
+      return {
+        id: f.id || '',
+        sid: f.sid || '',
+        date: f.date || '',
+        session: f.session || '',
+        title: f.title || '',
+        saved_at: f.saved_at || ''
+      };
+    });
+    if (migrated) {
+      saveFavsRaw(raw);
+      console.log('[Favs] 已从 v1 迁移到 v2 (丢弃HTML副本)');
+    }
+    return raw;
+  } catch(e) { return []; }
 }
 
-// ── 从 sec-h 提取纯文本标题（排除 ☆ 按钮文字）──
+function saveFavsRaw(favs) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(favs));
+    renderFavPanel();
+    updateAllStarBtns();
+  } catch(e) {
+    // localStorage 满了 → 裁剪最旧的 25%
+    if (e.name === 'QuotaExceededError') {
+      const drop = Math.ceil(favs.length * 0.25);
+      const trimmed = favs.slice(drop);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+      showToast('存储已满，已自动清理' + drop + '条旧收藏');
+      renderFavPanel();
+      updateAllStarBtns();
+    }
+  }
+}
+
+function saveFavs(favs) {
+  saveFavsRaw(favs);
+}
+
+// ── 估算存储占用 ──
+function estimateStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? new Blob([raw]).size : 0;
+  } catch(e) { return 0; }
+}
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+// ── 从 sec-h 提取纯文本标题 ──
 function getTitleFromSec(sid) {
   const sec = document.querySelector(`[data-section-id="${sid}"]`);
   if (!sec) return '';
@@ -717,7 +787,6 @@ function getTitleFromSec(sid) {
   return (hEl.textContent || '').replace(btnText, '').trim();
 }
 
-// ── 构造唯一 ID（日期 + 场次 + section hash）──
 function makeFavId(sid) {
   return FAV_DATE_KEY + '_' + sid;
 }
@@ -728,22 +797,32 @@ function toggleFav(btn) {
   const favId = makeFavId(sid);
   const title = getTitleFromSec(sid);
   if (!title) return;
-  const sec = document.querySelector(`[data-section-id="${sid}"]`);
-  const html = sec ? sec.outerHTML : '';
 
   let favs = getFavs();
   const idx = favs.findIndex(f => f.id === favId);
   if (idx >= 0) {
     favs.splice(idx, 1);
+    saveFavs(favs);
     showToast('已取消收藏');
   } else {
-    favs.push({ id: favId, sid: sid, date: FAV_DATE, session: FAV_SESSION, title: title, html: html, saved_at: new Date().toISOString() });
+    if (favs.length >= MAX_FAVS) {
+      showToast('收藏已达上限 (' + MAX_FAVS + '条)，请先清理旧收藏');
+      return;
+    }
+    favs.push({
+      id: favId,
+      sid: sid,
+      date: FAV_DATE,
+      session: FAV_SESSION,
+      title: title,
+      saved_at: new Date().toISOString()
+    });
+    saveFavs(favs);
     showToast('已加入自选 ⭐');
   }
-  saveFavs(favs);
 }
 
-// ── 删除收藏项（按完整 id 精确删除）──
+// ── 删除收藏项 ──
 function delFav(favId) {
   let favs = getFavs();
   favs = favs.filter(f => f.id !== favId);
@@ -757,18 +836,21 @@ function gotoFav(favId) {
   const f = favs.find(x => x.id === favId);
   if (!f) return;
   const sid = f.sid || '';
-  // 如果当前页面已有该 section，直接滚动
+  const dateDigits = f.date.replace(/-/g, '');
+
+  // 当前页面已有该 section → 直接滚动
   const local = document.querySelector(`[data-section-id="${sid}"]`);
   if (local) {
     local.scrollIntoView({ behavior: 'smooth', block: 'center' });
     local.style.boxShadow = '0 0 0 3px var(--amber)';
     setTimeout(() => local.style.boxShadow = '', 2000);
-  } else {
-    // 跨报告跳转：拼接日期对应的报告 URL
-    const dateDigits = f.date.replace(/-/g, '');
-    const reportUrl = window.location.href.replace(/report_[^/]+\.html/, 'report_' + dateDigits + '.html');
-    window.location.href = reportUrl + '#' + sid;
+    return;
   }
+
+  // 跨报告跳转：构建目标 URL
+  const sessionSuffix = (f.session === '晚报') ? '_pm' : '_am';
+  const targetUrl = 'https://hcongxi42-web.github.io/HZT/report_' + dateDigits + sessionSuffix + '.html';
+  window.location.href = targetUrl + '#' + sid;
 }
 
 // ── 渲染底部自选面板 ──
@@ -778,9 +860,14 @@ function renderFavPanel() {
   const listEl = document.getElementById('favList');
   const summaryEl = document.getElementById('favSummary');
   const panel = document.getElementById('favPanel');
+  const sizeEl = document.getElementById('favSize');
 
+  const storageSize = estimateStorage();
   if (countEl) countEl.textContent = favs.length + '条';
-  if (summaryEl) summaryEl.textContent = favs.length ? favs.map(f => f.date.slice(5) + (f.session === '晚报' ? '晚' : '早')).join(' · ') : '';
+  if (sizeEl) sizeEl.textContent = fmtSize(storageSize);
+  if (summaryEl) summaryEl.textContent = favs.length
+    ? favs.map(f => f.date.slice(5) + (f.session === '晚报' ? '晚' : '早')).slice(-10).join(' · ')
+    : '';
   if (panel && favs.length > 0) panel.style.display = 'block';
   else if (panel && favs.length === 0) panel.style.display = 'none';
 
@@ -789,18 +876,90 @@ function renderFavPanel() {
     listEl.innerHTML = '<div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>';
     return;
   }
-  // 最新在前
-  const sorted = [...favs].reverse();
+
+  // 最新在前，最多展示最近 100 条
+  const sorted = [...favs].reverse().slice(0, 100);
   listEl.innerHTML = sorted.map(f => `
     <div class="fav-item">
       <span class="fav-item-date">${f.date.slice(5)}${f.session === '晚报' ? '晚' : '早'}</span>
-      <span class="fav-item-title" onclick="gotoFav('${f.id}')" title="点击跳转到该条分析">${f.title}</span>
-      <button class="fav-item-del" onclick="delFav('${f.id}')">✕ 删除</button>
+      <span class="fav-item-title" onclick="gotoFav('${f.id}')" title="点击跳转到 ${f.date} ${f.session} · ${f.title}">${f.title}</span>
+      <button class="fav-item-del" onclick="delFav('${f.id}')" title="删除">✕</button>
     </div>
   `).join('');
+
+  // 如果超过 100 条，显示提示
+  if (favs.length > 100) {
+    listEl.innerHTML += '<div class="fav-item" style="color:var(--text-muted);font-size:11px;justify-content:center;">… 还有 ' + (favs.length - 100) + ' 条更早的收藏（已折叠）</div>';
+  }
 }
 
-// ── 更新所有 ☆ 按钮状态（按当前报告的日期+场次匹配）──
+// ── 批量清空 ──
+function clearAllFavs() {
+  if (confirm('确定要清空全部收藏吗？此操作不可恢复。')) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderFavPanel();
+    updateAllStarBtns();
+    showToast('已清空全部收藏');
+  }
+}
+
+// ── 导出收藏为 JSON 文件 ──
+function exportFavs() {
+  const favs = getFavs();
+  if (favs.length === 0) { showToast('没有收藏可导出'); return; }
+  const blob = new Blob([JSON.stringify(favs, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'market_brief_favs_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('已导出 ' + favs.length + ' 条收藏');
+}
+
+// ── 导入收藏（合并去重）──
+function importFavs() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const incoming = JSON.parse(e.target.result);
+        if (!Array.isArray(incoming)) throw new Error('格式错误');
+        let existing = getFavs();
+        const existingIds = new Set(existing.map(f => f.id));
+        let added = 0;
+        for (const f of incoming) {
+          if (!f.id || !f.title) continue;
+          if (existingIds.has(f.id)) continue;
+          // 丢弃 html 字段（兼容旧格式）
+          existing.push({
+            id: f.id, sid: f.sid || '', date: f.date || '',
+            session: f.session || '', title: f.title,
+            saved_at: f.saved_at || new Date().toISOString()
+          });
+          existingIds.add(f.id);
+          added++;
+        }
+        if (existing.length > MAX_FAVS) {
+          existing = existing.slice(existing.length - MAX_FAVS);
+        }
+        saveFavs(existing);
+        showToast('导入了 ' + added + ' 条，合并后共 ' + existing.length + ' 条');
+      } catch(err) {
+        showToast('导入失败：文件格式不正确');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ── 更新所有 ☆ 按钮状态 ──
 function updateAllStarBtns() {
   const favs = getFavs();
   const favIdSet = new Set(favs.map(f => f.id));
@@ -821,11 +980,14 @@ function updateAllStarBtns() {
 function toggleFavPanel() {
   const list = document.getElementById('favList');
   const toggle = document.getElementById('favToggle');
+  const actions = document.getElementById('favActions');
   if (list.style.display === 'none') {
     list.style.display = '';
+    if (actions) actions.style.display = '';
     toggle.textContent = '▾';
   } else {
     list.style.display = 'none';
+    if (actions) actions.style.display = 'none';
     toggle.textContent = '▸';
   }
 }
