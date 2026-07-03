@@ -407,6 +407,7 @@ def insert_charts_into_picks(stock_picks, chart_urls):
                 code_to_chart[code6] = (name, code, url)
 
     placed_codes = set()
+    first_chart = True  # 在第一张图上方标注保留期限
 
     # ---- 按 ### 标题拆分 section ----
     # 使用正则可以保留分隔符
@@ -473,6 +474,9 @@ def insert_charts_into_picks(stock_picks, chart_urls):
 
         chart_md_lines = []
         for name, code, url in section_charts:
+            if first_chart:
+                chart_md_lines.append('<span style="color:#d63031;font-weight:600;">⚠️ 注：K线图仅保留近7天，历史图表将自动清理。如需长期保存，请右键另存为。</span>')
+                first_chart = False
             chart_md_lines.append(f'![{name} {code}]({url})')
 
         # 在插入点后加一个空行分隔
@@ -1246,6 +1250,18 @@ mark {{ background: transparent; }}
 }}
 .fav-item-del:hover {{ color: var(--red); border-color: var(--red); }}
 
+/* ---- Fav action buttons ---- */
+.fav-act-btn {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size:9px; font-weight:600; letter-spacing:0.5px;
+  padding:2px 8px; border-radius:2px;
+  background: var(--bg); border:1px solid var(--border);
+  color: var(--text-muted); cursor:pointer;
+  transition: all 0.15s; white-space:nowrap;
+}}
+.fav-act-btn:hover {{ color: var(--accent); border-color: var(--accent); }}
+.fav-act-del:hover {{ color: var(--red); border-color: var(--red); }}
+
 /* ===== FAV TOAST ===== */
 .fav-toast {{
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
@@ -1334,9 +1350,15 @@ mark {{ background: transparent; }}
     <div class="fav-panel-hdr">
       <span>⭐ 自选新闻 · <em id="favCount">0</em></span>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="fav-count" id="favSummary"></span>
+        <span class="fav-count" id="favSize" title="localStorage 占用"></span>
+        <button class="fav-act-btn" onclick="exportFavs()" title="导出收藏为 JSON 文件">↗导出</button>
+        <button class="fav-act-btn" onclick="importFavs()" title="从 JSON 文件导入收藏（合并去重）">↘导入</button>
+        <button class="fav-act-btn fav-act-del" onclick="clearAllFavs()" title="清空全部收藏">清空</button>
         <button class="fav-toggle" id="favToggle" title="收起面板" onclick="toggleFavPanel()">▾</button>
       </div>
+    </div>
+    <div id="favActions" style="padding:6px 20px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);">
+      收藏仅保存索引（不存HTML）· 上限 200 条 · 跨报告跳转需联网 · 可导出备份
     </div>
     <div class="fav-list" id="favList">
       <div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>
@@ -1348,8 +1370,12 @@ mark {{ background: transparent; }}
 <div class="fav-toast" id="favToast"></div>
 
 <script>
-// ── 自选新闻 · localStorage 持久化 ──
-const STORAGE_KEY = 'market_brief_favs';
+// ═══════════════════════════════════════════════════════════════
+//  自选新闻 · localStorage 持久化（轻量版）
+//  只存元数据索引，不存 HTML 副本 — 跨报告跳转时从源文件加载。
+// ═══════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'market_brief_favs_v2';  // v2: 不再存储 html 字段
+const MAX_FAVS = 200;
 const FAV_DATE_KEY = '{fav_date_key}';
 const FAV_DATE = '{today}';
 const FAV_SESSION = '{session_label}';
@@ -1377,17 +1403,69 @@ function goToDate() {{
   }}
 }}
 
+// ── 读写 localStorage（带错误处理 + 旧格式迁移）──
 function getFavs() {{
-  try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }}
-  catch(e) {{ return []; }}
-}}
-function saveFavs(favs) {{
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(favs));
-  renderFavPanel();
-  updateAllStarBtns();
+  try {{
+    let raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!Array.isArray(raw)) return [];
+    // 迁移 v1 → v2: 丢弃 html 字段，只保留元数据
+    let migrated = false;
+    raw = raw.map(f => {{
+      if (f.html !== undefined) {{ migrated = true; }}
+      return {{
+        id: f.id || '',
+        sid: f.sid || '',
+        date: f.date || '',
+        session: f.session || '',
+        title: f.title || '',
+        saved_at: f.saved_at || ''
+      }};
+    }});
+    if (migrated) {{
+      saveFavsRaw(raw);
+      console.log('[Favs] 已从 v1 迁移到 v2 (丢弃HTML副本)');
+    }}
+    return raw;
+  }} catch(e) {{ return []; }}
 }}
 
-// ── 从 sec-h 提取纯文本标题（排除 ☆ 按钮文字）──
+function saveFavsRaw(favs) {{
+  try {{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(favs));
+    renderFavPanel();
+    updateAllStarBtns();
+  }} catch(e) {{
+    // localStorage 满了 → 裁剪最旧的 25%
+    if (e.name === 'QuotaExceededError') {{
+      const drop = Math.ceil(favs.length * 0.25);
+      const trimmed = favs.slice(drop);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+      showToast('存储已满，已自动清理' + drop + '条旧收藏');
+      renderFavPanel();
+      updateAllStarBtns();
+    }}
+  }}
+}}
+
+function saveFavs(favs) {{
+  saveFavsRaw(favs);
+}}
+
+// ── 估算存储占用 ──
+function estimateStorage() {{
+  try {{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? new Blob([raw]).size : 0;
+  }} catch(e) {{ return 0; }}
+}}
+
+function fmtSize(bytes) {{
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}}
+
+// ── 从 sec-h 提取纯文本标题 ──
 function getTitleFromSec(sid) {{
   const sec = document.querySelector(`[data-section-id="${{sid}}"]`);
   if (!sec) return '';
@@ -1398,7 +1476,6 @@ function getTitleFromSec(sid) {{
   return (hEl.textContent || '').replace(btnText, '').trim();
 }}
 
-// ── 构造唯一 ID（日期 + 场次 + section hash）──
 function makeFavId(sid) {{
   return FAV_DATE_KEY + '_' + sid;
 }}
@@ -1409,22 +1486,32 @@ function toggleFav(btn) {{
   const favId = makeFavId(sid);
   const title = getTitleFromSec(sid);
   if (!title) return;
-  const sec = document.querySelector(`[data-section-id="${{sid}}"]`);
-  const html = sec ? sec.outerHTML : '';
 
   let favs = getFavs();
   const idx = favs.findIndex(f => f.id === favId);
   if (idx >= 0) {{
     favs.splice(idx, 1);
+    saveFavs(favs);
     showToast('已取消收藏');
   }} else {{
-    favs.push({{ id: favId, sid: sid, date: FAV_DATE, session: FAV_SESSION, title: title, html: html, saved_at: new Date().toISOString() }});
+    if (favs.length >= MAX_FAVS) {{
+      showToast('收藏已达上限 (' + MAX_FAVS + '条)，请先清理旧收藏');
+      return;
+    }}
+    favs.push({{
+      id: favId,
+      sid: sid,
+      date: FAV_DATE,
+      session: FAV_SESSION,
+      title: title,
+      saved_at: new Date().toISOString()
+    }});
+    saveFavs(favs);
     showToast('已加入自选 ⭐');
   }}
-  saveFavs(favs);
 }}
 
-// ── 删除收藏项（按完整 id 精确删除）──
+// ── 删除收藏项 ──
 function delFav(favId) {{
   let favs = getFavs();
   favs = favs.filter(f => f.id !== favId);
@@ -1438,18 +1525,21 @@ function gotoFav(favId) {{
   const f = favs.find(x => x.id === favId);
   if (!f) return;
   const sid = f.sid || '';
-  // 如果当前页面已有该 section，直接滚动
+  const dateDigits = f.date.replace(/-/g, '');
+
+  // 当前页面已有该 section → 直接滚动
   const local = document.querySelector(`[data-section-id="${{sid}}"]`);
   if (local) {{
     local.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
     local.style.boxShadow = '0 0 0 3px var(--amber)';
     setTimeout(() => local.style.boxShadow = '', 2000);
-  }} else {{
-    // 跨报告跳转：拼接日期对应的报告 URL
-    const dateDigits = f.date.replace(/-/g, '');
-    const reportUrl = window.location.href.replace(/report_[^/]+\\.html/, 'report_' + dateDigits + '.html');
-    window.location.href = reportUrl + '#' + sid;
+    return;
   }}
+
+  // 跨报告跳转：构建目标 URL
+  const sessionSuffix = (f.session === '晚报') ? '_pm' : '_am';
+  const targetUrl = '{page_base_url}report_' + dateDigits + sessionSuffix + '.html';
+  window.location.href = targetUrl + '#' + sid;
 }}
 
 // ── 渲染底部自选面板 ──
@@ -1459,9 +1549,14 @@ function renderFavPanel() {{
   const listEl = document.getElementById('favList');
   const summaryEl = document.getElementById('favSummary');
   const panel = document.getElementById('favPanel');
+  const sizeEl = document.getElementById('favSize');
 
+  const storageSize = estimateStorage();
   if (countEl) countEl.textContent = favs.length + '条';
-  if (summaryEl) summaryEl.textContent = favs.length ? favs.map(f => f.date.slice(5) + (f.session === '晚报' ? '晚' : '早')).join(' · ') : '';
+  if (sizeEl) sizeEl.textContent = fmtSize(storageSize);
+  if (summaryEl) summaryEl.textContent = favs.length
+    ? favs.map(f => f.date.slice(5) + (f.session === '晚报' ? '晚' : '早')).slice(-10).join(' · ')
+    : '';
   if (panel && favs.length > 0) panel.style.display = 'block';
   else if (panel && favs.length === 0) panel.style.display = 'none';
 
@@ -1470,18 +1565,90 @@ function renderFavPanel() {{
     listEl.innerHTML = '<div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>';
     return;
   }}
-  // 最新在前
-  const sorted = [...favs].reverse();
+
+  // 最新在前，最多展示最近 100 条
+  const sorted = [...favs].reverse().slice(0, 100);
   listEl.innerHTML = sorted.map(f => `
     <div class="fav-item">
       <span class="fav-item-date">${{f.date.slice(5)}}${{f.session === '晚报' ? '晚' : '早'}}</span>
-      <span class="fav-item-title" onclick="gotoFav('${{f.id}}')" title="点击跳转到该条分析">${{f.title}}</span>
-      <button class="fav-item-del" onclick="delFav('${{f.id}}')">✕ 删除</button>
+      <span class="fav-item-title" onclick="gotoFav('${{f.id}}')" title="点击跳转到 ${{f.date}} ${{f.session}} · ${{f.title}}">${{f.title}}</span>
+      <button class="fav-item-del" onclick="delFav('${{f.id}}')" title="删除">✕</button>
     </div>
   `).join('');
+
+  // 如果超过 100 条，显示提示
+  if (favs.length > 100) {{
+    listEl.innerHTML += '<div class="fav-item" style="color:var(--text-muted);font-size:11px;justify-content:center;">… 还有 ' + (favs.length - 100) + ' 条更早的收藏（已折叠）</div>';
+  }}
 }}
 
-// ── 更新所有 ☆ 按钮状态（按当前报告的日期+场次匹配）──
+// ── 批量清空 ──
+function clearAllFavs() {{
+  if (confirm('确定要清空全部收藏吗？此操作不可恢复。')) {{
+    localStorage.removeItem(STORAGE_KEY);
+    renderFavPanel();
+    updateAllStarBtns();
+    showToast('已清空全部收藏');
+  }}
+}}
+
+// ── 导出收藏为 JSON 文件 ──
+function exportFavs() {{
+  const favs = getFavs();
+  if (favs.length === 0) {{ showToast('没有收藏可导出'); return; }}
+  const blob = new Blob([JSON.stringify(favs, null, 2)], {{ type: 'application/json' }});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'market_brief_favs_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('已导出 ' + favs.length + ' 条收藏');
+}}
+
+// ── 导入收藏（合并去重）──
+function importFavs() {{
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function() {{
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {{
+      try {{
+        const incoming = JSON.parse(e.target.result);
+        if (!Array.isArray(incoming)) throw new Error('格式错误');
+        let existing = getFavs();
+        const existingIds = new Set(existing.map(f => f.id));
+        let added = 0;
+        for (const f of incoming) {{
+          if (!f.id || !f.title) continue;
+          if (existingIds.has(f.id)) continue;
+          // 丢弃 html 字段（兼容旧格式）
+          existing.push({{
+            id: f.id, sid: f.sid || '', date: f.date || '',
+            session: f.session || '', title: f.title,
+            saved_at: f.saved_at || new Date().toISOString()
+          }});
+          existingIds.add(f.id);
+          added++;
+        }}
+        if (existing.length > MAX_FAVS) {{
+          existing = existing.slice(existing.length - MAX_FAVS);
+        }}
+        saveFavs(existing);
+        showToast('导入了 ' + added + ' 条，合并后共 ' + existing.length + ' 条');
+      }} catch(err) {{
+        showToast('导入失败：文件格式不正确');
+      }}
+    }};
+    reader.readAsText(file);
+  }};
+  input.click();
+}}
+
+// ── 更新所有 ☆ 按钮状态 ──
 function updateAllStarBtns() {{
   const favs = getFavs();
   const favIdSet = new Set(favs.map(f => f.id));
@@ -1502,11 +1669,14 @@ function updateAllStarBtns() {{
 function toggleFavPanel() {{
   const list = document.getElementById('favList');
   const toggle = document.getElementById('favToggle');
+  const actions = document.getElementById('favActions');
   if (list.style.display === 'none') {{
     list.style.display = '';
+    if (actions) actions.style.display = '';
     toggle.textContent = '▾';
   }} else {{
     list.style.display = 'none';
+    if (actions) actions.style.display = 'none';
     toggle.textContent = '▸';
   }}
 }}
@@ -1548,6 +1718,36 @@ function showToast(msg) {{
 # ============================================================
 #  PDF 生成
 # ============================================================
+
+def cleanup_old_files(days=7):
+    """清理旧的图表和 PDF 文件，避免 docs/ 目录膨胀导致 Pages 部署失败。
+
+    保留逻辑：
+      - charts/: 删除超过 `days` 天的 PNG 文件
+      - pdf/:    删除超过 `days` 天的 PDF（保留 latest.pdf）
+    """
+    import glob as _glob
+    import time as _time
+
+    now = _time.time()
+    cutoff = now - days * 86400
+    total_removed = 0
+
+    for subdir, pattern in [("charts", "*.png"), ("pdf", "股市简报_*.pdf")]:
+        dir_path = os.path.join("docs", subdir)
+        if not os.path.isdir(dir_path):
+            continue
+        for fp in _glob.glob(os.path.join(dir_path, pattern)):
+            try:
+                if os.path.getmtime(fp) < cutoff:
+                    os.remove(fp)
+                    total_removed += 1
+            except OSError:
+                pass
+
+    if total_removed > 0:
+        print(f"[Cleanup] 已清理 {total_removed} 个旧文件 (>{days}天)")
+
 
 def generate_pdf(html_path):
     """将 HTML 报告转为 PDF（Chrome Headless）。"""
@@ -1684,7 +1884,10 @@ def main():
     else:
         page_base_url = "https://hcongxi42-web.github.io/HZT/"
 
-    # 5. 技术分析图表
+    # 5. 清理旧文件（防止 docs/ 膨胀导致 Pages 部署失败）
+    cleanup_old_files(days=7)
+
+    # 6. 技术分析图表
     if stock_picks and stock_analyzer:
         print("  解析高评分股票...")
         stock_list = stock_analyzer.parse_stock_picks(stock_picks)

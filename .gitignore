@@ -4,3 +4,5 @@ report_*.md
 cron.log
 /tmp/
 .env
+docs/pdf/*.pdf
+!docs/pdf/latest.pdf

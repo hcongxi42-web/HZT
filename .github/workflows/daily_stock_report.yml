@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
   pages: write
+  id-token: write
 
 jobs:
   generate-report:
@@ -39,32 +40,60 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python stock_report.py
 
-      - name: Deploy to GitHub Pages
+      - name: Commit HTML + Charts to Repo
         run: |
+          # 只提交轻量的 HTML 报告和图表（PDF 已被 gitignore 排除）
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull origin main --rebase || true
-          git add docs/ || true
-          git add stock_analyzer.py || true
+          git add docs/*.html docs/index.html docs/.nojekyll || true
+          git add docs/charts/ || true
           git diff --cached --quiet || git commit -m "update: 股市日报 $(date +%Y-%m-%d)"
           git push || true
 
+      - name: Upload PDF Artifact (before cleanup)
+        uses: actions/upload-artifact@v4
+        with:
+          # 按日期命名，便于查找；加上 session slug 区分早晚报
+          # 注意 v4 要求每次运行的 artifact name 唯一，这里加入日期+时间确保不冲突
+          name: stock-report-${{ github.run_number }}
+          path: |
+            report_*.md
+            docs/pdf/*.pdf
+          # PDF 文件小（~1.5MB/个），retention 设长一些不浪费多少空间
+          # 10GB 总量限制下：~1.5MB × 2次/天 × 90天 ≈ 270MB，完全没问题
+          retention-days: 90
+
+      - name: Strip PDFs from Pages artifact
+        run: |
+          # 保留 latest.pdf 供在线下载，删除其余 PDF（历史 PDF 通过 Artifact 保留）
+          if [ -f docs/pdf/latest.pdf ]; then
+            cp docs/pdf/latest.pdf /tmp/latest.pdf.backup
+          fi
+          rm -f docs/pdf/*.pdf
+          mkdir -p docs/pdf
+          if [ -f /tmp/latest.pdf.backup ]; then
+            cp /tmp/latest.pdf.backup docs/pdf/latest.pdf
+          fi
+          echo "=== docs/ layout (after strip) ==="
+          du -sh docs/ docs/*/ 2>/dev/null || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v5
+
       - name: Keep workflow alive
         run: |
-          # GitHub disables scheduled workflows after 60 days of repo inactivity.
-          # This step ensures there's always a recent commit to prevent that.
           if [ $(git log -1 --format=%ct) -lt $(date -d '50 days ago' +%s 2>/dev/null || date -v-50d +%s 2>/dev/null || echo 0) ]; then
             date -u > .github/.keepalive
             git add .github/.keepalive
             git commit -m "chore: keep workflow alive" || true
             git push || true
           fi
-
-      - name: Upload Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: stock-report-${{ github.run_number }}
-          path: |
-            report_*.md
-            docs/*.html
-          retention-days: 30
