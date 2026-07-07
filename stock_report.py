@@ -46,8 +46,12 @@ def _load_up_config():
 UP_CONFIG = _load_up_config()
 
 
-def find_today_opinions(opinion_dir="up主的每日观点"):
-    """扫描 UP主观点目录（含子目录），返回今日的转录文件列表。
+def find_today_opinions(opinion_dir="up主的每日观点", date_offset=0):
+    """扫描 UP主观点目录（含子目录），返回指定日期的转录文件列表。
+
+    Args:
+        opinion_dir: 观点文件根目录
+        date_offset: 日期偏移量，0=今天，-1=昨天（早报用），1=明天
 
     支持两种组织方式：
       - 扁平：up主的每日观点/xxx.ai-zh.txt
@@ -62,9 +66,9 @@ def find_today_opinions(opinion_dir="up主的每日观点"):
     if not os.path.isdir(opinion_dir):
         return []
 
-    today = beijing_now()
-    today_month = today.month
-    today_day = today.day
+    target = beijing_now() + timedelta(days=date_offset)
+    target_month = target.month
+    target_day = target.day
 
     results = []
     # 递归扫描目录和子目录
@@ -77,7 +81,7 @@ def find_today_opinions(opinion_dir="up主的每日观点"):
         if date_match:
             file_month = int(date_match.group(1))
             file_day = int(date_match.group(2))
-            if file_month != today_month or file_day != today_day:
+            if file_month != target_month or file_day != target_day:
                 continue  # 不是今天的文件，跳过
 
         # 从文件名解析 UP主 ID（长数字，通常在文件名靠后位置）
@@ -818,7 +822,7 @@ def markdown_to_html(md):
 
 def generate_html_report(report, quotes, news_list, page_url="", page_base_url="",
                          fund_flow=None, session_label="早报", session_slug="am",
-                         opinion_html=""):
+                         opinion_html="", opinion_title="今日收盘UP主观点"):
     """生成 Bloomberg Terminal 风格 HTML 详情页。"""
     bj_now = beijing_now()
     today = bj_now.strftime("%Y-%m-%d")
@@ -919,8 +923,7 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     # ---- 观点蒸馏板块 ----
     if opinion_html:
         opinion_section = (
-            '  <div class="sec-hdr" style="margin-top:40px;">'
-            'FINANCIAL OPINION DISTILLATION</div>\n'
+            f'  <div class="sec-hdr" style="margin-top:40px;">{opinion_title}</div>\n'
             f'  <div class="report-body opinions-body">{opinion_html}</div>\n'
         )
     else:
@@ -2125,9 +2128,18 @@ def main():
         report += format_stock_picks(stock_picks)
         print("  AI 选股完成")
 
-    # 5.5 财经观点蒸馏
-    print("\n▸ 扫描UP主观点文件...")
-    opinions = find_today_opinions()
+    # 5.5 财经观点蒸馏 — 早晚报区分标题和日期
+    if session_label == "早报":
+        opinion_title = "今日收盘UP主观点"
+        opinion_md_title = "## 📊 昨日收盘UP主观点"
+        date_offset = -1
+    else:
+        opinion_title = "今日收盘UP主观点"
+        opinion_md_title = "## 📊 今日收盘UP主观点"
+        date_offset = 0
+
+    print(f"\n▸ 扫描UP主观点文件（{opinion_title}）...")
+    opinions = find_today_opinions(date_offset=date_offset)
     opinion_html = ""
     opinion_md = ""
     if opinions:
@@ -2144,7 +2156,8 @@ def main():
             print(f"  观点分析失败: {opinion_md[:100] if opinion_md else '无返回'}")
             opinion_md = ""
     else:
-        print("  未找到今日UP主观点文件，跳过")
+        target_date = beijing_now() + timedelta(days=date_offset)
+        print(f"  未找到 {target_date.month}月{target_date.day}日 的UP主观点文件，跳过")
 
     print("\n" + "=" * 60)
     print(report[:2000])
@@ -2157,12 +2170,12 @@ def main():
     page_url = f"{page_base_url}report_{today_str}.html"
     html = generate_html_report(report, quotes, news_list, page_url, page_base_url,
                                 fund_flow, session_label=session_label, session_slug=session_slug,
-                                opinion_html=opinion_html)
+                                opinion_html=opinion_html, opinion_title=opinion_title)
     page_url = deploy_github_pages(html, session_slug=session_slug)
 
     # 将观点蒸馏追加到 report（用于 .md 保存，HTML 中已有独立板块不重复）
     if opinion_md:
-        report += "\n\n---\n\n## 📊 财经观点蒸馏\n\n" + opinion_md
+        report += f"\n\n---\n\n{opinion_md_title}\n\n" + opinion_md
 
     # 7. PDF
     print("▸ 生成 PDF...")
