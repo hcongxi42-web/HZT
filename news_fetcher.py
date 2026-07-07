@@ -12,6 +12,15 @@ import re
 import urllib.request
 import urllib.error
 from datetime import datetime, timedelta
+
+
+def _beijing_now():
+    """返回北京时间 datetime（UTC+8），兼容 CI 和本地环境。"""
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("Asia/Shanghai"))
+    except Exception:
+        return datetime.utcnow() + timedelta(hours=8)
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 
@@ -412,7 +421,7 @@ def fetch_all_news(market="all"):
       }
     """
     result = {
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "date": _beijing_now().strftime("%Y-%m-%d %H:%M"),
         "markets": {},
     }
 
@@ -478,7 +487,7 @@ class NewsHandler(BaseHTTPRequestHandler):
         self.wfile.write(response.encode("utf-8"))
 
     def log_message(self, format, *args):
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] {args[0]}")
+        print(f"[{_beijing_now().strftime('%H:%M:%S')}] {args[0]}")
 
 
 # ============================================================

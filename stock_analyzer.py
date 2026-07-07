@@ -12,6 +12,15 @@ import json
 import warnings
 from datetime import datetime, timedelta
 
+
+def _beijing_now():
+    """返回北京时间 datetime（UTC+8），兼容 CI 和本地环境。"""
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("Asia/Shanghai"))
+    except Exception:
+        return datetime.utcnow() + timedelta(hours=8)
+
 warnings.filterwarnings("ignore")
 
 # ============ Matplotlib 中文字体配置 ============
@@ -240,8 +249,8 @@ def fetch_baostock_data(stock_code, days=60):
             return None
         fetch_baostock_data._logged_in = True
 
-    end_date = datetime.now().strftime("%Y-%m-%d")
-    start_date = (datetime.now() - timedelta(days=days + 30)).strftime("%Y-%m-%d")
+    end_date = _beijing_now().strftime("%Y-%m-%d")
+    start_date = (_beijing_now() - timedelta(days=days + 30)).strftime("%Y-%m-%d")
 
     fields = "date,open,high,low,close,volume,amount,preclose,pctChg"
     rs = bs.query_history_k_data_plus(bs_code, fields, start_date=start_date, end_date=end_date, frequency="d")
@@ -467,7 +476,7 @@ def analyze_stocks(stock_list, charts_dir, page_base_url):
     if not stock_list:
         return []
 
-    today_str = datetime.now().strftime("%Y%m%d")
+    today_str = _beijing_now().strftime("%Y%m%d")
     chart_urls = []
 
     for name, code, stars, logic in stock_list:

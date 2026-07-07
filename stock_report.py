@@ -27,15 +27,20 @@ from news_fetcher import fetch_all_news_flat
 
 def get_session_label():
     """根据北京时间判断报告场次（A股交易时段）。"""
-    try:
-        from zoneinfo import ZoneInfo
-        hour = datetime.now(ZoneInfo("Asia/Shanghai")).hour
-    except Exception:
-        hour = (datetime.utcnow().hour + 8) % 24
+    hour = beijing_now().hour
     if hour < 12:
         return "早报", "am"
     else:
         return "晚报", "pm"
+
+
+def beijing_now():
+    """返回北京时间 datetime（UTC+8），兼容 CI 和本地环境。"""
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("Asia/Shanghai"))
+    except Exception:
+        return datetime.utcnow() + timedelta(hours=8)
 
 
 # ============================================================
@@ -122,10 +127,10 @@ def _fmt_time_short(time_str):
 
 def format_news(news_list, fund_flow=None):
     """将多市场新闻和资金面数据格式化为 LLM 可读文本。"""
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    today_str = beijing_now().strftime("%Y-%m-%d")
 
     lines = [
-        f"日期: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        f"日期: {beijing_now().strftime('%Y-%m-%d %H:%M')}",
         f"今日 {today_str} 是交易日，以下为当日多市场资讯汇总。",
         "",
     ]
@@ -239,14 +244,15 @@ STOCK_PICKER_TEMPLATE = """从以下资讯中，找出今天值得关注的个�
 输出格式：
 - 每条重要新闻用 ### 做标题
 - 新闻下面放表格：| 股票及代码 | 为什么选它 | 看多/看空 | 把握度 |
-- 「超核心关注」、「核心关注」和「可以看看」放表格里
+- 
+
+「超核心关注」、「核心关注」和「可以看看」放到“把握度”里
 - 「知道就行」的放在新闻末尾用 - 简单提一下
 - 如果有利空消息，用 ### 个股风险提示 单独列出（减持/业绩暴雷/监管处罚等）
 
 注意：
 - 表格每栏至少 3-5 行（可以更多），体现产业链推理
 - 每条资讯只用一次，别在不同板块里重复
-
 ---
 数据：
 
@@ -666,27 +672,29 @@ def markdown_to_html(md):
 def generate_html_report(report, quotes, news_list, page_url="", page_base_url="",
                          fund_flow=None, session_label="早报", session_slug="am"):
     """生成 Bloomberg Terminal 风格 HTML 详情页。"""
-    today = datetime.now().strftime("%Y-%m-%d")
-    today_en = datetime.now().strftime("%B %d, %Y")
-    now_str = datetime.now().strftime("%H:%M")
+    bj_now = beijing_now()
+    today = bj_now.strftime("%Y-%m-%d")
+    today_en = bj_now.strftime("%B %d, %Y")
+    now_str = bj_now.strftime("%H:%M")
+    update_datetime = bj_now.strftime("%Y-%m-%d %H:%M")  # 完整时间戳，页面展示用
     weekday_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     weekday_cn = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
-    weekday = weekday_names[datetime.now().weekday()]
-    wk_cn = weekday_cn[datetime.now().weekday()]
+    weekday = weekday_names[bj_now.weekday()]
+    wk_cn = weekday_cn[bj_now.weekday()]
     fav_date_key = f"{today}_{session_slug}"  # 用于收藏唯一标识
 
     # ---- 历史简报导航 ----
     history_links_html = ""
     if page_base_url:
         for i in range(1, 6):
-            d = datetime.now() - timedelta(days=i)
+            d = bj_now - timedelta(days=i)
             label = d.strftime("%m月%d日")
             history_links_html += (
                 f'<a class="hl" href="{page_base_url}report_{d.strftime("%Y%m%d")}.html">'
                 f'{label}</a>'
             )
         # 日期选择器 + 早报/晚报切换按钮
-        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_str = bj_now.strftime("%Y-%m-%d")
         am_active = " active" if session_slug == "am" else ""
         pm_active = " active" if session_slug == "pm" else ""
         history_links_html += (
@@ -939,6 +947,11 @@ body {{
   font-size:14px; color: var(--text-secondary);
   font-weight:400; font-family: 'JetBrains Mono', monospace;
   letter-spacing: 1px;
+}}
+.masthead-update {{
+  font-size:12px; color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px; margin-top: 8px;
 }}
 .masthead-tags {{
   margin-top:18px; display:flex; justify-content:center; gap:8px; flex-wrap:wrap;
@@ -1288,7 +1301,7 @@ mark {{ background: transparent; }}
 <div class="topbar">
   <div class="topbar-inner">
     <div class="logo">MARKET<em>//</em>BRIEF</div>
-    <div class="topbar-meta">{weekday}<br>{now_str} CST</div>
+    <div class="topbar-meta">{weekday}<br>{now_str} CST（北京时间）</div>
   </div>
 </div>
 
@@ -1308,6 +1321,7 @@ mark {{ background: transparent; }}
   <div class="masthead-date">{today} · {wk_cn} · {session_label}</div>
   <h1>每日市场情报</h1>
   <div class="masthead-sub">INSTITUTIONAL · MARKET · INTELLIGENCE</div>
+  <div class="masthead-update">更新时间：{update_datetime}（北京时间 CST）</div>
   <div class="masthead-tags">
     <span class="mtag mtag-a">A-SHARE · {a_count}</span>
     <span class="mtag mtag-us">US · {us_count}</span>
@@ -1733,7 +1747,7 @@ def cleanup_old_files(days=7, max_per_run=50):
     import glob as _glob
     import re as _re
 
-    today = datetime.now()
+    today = beijing_now()
     cutoff = today - timedelta(days=days)
     cutoff_date = cutoff.date()
     total_removed = 0
@@ -1792,7 +1806,7 @@ def generate_pdf(html_path):
     import subprocess
     import shutil
 
-    now = datetime.now()
+    now = beijing_now()
     pdf_filename = f"股市简报_{now.strftime('%Y-%m-%d_%H%M')}.pdf"
     pdf_dir = os.path.join("docs", "pdf")
     os.makedirs(pdf_dir, exist_ok=True)
@@ -1840,7 +1854,7 @@ def generate_pdf(html_path):
 
 def deploy_github_pages(html_content, session_slug="am"):
     """将 HTML 写入 docs/ 目录，同时生成主文件和场次文件。"""
-    today = datetime.now().strftime("%Y%m%d")
+    today = beijing_now().strftime("%Y%m%d")
     os.makedirs("docs", exist_ok=True)
 
     # 主文件（最新报告，向后兼容）
@@ -1877,7 +1891,7 @@ def deploy_github_pages(html_content, session_slug="am"):
 
 def main():
     session_label, session_slug = get_session_label()
-    print(f"[{datetime.now()}] 开始生成每日市场情报（{session_label}）...")
+    print(f"[{beijing_now()}] 开始生成每日市场情报（{session_label}）...")
     print()
 
     # 1. 行情
@@ -1913,7 +1927,7 @@ def main():
     stock_picks = call_stock_picker(news_text)
 
     # 预先构造 GitHub Pages URL
-    today_str = datetime.now().strftime("%Y%m%d")
+    today_str = beijing_now().strftime("%Y%m%d")
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     if repo:
         owner = repo.split("/")[0].lower()
@@ -1967,9 +1981,9 @@ def main():
     generate_pdf(html_file)
 
     # 8. 保存 Markdown
-    report_file = f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
+    report_file = f"report_{beijing_now().strftime('%Y%m%d_%H%M')}.md"
     with open(report_file, "w", encoding="utf-8") as f:
-        f.write(f"# 每日市场情报 - {datetime.now().strftime('%Y-%m-%d')} {session_label}\n\n")
+        f.write(f"# 每日市场情报 - {beijing_now().strftime('%Y-%m-%d')} {session_label}\n\n")
         f.write(report)
     print(f"Markdown 报告: {report_file}")
 
@@ -1980,7 +1994,7 @@ def main():
             f.write(f"report_file={report_file}\n")
             f.write(f"page_url={page_url}\n")
 
-    print(f"\n[{datetime.now()}] 完成")
+    print(f"\n[{beijing_now()}] 完成")
 
 
 if __name__ == "__main__":
