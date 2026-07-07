@@ -25,6 +25,99 @@ from news_fetcher import fetch_all_news_flat
 #  工具函数
 # ============================================================
 
+# ============================================================
+#  UP主观点 — 配置 & 文件扫描
+# ============================================================
+
+def _load_up_config():
+    """加载 UP主 配置文件，文件不存在时返回空 dict。"""
+    import os as _os
+    config_path = _os.path.join("opinions", "up_config.json")
+    if not _os.path.exists(config_path):
+        return {}
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+# 模块级缓存
+UP_CONFIG = _load_up_config()
+
+
+def find_today_opinions(opinion_dir="up主的每日观点"):
+    """扫描 UP主观点目录（含子目录），返回今日的转录文件列表。
+
+    支持两种组织方式：
+      - 扁平：up主的每日观点/xxx.ai-zh.txt
+      - 分类：up主的每日观点/up擒龙先生/xxx.ai-zh.txt
+
+    Returns:
+        list[dict]: [{up_id, name, platform, filename, content, char_count}, ...]
+        无今日文件时返回 []
+    """
+    import glob as _glob
+
+    if not os.path.isdir(opinion_dir):
+        return []
+
+    today = beijing_now()
+    today_month = today.month
+    today_day = today.day
+
+    results = []
+    # 递归扫描目录和子目录
+    for fp in _glob.glob(os.path.join(opinion_dir, "**", "*.txt"), recursive=True):
+        fname = os.path.basename(fp)
+        parent_dir = os.path.basename(os.path.dirname(fp))
+
+        # 从文件名解析日期（支持 "7月6日" 中文格式）
+        date_match = re.search(r'(\d{1,2})月(\d{1,2})日', fname)
+        if date_match:
+            file_month = int(date_match.group(1))
+            file_day = int(date_match.group(2))
+            if file_month != today_month or file_day != today_day:
+                continue  # 不是今天的文件，跳过
+
+        # 从文件名解析 UP主 ID（长数字，通常在文件名靠后位置）
+        id_match = re.search(r'\.(\d{8,20})(?:\.ai-zh)?\.txt$', fname)
+        up_id = id_match.group(1) if id_match else ""
+
+        # 读取内容
+        try:
+            with open(fp, "r", encoding="utf-8") as f:
+                content = f.read()
+            if not content or len(content.strip()) < 50:
+                print(f"  ⚠ 跳过空/过短文件: {fname}")
+                continue
+        except Exception as e:
+            print(f"  ⚠ 无法读取 {fname}: {e}")
+            continue
+
+        # 查找 UP主 显示名称
+        cfg = UP_CONFIG.get(up_id, {})
+        name = cfg.get("name", "")
+        if not name:
+            # 尝试从父目录名推断（如 "up擒龙先生" → "擒龙先生"）
+            if parent_dir and parent_dir != opinion_dir and parent_dir.startswith("up"):
+                name = parent_dir[2:]  # 去掉 "up" 前缀
+            else:
+                name = f"UP主{up_id}" if up_id else fname[:20]
+        platform = cfg.get("platform", "")
+
+        results.append({
+            "up_id": up_id,
+            "name": name,
+            "platform": platform,
+            "filename": fname,
+            "content": content,
+            "char_count": len(content),
+        })
+
+    return results
+
+
 def get_session_label():
     """根据北京时间判断报告场次（A股交易时段）。"""
     hour = beijing_now().hour
@@ -260,6 +353,49 @@ STOCK_PICKER_TEMPLATE = """从以下资讯中，找出今天值得关注的个�
 
 
 # ============================================================
+#  财经观点蒸馏 — 提示词
+# ============================================================
+
+OPINION_SYSTEM_PROMPT = (
+    "你是一位专业财经信息编辑，擅长从自媒体观点的原始口播转录中"
+    "提取核心判断、去除口语噪音、保留个人风格。"
+    "你的职责是忠实还原每位UP主的观点，不添加你自己的判断，不模棱两可。"
+    "对每位UP主输出结构一致但语言保留其个人风格的分析。"
+)
+
+OPINION_USER_PROMPT_TEMPLATE = """以下是今日财经UP主的AI转录观点文本。请逐个UP主分析，提取核心观点。
+
+对每位UP主，请输出以下结构（用 ### 做标题）：
+
+### UP主名称：核心观点提炼
+
+- **核心逻辑**：用1句话概括这位UP主今天最核心的判断
+- **情绪倾向**：乐观 / 中性 / 悲观（标为 利好 / 中性 / 利空）
+- **看多方向**：列举UP主明确看好的板块/赛道
+- **看空/谨慎方向**：列举UP主明确看空或提示风险的板块
+- **关键论据**：UP主给出的逻辑支撑（引用原文关键句，标注「」）
+- **置信度**：判断UP主对自己观点的确信程度（坚定 / 较强 / 一般 / 犹豫）
+- **风格标签**：用2-3个词概括分析风格（如：基本面派、情绪派、产业链派、技术分析派）
+
+末尾再加一个 ### 多方观点交叉比对 小节：
+- 横向量化：哪些板块被多位UP主同时看好？哪些存在分歧？
+- 列出表格：| 板块名称 | 看多人数 | 看空人数 | 代表人物 |
+- 1-2句话总结今日民间观点的共识度和分歧度
+
+风格要求：
+- 忠实还原UP主原意，不要润色过度失去个人风格
+- 别用「值得关注的是」「总体来看」这类废话开头
+- 「」标记板块和关键术语
+- 保留口语化的金句（如「血包逻辑」这种有辨识度的表达）
+- 别用 emoji
+
+---
+今日观点文本：
+
+{opinion_text}"""
+
+
+# ============================================================
 #  LLM 输出清洗
 # ============================================================
 
@@ -378,6 +514,17 @@ def format_stock_picks(picks_md):
         "## 📌 产业链选股（AI 驱动）\n\n"
         f"{picks_md}\n"
     )
+
+
+def call_opinion_analyzer(opinion_text):
+    """调用 LLM 分析UP主财经观点，返回结构化 markdown。"""
+    raw = _call_deepseek(
+        OPINION_SYSTEM_PROMPT,
+        OPINION_USER_PROMPT_TEMPLATE.format(opinion_text=opinion_text),
+        temperature=0.4,
+        max_tokens=4096,
+    )
+    return _cleanup_report(raw)
 
 
 # ============================================================
@@ -670,7 +817,8 @@ def markdown_to_html(md):
 # ============================================================
 
 def generate_html_report(report, quotes, news_list, page_url="", page_base_url="",
-                         fund_flow=None, session_label="早报", session_slug="am"):
+                         fund_flow=None, session_label="早报", session_slug="am",
+                         opinion_html=""):
     """生成 Bloomberg Terminal 风格 HTML 详情页。"""
     bj_now = beijing_now()
     today = bj_now.strftime("%Y-%m-%d")
@@ -767,6 +915,16 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
 
     # ---- 报告正文 ----
     report_html = markdown_to_html(report)
+
+    # ---- 观点蒸馏板块 ----
+    if opinion_html:
+        opinion_section = (
+            '  <div class="sec-hdr" style="margin-top:40px;">'
+            'FINANCIAL OPINION DISTILLATION</div>\n'
+            f'  <div class="report-body opinions-body">{opinion_html}</div>\n'
+        )
+    else:
+        opinion_section = ""
 
     # ---- 组装 ----
     html = f"""<!DOCTYPE html>
@@ -1293,6 +1451,10 @@ mark {{ background: transparent; }}
   .fav-panel-hdr {{ padding:10px 14px; }}
   .fav-panel {{ padding: 0 14px 24px; }}
 }}
+
+/* ===== OPINIONS SECTION ===== */
+.opinions-body .sec {{ border-left: 2px solid var(--purple); padding-left: 16px; margin-bottom: 28px; }}
+.opinions-body .sec-h {{ color: var(--purple); }}
 </style>
 </head>
 <body>
@@ -1343,6 +1505,7 @@ mark {{ background: transparent; }}
   <div class="sec-hdr">ANALYSIS</div>
   <div class="report-body">{report_html}</div>
 
+  {opinion_section}
 </div>
 
 <div class="site-footer">
@@ -1962,6 +2125,27 @@ def main():
         report += format_stock_picks(stock_picks)
         print("  AI 选股完成")
 
+    # 5.5 财经观点蒸馏
+    print("\n▸ 扫描UP主观点文件...")
+    opinions = find_today_opinions()
+    opinion_html = ""
+    opinion_md = ""
+    if opinions:
+        print(f"  发现 {len(opinions)} 位UP主观点，开始蒸馏...")
+        parts = []
+        for o in opinions:
+            parts.append(f"【UP主: {o['name']}（{o['filename']}，{o['char_count']}字）】\n{o['content']}")
+        combined_text = "\n\n---\n\n".join(parts)
+        opinion_md = call_opinion_analyzer(combined_text)
+        if opinion_md and not opinion_md.startswith("API 调用失败"):
+            opinion_html = markdown_to_html(opinion_md)
+            print("  观点蒸馏完成")
+        else:
+            print(f"  观点分析失败: {opinion_md[:100] if opinion_md else '无返回'}")
+            opinion_md = ""
+    else:
+        print("  未找到今日UP主观点文件，跳过")
+
     print("\n" + "=" * 60)
     print(report[:2000])
     if len(report) > 2000:
@@ -1972,8 +2156,13 @@ def main():
     print("\n▸ 生成详情页...")
     page_url = f"{page_base_url}report_{today_str}.html"
     html = generate_html_report(report, quotes, news_list, page_url, page_base_url,
-                                fund_flow, session_label=session_label, session_slug=session_slug)
+                                fund_flow, session_label=session_label, session_slug=session_slug,
+                                opinion_html=opinion_html)
     page_url = deploy_github_pages(html, session_slug=session_slug)
+
+    # 将观点蒸馏追加到 report（用于 .md 保存，HTML 中已有独立板块不重复）
+    if opinion_md:
+        report += "\n\n---\n\n## 📊 财经观点蒸馏\n\n" + opinion_md
 
     # 7. PDF
     print("▸ 生成 PDF...")
