@@ -2123,14 +2123,9 @@ def main():
     elif not stock_analyzer:
         print("  stock_analyzer 模块未加载，跳过图表")
 
-    # 组装完整报告
-    if stock_picks:
-        report += format_stock_picks(stock_picks)
-        print("  AI 选股完成")
-
-    # 5.5 财经观点蒸馏 — 早晚报区分标题和日期
+    # 5.5 财经观点蒸馏 — 早晚报区分标题和日期（放在选股前面）
     if session_label == "早报":
-        opinion_title = "今日收盘UP主观点"
+        opinion_title = "昨日收盘UP主观点"
         opinion_md_title = "## 📊 昨日收盘UP主观点"
         date_offset = -1
     else:
@@ -2140,8 +2135,6 @@ def main():
 
     print(f"\n▸ 扫描UP主观点文件（{opinion_title}）...")
     opinions = find_today_opinions(date_offset=date_offset)
-    opinion_html = ""
-    opinion_md = ""
     if opinions:
         print(f"  发现 {len(opinions)} 位UP主观点，开始蒸馏...")
         parts = []
@@ -2150,14 +2143,19 @@ def main():
         combined_text = "\n\n---\n\n".join(parts)
         opinion_md = call_opinion_analyzer(combined_text)
         if opinion_md and not opinion_md.startswith("API 调用失败"):
-            opinion_html = markdown_to_html(opinion_md)
-            print("  观点蒸馏完成")
+            # 直接追加到 report，在选股前面
+            report += f"\n\n---\n\n{opinion_md_title}\n\n{opinion_md}"
+            print("  观点蒸馏完成，已插入到产业链选股前面")
         else:
             print(f"  观点分析失败: {opinion_md[:100] if opinion_md else '无返回'}")
-            opinion_md = ""
     else:
         target_date = beijing_now() + timedelta(days=date_offset)
         print(f"  未找到 {target_date.month}月{target_date.day}日 的UP主观点文件，跳过")
+
+    # 组装完整报告 — 产业链选股放在观点蒸馏后面
+    if stock_picks:
+        report += format_stock_picks(stock_picks)
+        print("  AI 选股完成")
 
     print("\n" + "=" * 60)
     print(report[:2000])
@@ -2169,13 +2167,8 @@ def main():
     print("\n▸ 生成详情页...")
     page_url = f"{page_base_url}report_{today_str}.html"
     html = generate_html_report(report, quotes, news_list, page_url, page_base_url,
-                                fund_flow, session_label=session_label, session_slug=session_slug,
-                                opinion_html=opinion_html, opinion_title=opinion_title)
+                                fund_flow, session_label=session_label, session_slug=session_slug)
     page_url = deploy_github_pages(html, session_slug=session_slug)
-
-    # 将观点蒸馏追加到 report（用于 .md 保存，HTML 中已有独立板块不重复）
-    if opinion_md:
-        report += f"\n\n---\n\n{opinion_md_title}\n\n" + opinion_md
 
     # 7. PDF
     print("▸ 生成 PDF...")
