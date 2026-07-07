@@ -1087,12 +1087,12 @@ body {{
 /* ---- Color highlight marks ---- */
 mark {{ background: transparent; }}
 .mk-bullish {{
-  color: var(--green); font-weight: 700;
-  background: rgba(26,138,63,0.08); padding: 1px 5px; border-radius: 2px;
-}}
-.mk-bearish {{
   color: var(--red); font-weight: 700;
   background: rgba(214,48,49,0.08); padding: 1px 5px; border-radius: 2px;
+}}
+.mk-bearish {{
+  color: var(--green); font-weight: 700;
+  background: rgba(26,138,63,0.08); padding: 1px 5px; border-radius: 2px;
 }}
 .mk-neutral {{
   color: var(--text-muted); font-weight: 600;
@@ -1107,12 +1107,12 @@ mark {{ background: transparent; }}
   background: rgba(184,134,11,0.06); padding: 0 3px; border-radius: 2px;
 }}
 .mk-cool {{
-  color: var(--accent-blue); font-weight: 600;
-  background: rgba(32,112,204,0.06); padding: 0 3px; border-radius: 2px;
+  color: var(--green); font-weight: 600;
+  background: rgba(26,138,63,0.06); padding: 0 3px; border-radius: 2px;
 }}
 .mk-ice {{
-  color: var(--purple); font-weight: 700;
-  background: rgba(124,58,237,0.06); padding: 0 3px; border-radius: 2px;
+  color: var(--green); font-weight: 700;
+  background: rgba(26,138,63,0.08); padding: 0 3px; border-radius: 2px;
 }}
 
 /* ---- Tables ---- */
