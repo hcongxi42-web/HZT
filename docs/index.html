@@ -177,6 +177,11 @@ body {
   font-weight:400; font-family: 'JetBrains Mono', monospace;
   letter-spacing: 1px;
 }
+.masthead-update {
+  font-size:12px; color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px; margin-top: 8px;
+}
 .masthead-tags {
   margin-top:18px; display:flex; justify-content:center; gap:8px; flex-wrap:wrap;
 }
@@ -311,12 +316,12 @@ body {
 /* ---- Color highlight marks ---- */
 mark { background: transparent; }
 .mk-bullish {
-  color: var(--green); font-weight: 700;
-  background: rgba(26,138,63,0.08); padding: 1px 5px; border-radius: 2px;
-}
-.mk-bearish {
   color: var(--red); font-weight: 700;
   background: rgba(214,48,49,0.08); padding: 1px 5px; border-radius: 2px;
+}
+.mk-bearish {
+  color: var(--green); font-weight: 700;
+  background: rgba(26,138,63,0.08); padding: 1px 5px; border-radius: 2px;
 }
 .mk-neutral {
   color: var(--text-muted); font-weight: 600;
@@ -331,12 +336,12 @@ mark { background: transparent; }
   background: rgba(184,134,11,0.06); padding: 0 3px; border-radius: 2px;
 }
 .mk-cool {
-  color: var(--accent-blue); font-weight: 600;
-  background: rgba(32,112,204,0.06); padding: 0 3px; border-radius: 2px;
+  color: var(--green); font-weight: 600;
+  background: rgba(26,138,63,0.06); padding: 0 3px; border-radius: 2px;
 }
 .mk-ice {
-  color: var(--purple); font-weight: 700;
-  background: rgba(124,58,237,0.06); padding: 0 3px; border-radius: 2px;
+  color: var(--green); font-weight: 700;
+  background: rgba(26,138,63,0.08); padding: 0 3px; border-radius: 2px;
 }
 
 /* ---- Tables ---- */
@@ -517,6 +522,10 @@ mark { background: transparent; }
   .fav-panel-hdr { padding:10px 14px; }
   .fav-panel { padding: 0 14px 24px; }
 }
+
+/* ===== OPINIONS SECTION ===== */
+.opinions-body .sec { border-left: 2px solid var(--purple); padding-left: 16px; margin-bottom: 28px; }
+.opinions-body .sec-h { color: var(--purple); }
 </style>
 </head>
 <body>
@@ -525,7 +534,7 @@ mark { background: transparent; }
 <div class="topbar">
   <div class="topbar-inner">
     <div class="logo">MARKET<em>//</em>BRIEF</div>
-    <div class="topbar-meta">Tuesday<br>09:53 CST</div>
+    <div class="topbar-meta">Tuesday<br>23:09 CST（北京时间）</div>
   </div>
 </div>
 
@@ -545,10 +554,11 @@ mark { background: transparent; }
   <div class="masthead-date">2026-07-07 · 星期二 · 晚报</div>
   <h1>每日市场情报</h1>
   <div class="masthead-sub">INSTITUTIONAL · MARKET · INTELLIGENCE</div>
+  <div class="masthead-update">更新时间：2026-07-07 23:09（北京时间 CST）</div>
   <div class="masthead-tags">
-    <span class="mtag mtag-a">A-SHARE · 40</span>
+    <span class="mtag mtag-a">A-SHARE · 47</span>
     <span class="mtag mtag-us">US · 28</span>
-    <span class="mtag mtag-hk">HK · 10</span>
+    <span class="mtag mtag-hk">HK · 6</span>
   </div>
 </div>
 
@@ -556,7 +566,7 @@ mark { background: transparent; }
 
   <!-- FUND FLOW PANEL -->
   <div class="sec-hdr">CAPITAL FLOWS</div>
-  <div class="fp-grid"><div class="fp"><div class="fp-h">主力资金流向（近5日 · 亿元）</div><div class="fp-bars"><div class="fp-bar-row"><span class="fp-date">07-01</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:50.688771665410705%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-168.2</span></div><div class="fp-bar-row"><span class="fp-date">07-02</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:100.0%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-331.8</span></div><div class="fp-bar-row"><span class="fp-date">07-03</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:10.408440090429542%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+34.5</span></div><div class="fp-bar-row"><span class="fp-date">07-06</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:31.9879427279578%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-106.1</span></div><div class="fp-bar-row"><span class="fp-date">07-07</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:18.92388847023361%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-62.8</span></div></div></div></div>
+  <div class="fp-grid"></div>
 
   <!-- INTRADAY CHARTS -->
   <div class="sec-hdr">INTRADAY</div>
@@ -565,78 +575,107 @@ mark { background: transparent; }
   <!-- AI ANALYSIS -->
   <div class="sec-hdr">ANALYSIS</div>
   <div class="report-body"><div class="sec" data-section-id="s0">
-<p class="para">资金面：主力还在装睡。连续流出态势未改，今天又跑了62亿，虽然比前两天少点，但整体是<mark class="mk-bearish">防守</mark>姿态。盘口上看，没有主动<mark class="mk-bullish">进攻</mark>的增量，只有场内资金在东拉西扯。</p>
+<p class="para">资金面：</p>
+<p class="para">主力今晚的态度就是<mark class="mk-neutral">观望</mark>偏<mark class="mk-bearish">防守</mark>。明早北向资金压力会很大——费城半导体期货暴跌7%，美债收益率还上到4.52%，这种组合下外资很难主动加仓A股。内资即使想动，也不急在这一时，大概率先看开盘情绪再说。</p>
 <p class="para">主线扫描：</p>
-<div class="bi">「半导体」方向：东微半导、中微公司大宗交易折价出货，但盘面有资金在接。逻辑硬，国产替代和反制概念双重加持，加上中东扰动可能影响全球芯片供应链，这个方向有持续性。</div>
-<div class="bi">「港股互联网」方向：南向资金疯抢「腾讯控股」「美团」「阿里巴巴」，是真金白银在抄底。恒生科技虽然跌了，但南下资金态度很明确，看好后续修复。这是跨市场的机构行为，不要忽视。</div>
-<div class="bi">「算力基建」方向：威尔高拿到AI电源模块批量订单，Anthropic与TeraWulf签了190亿美元租赁大单，Meta明年资本开支还要大增。AI的军备竞赛在硬件端根本没停，A股里沾边真订单的公司有肉吃。</div>
-<div class="bi">「大宗交易异动」方向：茅台、东鹏饮料、福耀玻璃都是溢价成交，中微、东微却是大折价。这背后是机构在密集调仓，往确定性强的高股息和必选消费里躲，同时砍掉部分涨多了的科技。</div>
-<div class="bi">「事件驱动——洪水」方向：100多条河超警，这波汛情级别不低。水利管网、水泵、部分农产品短期会有脉冲，但别入戏，这是快进快出的题材。</div>
+<div class="bi">「浪潮信息」这条线：半年报预增超两倍，Q2利润中值22亿多，服务器景气度实打实。明天算力/AI服务器方向会是少数有人敢捞的地方，逻辑硬，有业绩背书，持续性比纯概念强。</div>
+<div class="bi">芯片半导体：美股今晚这一跌，明天A股半导体大概率直接低开消化。「费半」跌7%不是小事，英特尔闪迪带头崩，短期内情绪压制明显，除了和国产替代强相关的个别标的，整体要避一避。</div>
+<div class="bi">能源/油服：霍尔木兹海峡出消息，油价直线拉2.4%。这事儿还没完，短期油价敏感度高，油服和石化票会有事件驱动脉冲，但持续性要看后续局势演变，别当趋势做。</div>
+<div class="bi">绿色新基建/算力设施：「金埔园林」这种跨界搞智算的虽然体量小，但说明场外资金还在往算力基建里拱，这块热度没散，后面可能还有些公司跟风。</div>
+<div class="bi">互联网平台整治：市场监管总局整治“内卷式”竞争，这对大平台是<mark class="mk-neutral">中性</mark><mark class="mk-warm">偏暖</mark>，但短期难成主线，顶多让超跌的互联网企稳一点。</div>
 <p class="para">跨市场：</p>
-<p class="para">港股恒指和科指都在跌，但南向资金逆势大买，说明港股跌不深，资金在切换，从高位美股往滞涨港股流。夜里美股要盯紧迈威尔科技，盘前跌5%，若半导体崩，明早A股科技情绪会承压。另外，特朗普敲钟放狠话，这种极度亢奋往往是短期反向指标。</p>
+<p class="para">美股科技股暴跌会直接导到港股和A股的开盘。恒生科技期货估计明天九点前就能看出来压力。A股这边，科创50和半导体指数大概率集体低开。唯一能对冲一点的是油价涨，三桶油可能撑一下沪指。</p>
 <p class="para">要闻速览：</p>
-<div class="bi">中国央行连续20个月增持黄金。<mark class="mk-bullish">利好</mark></div>
-<div class="bi">国务院批复旅游强国“十五五”规划。<mark class="mk-bullish">利好</mark></div>
-<div class="bi">招商证券半年净利预增93%-112%。<mark class="mk-bullish">利好</mark></div>
-<div class="bi">南向资金净买入腾讯23亿、美团12亿、阿里9亿。<mark class="mk-bullish">利好</mark>（相关个股）</div>
-<div class="bi">金融监管总局：整治无序竞争，化解中小金融机构风险。<mark class="mk-neutral">中性</mark>（长期好，短期压）</div>
-<div class="bi">100多条河超警，台风影响大。<mark class="mk-bearish">利空</mark></div>
-<div class="bi">英国央行：股市杠杆率上升加剧金融稳定威胁。<mark class="mk-bearish">利空</mark></div>
-<div class="bi">迈威尔科技盘前跌超5%。<mark class="mk-bearish">利空</mark></div>
-<div class="bi">郭明錤：台积电7月对GCS/CoPoS提供重大更新机会不高。<mark class="mk-bearish">利空</mark></div>
-<div class="bi">美国22州反对联邦加征关税计划。<mark class="mk-neutral">中性</mark>偏<mark class="mk-bullish">利好</mark></div>
-<p class="para">市场体温：<mark class="mk-cool">偏冷</mark>。沪指刚丢了4000点，两市成交缩量超5000亿，钱明显不够。涨停才34家，封板率只有54%，炸板率极高，短线情绪很差。主力连续跑路，机构在大宗交易里换仓<mark class="mk-bearish">防守</mark>，增量资金在<mark class="mk-neutral">观望</mark>，这个位置没火起来，大家宁愿等着。</p>
+<div class="bi">费城半导体指数日内跌7%，英特尔跌超10%（<mark class="mk-bearish">利空</mark>半导体）</div>
+<div class="bi">霍尔木兹海峡消息致油价拉升超2%（<mark class="mk-bullish">利好</mark>油服/石油）</div>
+<div class="bi">浪潮信息预计上半年净利润同比增长226%-288%（<mark class="mk-bullish">利好</mark>算力/服务器）</div>
+<div class="bi">证监会对编造「中公教育」虚假信息人员立案调查（<mark class="mk-neutral">中性</mark>偏严监管）</div>
+<div class="bi">美国6月纽约联储1年通胀预期升至3.67%（<mark class="mk-bearish">利空</mark>全球风险资产）</div>
+<div class="bi">纽约联储行长称能源价格下降将推动通胀回落（<mark class="mk-neutral">中性</mark>，安抚市场）</div>
+<div class="bi">港交所上半年IPO金额同比增长92%（<mark class="mk-bullish">利好</mark>港交所/券商情绪）</div>
+<div class="bi">市场监管总局多举措整治“内卷式”竞争（对平台经济<mark class="mk-neutral">中性</mark><mark class="mk-warm">偏暖</mark>）</div>
+<div class="bi">珠江防总将应急响应提升至Ⅰ级（<mark class="mk-bearish">利空</mark>水利/受灾地区相关）</div>
+<div class="bi">国投证券前首席经济学家高善文去世（业界新闻，短期无市场影响）</div>
+<p class="para">市场体温：</p>
+<p class="para"><mark class="mk-cool">偏冷</mark>。外围是明牌<mark class="mk-bearish">利空</mark>，半导体情绪<mark class="mk-ice">冰点</mark>，油价上涨又抽血其他板块。国内这边除了个别业绩票，缺乏做多共识。成交量明天可能会再缩，资金都在等美股今晚的惨状被消化完。预计开盘涨跌家数会很难看。</p>
 <p class="para">明天怎么看：</p>
-<p class="para">第一种，跌势趋缓，惯性下探后小幅震荡。今天量缩得太快，空头力气也用得差不多，明天在关键位置能稳住，但攻不上去，收个十字星。这是最大可能。</p>
-<p class="para">第二种，如果夜里美股科技股真被迈威尔带崩，情绪传导过来，A股半导体和AI可能低开，带着指数再往下踩一脚。但急跌反而是短线抄底的机会，日内会有修复。</p>
-<p class="para">第三种，要是突然有超预期的<mark class="mk-bullish">利好</mark>政策放出来，指数能拉个中阳线反包。但看现在的环境，概率很低，先别做这个梦。</p>
+<p class="para">情景一（大概率）：低开震荡，沪指靠石油银行撑一下，创业板和科创板比主板弱，半导体领跌，算力方向分化但相对抗跌。尾盘可能会有资金试探性捞货，但整体收跌。</p>
+<p class="para">情景二（小概率）：低开后有大资金主动拉券商或中字头护盘，把指数拽回来，但个股依然跌多涨少，变成指数假强、赚钱效应很差的局面。</p>
+<p class="para">情景三（黑天鹅级）：美股盘后继续恶化，明天A股直接大幅跳空低开后无力反弹，中小票恐慌踩踏，那就必须减仓等企稳了。</p>
 </div>
 <div class="sec" data-section-id="1091887a41">
 <h3 class="sec-h"><button class="fav-btn" data-sid="1091887a41" title="收藏此条分析" onclick="toggleFav(this)">☆</button>📌 产业链选股（AI 驱动）</h3>
 </div>
-<div class="sec" data-section-id="00817eb70b">
-<h3 class="sec-h"><button class="fav-btn" data-sid="00817eb70b" title="收藏此条分析" onclick="toggleFav(this)">☆</button>AI军备竞赛升级：算力基建成产业链核心卡位点</h3>
-<p class="para">今日多则消息相互印证，确认全球AI算力基础设施扩建仍在猛烈加速，上游硬件供应商最为受益。</p>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">中际旭创 (300308.SZ)</td><td style="text-align:left">AnThropic与TeraWulf签署20年190亿美元数据中心租约，Meta明年资本支出或大增，直接拉动上游800G/1.6T光模块需求。中际旭创作为全球光模块龙头，是北美云厂商（含Meta）的核心供应商，位于算力基建的卡脖子环节。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">新易盛 (300502.SZ)</td><td style="text-align:left">逻辑同上。公司是Meta等科技巨头数据中心光模块的重要供应商，AI数据中心扩张将直接转化为其高速率光模块订单。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">工业富联 (601138.SH)</td><td style="text-align:left">公司是北美主要云厂商的AI服务器核心代工商，Meta和Anthropic的资本开支扩张，将直接增加对其AI服务器整机及相关零部件的采购。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">天孚通信 (300394.SZ)</td><td style="text-align:left">作为光模块上游关键器件（如光引擎）的“卖铲人”，受益于整个光模块市场的需求爆发。无论下游哪个模块厂拿到订单，其产品需求都会增加。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">威尔高 (301251.SZ)</td><td style="text-align:left">直接提及DC/DC电源模块获批量订单。该产品是AI服务器供电关键环节，公司的技术突破和订单获取验证了AI算力产业链国产化的具体落地。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">中微公司 (688012.SH)</td><td style="text-align:left">作为半导体设备龙头，AI芯片需求爆发是长期核心驱动力，但今日大宗交易折价6.5%成交4.3亿元，短期可能面临减持压力。</td><td style="text-align:left">多空分歧</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<div class="sec" data-section-id="1e9f43fd92">
+<h3 class="sec-h"><button class="fav-btn" data-sid="1e9f43fd92" title="收藏此条分析" onclick="toggleFav(this)">☆</button>霍尔木兹海峡局势缓和，纽约联储预计能源价格下降，国际油价短期巨震</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">中国国航 (601111)</td><td style="text-align:left">航空煤油是主要成本，油价下跌预期将直接降低运营成本，增厚利润。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">南方航空 (600029)</td><td style="text-align:left">逻辑同上，国内航空龙头，对燃油成本波动高度敏感。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">招商轮船 (601872)</td><td style="text-align:left">油轮运输公司，油价下跌短期或降低燃料成本，但市场需求变化需观察。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">恒力石化 (600346)</td><td style="text-align:left">炼化一体化龙头，原油是其核心原料，价格下跌预期将降低采购成本。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">万华化学 (600309)</td><td style="text-align:left">化工巨头，原油是其基础原料来源，油价下跌有助于降低生产成本。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
 <p class="para"><span style="color:#d63031;font-weight:600;">⚠️ 注：K线图仅保留近7天，历史图表将自动清理。如需长期保存，请右键另存为。</span></p>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/300308_SZ_20260707.png" alt="中际旭创 300308.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/300502_SZ_20260707.png" alt="新易盛 300502.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601138_SH_20260707.png" alt="工业富联 601138.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/300394_SZ_20260707.png" alt="天孚通信 300394.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/301251_SZ_20260707.png" alt="威尔高 301251.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601111_SH_20260707.png" alt="中国国航 601111.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600029_SH_20260707.png" alt="南方航空 600029.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601872_SH_20260707.png" alt="招商轮船 601872.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600346_SH_20260707.png" alt="恒力石化 600346.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600309_SH_20260707.png" alt="万华化学 600309.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="bi">知道就行：新闻提及“美伊达成临时和平协议”，地缘政治缓和是油价下跌的核心驱动，对整体宏观经济构成<mark class="mk-bullish">利好</mark>，但对黄金、军工等避险资产逻辑上偏空，不过链条较远。</div>
+</div>
+<div class="sec" data-section-id="b555281a49">
+<h3 class="sec-h"><button class="fav-btn" data-sid="b555281a49" title="收藏此条分析" onclick="toggleFav(this)">☆</button>费城半导体指数暴跌超7%，美光、英特尔、铠侠等美股芯片股集体重挫</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">江波龙 (301308)</td><td style="text-align:left">公司主营存储模组，美光、铠侠是其重要供应商，原厂股价暴跌或预示行业供需失衡加剧，将承受库存跌价风险。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">兆易创新 (603986)</td><td style="text-align:left">国内存储芯片设计龙头，与美光等在利基型市场存在竞争，行业景气度下行将影响其盈利预期。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">中微公司 (688012)</td><td style="text-align:left">国内刻蚀设备龙头，是美光、英特尔等全球存储/逻辑芯片厂的设备供应商，下游客户资本开支预期可能受到影响。</td><td style="text-align:left">看空</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">北方华创 (002371)</td><td style="text-align:left">国内半导体设备平台型龙头，同样服务于全球半导体产线，行业需求预期转弱会传导至设备采购端。</td><td style="text-align:left">看空</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">佰维存储 (688525)</td><td style="text-align:left">存储芯片模组厂商，与江波龙逻辑类似，面临存货跌价和下游需求收缩的双重压力。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/301308_SZ_20260707.png" alt="江波龙 301308.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/603986_SH_20260707.png" alt="兆易创新 603986.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
 <div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/688012_SH_20260707.png" alt="中微公司 688012.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="bi">知道就行：三星、SK海力士（竞争对手，间接证实存储芯片需求旺盛，但本身非A股标的）；台积电7月对GCS/CoPoS无重大更新（<mark class="mk-bearish">利空</mark>先进封装概念预期，但逻辑稍远）；招商证券研报称AI估值相对便宜。</div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002371_SZ_20260707.png" alt="北方华创 002371.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/688525_SH_20260707.png" alt="佰维存储 688525.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="bi">知道就行：美股“闪迪”作为存储原厂也暴跌，进一步佐证存储行业的悲观情绪。</div>
 </div>
-<div class="sec" data-section-id="28b4fa56f9">
-<h3 class="sec-h"><button class="fav-btn" data-sid="28b4fa56f9" title="收藏此条分析" onclick="toggleFav(this)">☆</button>券商板块业绩与资金预期共振</h3>
-<p class="para">招商证券发布业绩预告，2026年上半年净利润同比增长93%-112%，叠加近期大盘虽有调整但成交额仍在高位，券商作为市场情绪放大器，板块机会值得关注。</p>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">招商证券 (600999.SH)</td><td style="text-align:left">直接受益标的。公司明确预告半年度净利润翻倍，Q2预计环比增长超100%，主要系股市震荡上行和自身综合化发展，业绩确定性高。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">东方财富 (300059.SZ)</td><td style="text-align:left">互联网券商龙头，其证券业务和基金代销业务与市场成交额高度相关。市场维持万亿以上成交额是公司业绩的基石，作为市场风向标弹性更大。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">中信证券 (600030.SH)</td><td style="text-align:left">行业绝对龙头，业务布局最全面。在“集约化、综合化”发展趋势下，龙头券商享有更强的马太效应，业绩增长确定性强。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">同花顺 (300033.SZ)</td><td style="text-align:left">作为金融信息服务商，市场行情活跃将直接推动其增值服务销售和广告收入。用户活跃度与大盘热度高度绑定。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">指南针 (300803.SZ)</td><td style="text-align:left">逻辑与同花顺类似，其金融信息服务业务（尤其是带交易功能的软件）收入与市场情绪和交易量正相关。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600999_SH_20260707.png" alt="招商证券 600999.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/300059_SZ_20260707.png" alt="东方财富 300059.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600030_SH_20260707.png" alt="中信证券 600030.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/300033_SZ_20260707.png" alt="同花顺 300033.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="bi">知道就行：南华期货 (603093.SH) 预增62%-75%，主要靠境外金融服务，可佐证中国金融企业国际化趋势，但体量相对较小。</div>
-</div>
-<div class="sec" data-section-id="b56708ae1e">
-<h3 class="sec-h"><button class="fav-btn" data-sid="b56708ae1e" title="收藏此条分析" onclick="toggleFav(this)">☆</button>旅游强国规划落地，文旅融合进入“十五五”</h3>
-<p class="para">国务院批复《旅游强国建设“十五五”规划》，明确提出推动高质量发展和文旅深度融合，为行业带来顶层设计层面的驱动。</p>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">中国中免 (601888.SH)</td><td style="text-align:left">旅游强国的核心受益者。完善现代旅游业体系、优化旅游空间布局将直接刺激出入境和国内游，利好其免税商品销售业务。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">锦江酒店 (600754.SH)</td><td style="text-align:left">国内连锁酒店龙头，旅游行业的繁荣将直接拉动住宿需求，政策对旅游业的整体推动将提升其入住率和RevPAR。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">首旅酒店 (600258.SH)</td><td style="text-align:left">逻辑同上，同样是国内大型酒店集团，受益于旅游消费规模的扩大和质量提升。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">宋城演艺 (300144.SZ)</td><td style="text-align:left">旅游演艺龙头企业，文旅深度融合政策的直接抓手。“完善现代旅游业体系”有利于其创新项目落地和客源增长。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">中青旅 (600138.SH)</td><td style="text-align:left">代表“旅游+文化”的综合性旅游集团，业务涵盖景区、会展、旅行社等，在政策推动下可能存在整合和发展机会。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601888_SH_20260707.png" alt="中国中免 601888.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="bi">知道就行：西安旅游、桂林旅游、黄山旅游等景区类上市公司，普遍受益但缺乏个股特殊逻辑驱动。</div>
-</div>
-<div class="sec" data-section-id="44a38de1f2">
-<h3 class="sec-h"><button class="fav-btn" data-sid="44a38de1f2" title="收藏此条分析" onclick="toggleFav(this)">☆</button>央行连续20个月增持黄金，避险情绪与去美元化趋势延续</h3>
-<p class="para">央行持续增持黄金的行为，为黄金及相关资产提供了长期支撑逻辑，尤其在地缘冲突（如北约无人机协议、霍尔木兹海峡担忧）背景下。</p>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">山东黄金 (600547.SH)</td><td style="text-align:left">国内黄金行业龙头之一，黄金储量丰富。央行购金行为示范效应强，金价中枢上移直接提升公司矿产金业务的盈利能力。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">紫金矿业 (601899.SH)</td><td style="text-align:left">综合性矿业巨头，黄金是其主要产品之一。公司成长性良好，受益于金价上涨的同时，铜等其他矿产也能提供利润弹性。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">中金黄金 (600489.SH)</td><td style="text-align:left">黄金矿业上市央企，控股股东中国黄金集团。金价上涨对其业绩推动显著，是国家增持黄金的产业链直接受益方。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">赤峰黄金 (600988.SH)</td><td style="text-align:left">国内高速成长的黄金矿企，境外矿山并购和扩产积极。金价上涨对其利润弹性较大。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">银泰黄金 (000975.SZ)</td><td style="text-align:left">拥有国内高品位的金矿资源，开采成本控制较好。在金价上行周期中，利润增厚效应明显。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600547_SH_20260707.png" alt="山东黄金 600547.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601899_SH_20260707.png" alt="紫金矿业 601899.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="bi">知道就行：埃塞俄比亚年度黄金出口同比猛增58%，从侧面印证全球黄金市场产需两旺的格局。</div>
+<div class="sec" data-section-id="12488e6ec6">
+<h3 class="sec-h"><button class="fav-btn" data-sid="12488e6ec6" title="收藏此条分析" onclick="toggleFav(this)">☆</button>浪潮信息半年度业绩预告亮眼，净利润同比增长超两倍</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">浪潮信息 (000977)</td><td style="text-align:left">公司是全球领先的AI服务器供应商，业绩爆发式增长直接印证AI算力需求的高度景气。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">中科曙光 (603019)</td><td style="text-align:left">国产算力龙头，同样是AI服务器和算力基础设施的核心供应商，浪潮的业绩验证了行业的高景气度。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">海光信息 (688041)</td><td style="text-align:left">国产高端CPU/GPU龙头，是算力服务器的核心芯片提供商，与浪潮信息等服务器厂商同属一个产业链，共享行业增长红利。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">工业富联 (601138)</td><td style="text-align:left">全球重要的AI服务器及云计算设备制造商，算力需求爆发对其核心业务有直接拉动作用。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">沪电股份 (002463)</td><td style="text-align:left">AI服务器和交换机对高端PCB板需求量巨大，公司是重要供应商，将间接受益于算力建设的持续投入。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/000977_SZ_20260707.png" alt="浪潮信息 000977.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/603019_SH_20260707.png" alt="中科曙光 603019.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/688041_SH_20260707.png" alt="海光信息 688041.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601138_SH_20260707.png" alt="工业富联 601138.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002463_SZ_20260707.png" alt="沪电股份 002463.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="bi">知道就行：金埔园林拟成立公司从事绿色新基建业务，与算力基建沾边，但逻辑链条较长。</div>
 </div>
 <div class="sec" data-section-id="bb0b02c95c">
 <h3 class="sec-h"><button class="fav-btn" data-sid="bb0b02c95c" title="收藏此条分析" onclick="toggleFav(this)">☆</button>个股风险提示</h3>
-<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">中微公司 (688012.SH)</td><td style="text-align:left">今日大宗交易折价6.5%，成交4.3亿元。可能是重要股东或机构折价减持，短期对股价构成直接压力。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">东微半导 (688261.SH)</td><td style="text-align:left">今日大宗交易折价6.14%，成交7679.88万元。原因类似，需警惕原始股东或早期投资人减持风险。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">长进光子 (688635.SH)</td><td style="text-align:left">新闻提及此股为“今年最牛新股”，但股价已较上市以来高点下跌超50%，表明炒作退潮，追高风险巨大。</td><td style="text-align:left">看空</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">快手-W (01024.HK)</td><td style="text-align:left">领跌今日恒生指数成分股，消息面上缺乏直接利空，可能是市场博弈或资金面影响。短期走势偏弱，需关注。</td><td style="text-align:left">看空</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">比亚迪电子 (00285.HK)</td><td style="text-align:left">同为今日港股恒生科技指数成分股跌幅靠前，且近期受中美关税影响消费电子/汽车供应链情绪，短期承压。</td><td style="text-align:left">看空</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
-<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/688261_SH_20260707.png" alt="东微半导 688261.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
-<div class="bi">知道就行：福特召回4.2万辆汽车，对A股影响有限；太合音乐IPO财务风险高，但尚未上市影响间接。</div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">中公教育 (002607)</td><td style="text-align:left">证监会对编造传播公司虚假信息的个人立案调查，虽然监管打击造谣者是长期利好，但短期反映出公司是市场谣言关注的重点，可能引发市场情绪波动和信任担忧。</td><td style="text-align:left">看空</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+</div></div>
+
+    <div class="sec-hdr" style="margin-top:40px;">今日收盘UP主观点</div>
+  <div class="report-body opinions-body"><div class="sec" data-section-id="23367cb53e">
+<h3 class="sec-h"><button class="fav-btn" data-sid="23367cb53e" title="收藏此条分析" onclick="toggleFav(this)">☆</button>擒龙先生：核心观点提炼</h3>
+<div class="bi"><strong>核心逻辑</strong>：科技方向今天出现第一次见底信号，光模块逆情绪拉升是领先指标，但整体尚未完全见底，不能立刻抄底。</div>
+<div class="bi"><strong>情绪倾向</strong>：<mark class="mk-neutral">中性</mark></div>
+<div class="bi"><strong>看多方向</strong>：光模块（光F4、CPO）、半导体（封测、设备支线机会）、MLCC（跌幅过大后的止跌机会）</div>
+<div class="bi"><strong>看空/谨慎方向</strong>：非科技板块（交易难度不比科技小）；科技整体（目前没有完全见底，还需等待第二次确认）</div>
+<div class="bi"><strong>关键论据</strong>：</div>
+<div class="bi">「行情很差或者情绪很差，光在今天主动拉升，这个就很重要」「光确实是什么啊，第一个科技里面第一个下跌回调的啊，所以光在这个位置先反弹很正常」</div>
+<div class="bi">「今天是三星投币18倍仍然被砸，全球情绪很弱……在这样的情况之下，我们的光它其实走出了一个什么逆情绪的走势」</div>
+<div class="bi">「东山小作文高义啊……剑桥科技1.6T是200万个……他在吹暖风，而不是鬼故事了，说明这一波跌幅差不多了，足够了」</div>
+<div class="bi">「半导体封测是明显强于整合板块的……整组板块的大主升已经走了一波了，这段时间回调你只能去找支线的机会」</div>
+<div class="bi"><strong>置信度</strong>：一般（肯定见底信号出现，但反复强调“不代表你能够立刻抄底”“你可能还要再等一等”，给出分批、等第二次见底等多种选项）</div>
+<div class="bi"><strong>风格标签</strong>：情绪共振派、产业链传闻派、<mark class="mk-ice">冰点</mark>博弈派</div>
+</div>
+<div class="sec" data-section-id="2be682a87a">
+<h3 class="sec-h"><button class="fav-btn" data-sid="2be682a87a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>缠论猎黑马：核心观点提炼</h3>
+<div class="bi"><strong>核心逻辑</strong>：科技趋势没有问题，短期调整是上涨过程中的健康换手蓄力，很快见底，多头力量更胜一筹。</div>
+<div class="bi"><strong>情绪倾向</strong>：乐观（<mark class="mk-bullish">利好</mark>）</div>
+<div class="bi"><strong>看多方向</strong>：半导体设备材料、存储芯片、CPU、PCB、MLCC、液冷</div>
+<div class="bi"><strong>看空/谨慎方向</strong>：无明确看空，仅提示短期行情在休整期间不要强迫交易，等待确定性机会</div>
+<div class="bi"><strong>关键论据</strong>：</div>
+<div class="bi">「每一次分时图的下杀之后，都遭到了多头的反扑……下方的承接资金它非非常非常的充裕，也同时的暴露出了主力资金在现阶段的交易倾向，就是遇到大的调整或者急杀之后，他们采取低吸的行为」</div>
+<div class="bi">「科创者的表现一天比一天要好了，主要体现在大反弹的次数增加了……相当于两个拳击手打搏击……多头反手就将A的眼眶骨给干裂了」</div>
+<div class="bi">「全球的这个存储是非常非常紧缺的……三星在今年就一共涨价了四次……大厂建起来至少要到2028年以后，产能的问题接下来一年多时间里面依旧比较紧缺」</div>
+<div class="bi">「他们要去扩产，要不要先去采购设备，要不要先把材料买回来……给卖设备的、卖材料的带来业绩」</div>
+<div class="bi"><strong>置信度</strong>：坚定（“科技的趋势没有问题”“应该很快见底”“最难过的行情快过去了”）</div>
+<div class="bi"><strong>风格标签</strong>：技术盘口派、产业链逻辑派、多空动能派</div>
+</div>
+<div class="sec" data-section-id="9d873f9b7b">
+<h3 class="sec-h"><button class="fav-btn" data-sid="9d873f9b7b" title="收藏此条分析" onclick="toggleFav(this)">☆</button>多方观点交叉比对</h3>
+<div class="bi">横向量化：两位UP主均看多科技方向，无一方明确看空科技的核心板块。形成合力的方向在半导体和MLCC，光模块获擒龙先生独立看好，液冷、存储方向获猎黑马独立看好。非科技类板块被擒龙先生认为持续性差，猎黑马未涉及，此处无明显多方分歧。整体共识度较高，分歧点主要在于反弹节奏判断——是直接见底还是需要第二次确认。</div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">板块名称</th><th style="text-align:left">看多人数</th><th style="text-align:left">看空人数</th><th style="text-align:left">代表人物</th></tr></thead><tbody><tr><td style="text-align:left">半导体（设备/封测/材料）</td><td style="text-align:left">2</td><td style="text-align:left">0</td><td style="text-align:left">擒龙先生、缠论猎黑马</td></tr><tr><td style="text-align:left">MLCC</td><td style="text-align:left">2</td><td style="text-align:left">0</td><td style="text-align:left">擒龙先生、缠论猎黑马</td></tr><tr><td style="text-align:left">光模块（CPO/光F4）</td><td style="text-align:left">1</td><td style="text-align:left">0</td><td style="text-align:left">擒龙先生</td></tr><tr><td style="text-align:left">液冷</td><td style="text-align:left">1</td><td style="text-align:left">0</td><td style="text-align:left">缠论猎黑马</td></tr><tr><td style="text-align:left">存储芯片</td><td style="text-align:left">1</td><td style="text-align:left">0</td><td style="text-align:left">缠论猎黑马</td></tr></tbody></table></div>
+<div class="bi">今日民间观点共识度较高，两位UP主均认为科技主线调整接近尾声、下方承接有效，分歧只体现在<mark class="mk-bullish">进攻</mark>节奏——擒龙先生更讲究“二次确定”，猎黑马直接用盘口动能判断“多头更胜一筹”。</div>
 </div></div>
 
 </div>
