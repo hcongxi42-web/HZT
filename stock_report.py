@@ -32,7 +32,7 @@ from news_fetcher import fetch_all_news_flat
 def _load_up_config():
     """加载 UP主 配置文件，文件不存在时返回空 dict。"""
     import os as _os
-    config_path = _os.path.join("opinions", "up_config.json")
+    config_path = _os.path.join("up主的每日观点", "up_config.json")
     if not _os.path.exists(config_path):
         return {}
     try:
