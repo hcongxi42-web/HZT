@@ -76,13 +76,17 @@ def find_today_opinions(opinion_dir="up主的每日观点", date_offset=0):
         fname = os.path.basename(fp)
         parent_dir = os.path.basename(os.path.dirname(fp))
 
-        # 从文件名解析日期（支持 "7月6日" 中文格式）
-        date_match = re.search(r'(\d{1,2})月(\d{1,2})日', fname)
+        # 从文件名解析日期（支持 "7月6日" / "7月6号" 两种中文格式）
+        date_match = re.search(r'(\d{1,2})月(\d{1,2})[日号]', fname)
         if date_match:
             file_month = int(date_match.group(1))
             file_day = int(date_match.group(2))
             if file_month != target_month or file_day != target_day:
-                continue  # 不是今天的文件，跳过
+                print(f"  ⏭ 跳过非目标日期文件: {parent_dir}/{fname} (需要 {target_month}月{target_day}日)")
+                continue  # 不是目标日期的文件，跳过
+        else:
+            # 文件名不含日期，兜底通过（可能是手动放的未命名文件）
+            print(f"  ⚐ 文件名未识别日期，兜底通过: {parent_dir}/{fname}")
 
         # 从文件名解析 UP主 ID（长数字，通常在文件名靠后位置）
         id_match = re.search(r'\.(\d{8,20})(?:\.ai-zh)?\.txt$', fname)
@@ -118,6 +122,9 @@ def find_today_opinions(opinion_dir="up主的每日观点", date_offset=0):
             "content": content,
             "char_count": len(content),
         })
+
+    if results:
+        print(f"  ✓ 匹配到 {len(results)} 个文件: {', '.join(r['name'] + '/' + r['filename'] for r in results)}")
 
     return results
 
