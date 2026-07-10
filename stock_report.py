@@ -2067,6 +2067,15 @@ def main():
     print(f"[{beijing_now()}] 开始生成每日市场情报（{session_label}）...")
     print()
 
+    # 周末判断：周六全天不更新，周日只更新晚报
+    wd = beijing_now().weekday()  # 0=Mon ... 5=Sat 6=Sun
+    if wd == 5:  # 周六
+        print("⏭ 周六不更新，退出")
+        return
+    if wd == 6 and session_label == "早报":  # 周日早报不更新
+        print("⏭ 周日不更新早报，退出")
+        return
+
     # 1. 行情
     print("▸ 抓取指数行情...")
     quotes = fetch_index_quotes()
