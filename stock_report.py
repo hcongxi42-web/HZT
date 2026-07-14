@@ -417,6 +417,39 @@ OPINION_USER_PROMPT_TEMPLATE = """以下是今日财经UP主的AI转录观点文
 
 
 # ============================================================
+#  信息差提炼 — 提示词
+# ============================================================
+
+INFO_GAP_SYSTEM_PROMPT = (
+    "你是一位专业财经信息编辑，擅长从碎片化的市场信息中提取关键事实。"
+    "你的任务是提炼核心信息、去除冗余、分类整理，不做主观判断。"
+    "输出简洁、有条理，每条信息都有据可查。"
+)
+
+INFO_GAP_USER_PROMPT_TEMPLATE = """以下是今日收集的市场信息差（碎片化财经信息）。请提炼核心信息，去除冗余和重复。
+
+输出结构：
+### 信息差提炼
+
+- **核心动态**：用 3-5 条要点概括今日最重要的市场信息（每条一句话，标注信息来源）
+- **行业/板块关注**：哪些行业或板块出现了值得关注的新信息（政策、供需、价格变动等）
+- **个股/公司动态**：具体公司的重要公告、业绩、订单、产能等信息
+- **数据/指标变动**：值得关注的商品价格、运价、汇率、行业数据等
+
+风格要求：
+- 只提炼事实，不做主观判断和多空评级
+- 每条信息标注来源
+- 别用「值得关注的是」「总体来看」这类废话
+- 「」标记关键术语和标的
+- 别用 emoji
+
+---
+原始信息：
+
+{info_text}"""
+
+
+# ============================================================
 #  LLM 输出清洗
 # ============================================================
 
@@ -549,6 +582,17 @@ def call_opinion_analyzer(opinion_text):
         OPINION_USER_PROMPT_TEMPLATE.format(opinion_text=opinion_text),
         temperature=0.4,
         max_tokens=4096,
+    )
+    return _cleanup_report(raw)
+
+
+def call_info_analyzer(info_text):
+    """调用 LLM 提炼信息差，提取核心事实（不做多空判断）。"""
+    raw = _call_deepseek(
+        INFO_GAP_SYSTEM_PROMPT,
+        INFO_GAP_USER_PROMPT_TEMPLATE.format(info_text=info_text),
+        temperature=0.3,
+        max_tokens=3072,
     )
     return _cleanup_report(raw)
 
@@ -2156,18 +2200,23 @@ def main():
     else:
         print("  未找到UP主观点文件")
 
-    # 4b. 处理信息差（原始信息，不经蒸馏，作为补充参考）
+    # 4b. 处理信息差（AI 提炼核心信息，不做多空判断）
     if info_files:
-        print(f"  发现 {len(info_files)} 条信息差，作为补充参考...")
+        print(f"  发现 {len(info_files)} 条信息差，开始提炼...")
         info_parts = []
         for o in info_files:
             info_parts.append(f"【{o['name']}（{o['filename']}，{o['char_count']}字）】\n{o['content']}")
             print(f"    ✓ {o['name']}: {o['char_count']}字")
-        info_text = "\n\n---\n\n".join(info_parts)
-        info_context = f"## 信息差补充（原始信息，供交叉验证）\n\n{info_text}"
-        # 追加到 report，放在观点蒸馏下面
-        report += f"\n\n---\n\n## 📋 信息差补充\n\n{info_text}"
-        print("  信息差已追加到报告")
+        info_raw = "\n\n---\n\n".join(info_parts)
+        info_md = call_info_analyzer(info_raw)
+        if info_md and not info_md.startswith("API 调用失败"):
+            info_context = f"## 信息差提炼（AI 提取关键事实）\n\n{info_md}"
+            report += f"\n\n---\n\n## 📋 信息差提炼\n\n{info_md}"
+            print("  信息差提炼完成")
+        else:
+            print(f"  信息差提炼失败: {info_md[:100] if info_md else '无返回'}")
+            info_context = f"## 信息差补充\n\n{info_raw}"
+            report += f"\n\n---\n\n## 📋 信息差补充\n\n{info_raw}"
 
     # 5. AI 选股 — 融合新闻 + UP主观点 + 信息差
     print("\n▸ 执行 AI 产业链选股（融合新闻+观点+信息差）...")
