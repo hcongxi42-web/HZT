@@ -114,10 +114,14 @@ def find_today_opinions(opinion_dir="up主的每日观点", date_offset=0):
                 name = f"UP主{up_id}" if up_id else fname[:20]
         platform = cfg.get("platform", "")
 
+        # 判断类型：目录名含「信息差」→ 信息类，其他 → 观点类
+        kind = "info" if "信息差" in parent_dir else "opinion"
+
         results.append({
             "up_id": up_id,
             "name": name,
             "platform": platform,
+            "kind": kind,
             "filename": fname,
             "content": content,
             "char_count": len(content),
@@ -331,12 +335,13 @@ STOCK_PICKER_SYSTEM_PROMPT = (
     "你推的每只股票都有据可查，不拍脑袋，不编代码。"
 )
 
-STOCK_PICKER_TEMPLATE = """从以下资讯中，找出今天值得关注的个股机会和风险。
+STOCK_PICKER_TEMPLATE = """从以下资讯、UP主观点和信息差中，找出今天值得关注的个股机会和风险。
 
 怎么找：
 - 先看新闻里直接提到了哪些公司，如果有直接提及，分析这个新闻对公司的影响
 - 再沿产业链上下推导：供应商、客户、竞争对手、替代品玩家
 - 结合资金流向，优先挑资金在买的板块
+- 参考下方「UP主观点」的市场判断和「信息差」的补充事实，交叉验证你的选股逻辑
 - 禁止编造新闻里不存在的股票
 
 怎么标记优先级（别用 emoji，用文字）：
@@ -346,21 +351,26 @@ STOCK_PICKER_TEMPLATE = """从以下资讯中，找出今天值得关注的个�
 - 「知道就行」：沾边但逻辑链条长
 
 输出格式：
-- 每条重要新闻用 ### 做标题
+- 每条重要新闻 / 投资主题用 ### 做标题
 - 新闻下面放表格：| 股票及代码 | 为什么选它 | 看多/看空 | 把握度 |
-- 
+-
 
-「超核心关注」、「核心关注」和「可以看看」放到“把握度”里
+「超核心关注」、「核心关注」和「可以看看」放到"把握度"里
 - 「知道就行」的放在新闻末尾用 - 简单提一下
 - 如果有利空消息，用 ### 个股风险提示 单独列出（减持/业绩暴雷/监管处罚等）
 
 注意：
 - 表格每栏至少 3-5 行（可以更多），体现产业链推理
 - 每条资讯只用一次，别在不同板块里重复
+- **重要**：综合新闻事实 + UP主观点共识/分歧 + 信息差数据，给出最有把握的推荐。UP主集体看好的方向要重点覆盖
 ---
 数据：
 
-{news_text}"""
+{news_text}
+
+{opinion_context}
+
+{info_context}"""
 
 
 # ============================================================
@@ -392,7 +402,7 @@ OPINION_USER_PROMPT_TEMPLATE = """以下是今日财经UP主的AI转录观点文
 - 列出表格：| 板块/概念 | 看多人数 | 看空人数 | UP主名称 | 板块逻辑 |观点
 - 板块逻辑中，总结UP主们的观点进行提炼
 - 1-2句话总结今日UP主观点的共识度和分歧度
-- 如果是看多但是要注意减仓；看空要注意抄底的观点，同步写到“观点”中
+- 如果是看多但是要注意减仓；看空要注意抄底的观点，同步写到"观点"中
 
 风格要求：
 - 忠实还原UP主原意，不要润色过度失去个人风格
@@ -509,9 +519,14 @@ def call_llm(news_text):
     return _cleanup_report(raw)
 
 
-def call_stock_picker(news_text):
-    """调用 LLM 执行产业链选股分析，并清洗输出（含去 **）。"""
-    raw = _call_deepseek(STOCK_PICKER_SYSTEM_PROMPT, STOCK_PICKER_TEMPLATE.format(news_text=news_text),
+def call_stock_picker(news_text, opinion_context="", info_context=""):
+    """调用 LLM 执行产业链选股分析（融合新闻+UP主观点+信息差），并清洗输出（含去 **）。"""
+    raw = _call_deepseek(STOCK_PICKER_SYSTEM_PROMPT,
+                         STOCK_PICKER_TEMPLATE.format(
+                             news_text=news_text,
+                             opinion_context=opinion_context,
+                             info_context=info_context,
+                         ),
                          temperature=0.3, max_tokens=6144)
     return _cleanup_report(raw, strip_bold=True)
 
@@ -2104,9 +2119,61 @@ def main():
     print("\n▸ 生成 AI 市场分析...")
     report = call_llm(news_text)
 
-    # 4. AI 选股
-    print("▸ 执行 AI 产业链选股...")
-    stock_picks = call_stock_picker(news_text)
+    # 4. 财经观点蒸馏 + 信息差 — 先扫描UP主文件（选股需用到观点上下文）
+    if session_label == "早报":
+        opinion_title = "昨日收盘UP主观点"
+        opinion_md_title = "## 📊 昨日收盘UP主观点"
+        date_offset = -1
+    else:
+        opinion_title = "今日收盘UP主观点"
+        opinion_md_title = "## 📊 今日收盘UP主观点"
+        date_offset = 0
+
+    print(f"\n▸ 扫描UP主观点文件（{opinion_title}）...")
+    all_files = find_today_opinions(date_offset=date_offset)
+    opinion_files = [o for o in all_files if o["kind"] == "opinion"]
+    info_files = [o for o in all_files if o["kind"] == "info"]
+
+    opinion_context = ""   # UP主蒸馏结果，传给选股
+    info_context = ""      # 信息差原始内容，传给选股
+    opinion_md = ""        # UP主蒸馏 markdown，追加到 report
+
+    # 4a. 处理UP主观点（蒸馏分析）
+    if opinion_files:
+        print(f"  发现 {len(opinion_files)} 位UP主观点，开始蒸馏...")
+        parts = []
+        for o in opinion_files:
+            parts.append(f"【UP主: {o['name']}（{o['filename']}，{o['char_count']}字）】\n{o['content']}")
+        combined_text = "\n\n---\n\n".join(parts)
+        opinion_md = call_opinion_analyzer(combined_text)
+        if opinion_md and not opinion_md.startswith("API 调用失败"):
+            report += f"\n\n---\n\n{opinion_md_title}\n\n{opinion_md}"
+            opinion_context = f"## UP主市场观点（AI蒸馏）\n\n{opinion_md}"
+            print("  观点蒸馏完成")
+        else:
+            print(f"  观点分析失败: {opinion_md[:100] if opinion_md else '无返回'}")
+            opinion_md = ""
+    else:
+        print("  未找到UP主观点文件")
+
+    # 4b. 处理信息差（原始信息，不经蒸馏，作为补充参考）
+    if info_files:
+        print(f"  发现 {len(info_files)} 条信息差，作为补充参考...")
+        info_parts = []
+        for o in info_files:
+            info_parts.append(f"【{o['name']}（{o['filename']}，{o['char_count']}字）】\n{o['content']}")
+            print(f"    ✓ {o['name']}: {o['char_count']}字")
+        info_text = "\n\n---\n\n".join(info_parts)
+        info_context = f"## 信息差补充（原始信息，供交叉验证）\n\n{info_text}"
+        # 追加到 report，放在观点蒸馏下面
+        report += f"\n\n---\n\n## 📋 信息差补充\n\n{info_text}"
+        print("  信息差已追加到报告")
+
+    # 5. AI 选股 — 融合新闻 + UP主观点 + 信息差
+    print("\n▸ 执行 AI 产业链选股（融合新闻+观点+信息差）...")
+    stock_picks = call_stock_picker(news_text,
+                                    opinion_context=opinion_context,
+                                    info_context=info_context)
 
     # 预先构造 GitHub Pages URL
     today_str = beijing_now().strftime("%Y%m%d")
@@ -2118,10 +2185,10 @@ def main():
     else:
         page_base_url = "https://hcongxi42-web.github.io/HZT/"
 
-    # 5. 清理旧文件（防止 docs/ 膨胀导致 Pages 部署失败）
+    # 6. 清理旧文件
     cleanup_old_files(days=7)
 
-    # 6. 技术分析图表
+    # 7. 技术分析图表
     if stock_picks and stock_analyzer:
         print("  解析高评分股票...")
         stock_list = stock_analyzer.parse_stock_picks(stock_picks)
@@ -2139,35 +2206,6 @@ def main():
     elif not stock_analyzer:
         print("  stock_analyzer 模块未加载，跳过图表")
 
-    # 5.5 财经观点蒸馏 — 早晚报区分标题和日期（放在选股前面）
-    if session_label == "早报":
-        opinion_title = "昨日收盘UP主观点"
-        opinion_md_title = "## 📊 昨日收盘UP主观点"
-        date_offset = -1
-    else:
-        opinion_title = "今日收盘UP主观点"
-        opinion_md_title = "## 📊 今日收盘UP主观点"
-        date_offset = 0
-
-    print(f"\n▸ 扫描UP主观点文件（{opinion_title}）...")
-    opinions = find_today_opinions(date_offset=date_offset)
-    if opinions:
-        print(f"  发现 {len(opinions)} 位UP主观点，开始蒸馏...")
-        parts = []
-        for o in opinions:
-            parts.append(f"【UP主: {o['name']}（{o['filename']}，{o['char_count']}字）】\n{o['content']}")
-        combined_text = "\n\n---\n\n".join(parts)
-        opinion_md = call_opinion_analyzer(combined_text)
-        if opinion_md and not opinion_md.startswith("API 调用失败"):
-            # 直接追加到 report，在选股前面
-            report += f"\n\n---\n\n{opinion_md_title}\n\n{opinion_md}"
-            print("  观点蒸馏完成，已插入到产业链选股前面")
-        else:
-            print(f"  观点分析失败: {opinion_md[:100] if opinion_md else '无返回'}")
-    else:
-        target_date = beijing_now() + timedelta(days=date_offset)
-        print(f"  未找到 {target_date.month}月{target_date.day}日 的UP主观点文件，跳过")
-
     # 组装完整报告 — 产业链选股放在观点蒸馏后面
     if stock_picks:
         report += format_stock_picks(stock_picks)
@@ -2179,7 +2217,7 @@ def main():
         print(f"... (总 {len(report)} 字符)")
     print("=" * 60)
 
-    # 6. HTML
+    # 8. HTML
     print("\n▸ 生成详情页...")
     page_url = f"{page_base_url}report_{today_str}.html"
     html = generate_html_report(report, quotes, news_list, page_url, page_base_url,
