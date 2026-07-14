@@ -570,7 +570,7 @@ def format_stock_picks(picks_md):
         return ""
     return (
         "\n\n---\n\n"
-        "##  AI选股\n\n"
+        "## AI选股\n\n"
         f"{picks_md}\n"
     )
 
@@ -616,7 +616,7 @@ def insert_charts_into_picks(stock_picks, chart_urls):
 
     # 移除旧版独立「技术分析图」板块（兼容历史数据）
     stock_picks = re.sub(
-        r'\n*###\s*📊\s*技术分析图\s*\n(?:\*\*.*?\*\*[^\n]*\n|!\[.*?\]\(.*?\)\n|\n)*',
+        r'\n*###\s*\s*技术分析图\s*\n(?:\*\*.*?\*\*[^\n]*\n|!\[.*?\]\(.*?\)\n|\n)*',
         '', stock_picks
     )
 
@@ -698,7 +698,7 @@ def insert_charts_into_picks(stock_picks, chart_urls):
         chart_md_lines = []
         for name, code, url in section_charts:
             if first_chart:
-                chart_md_lines.append('<span style="color:#d63031;font-weight:600;">⚠️ 注：K线图仅保留近7天，历史图表将自动清理。如需长期保存，请右键另存为。</span>')
+                chart_md_lines.append('<span style="color:#d63031;font-weight:600;"> 注：K线图仅保留近7天，历史图表将自动清理。如需长期保存，请右键另存为。</span>')
                 first_chart = False
             chart_md_lines.append(f'![{name} {code}]({url})')
 
@@ -1594,7 +1594,7 @@ mark {{ background: transparent; }}
 <div class="fav-panel" id="favPanel">
   <div class="fav-panel-inner">
     <div class="fav-panel-hdr">
-      <span>⭐ 自选新闻 · <em id="favCount">0</em></span>
+      <span> 自选新闻 · <em id="favCount">0</em></span>
       <div style="display:flex;align-items:center;gap:8px;">
         <span class="fav-count" id="favSize" title="localStorage 占用"></span>
         <button class="fav-act-btn" onclick="exportFavs()" title="导出收藏为 JSON 文件">↗导出</button>
@@ -1753,7 +1753,7 @@ function toggleFav(btn) {{
       saved_at: new Date().toISOString()
     }});
     saveFavs(favs);
-    showToast('已加入自选 ⭐');
+    showToast('已加入自选 ');
   }}
 }}
 
@@ -2166,11 +2166,11 @@ def main():
     # 4. 财经观点蒸馏 + 信息差 — 先扫描UP主文件（选股需用到观点上下文）
     if session_label == "早报":
         opinion_title = "昨日收盘UP主观点"
-        opinion_md_title = "## 📊 昨日收盘UP主观点"
+        opinion_md_title = "## 昨日收盘UP主观点"
         date_offset = -1
     else:
         opinion_title = "今日收盘UP主观点"
-        opinion_md_title = "## 📊 今日收盘UP主观点"
+        opinion_md_title = "## 今日收盘UP主观点"
         date_offset = 0
 
     print(f"\n▸ 扫描UP主观点文件（{opinion_title}）...")
@@ -2211,12 +2211,12 @@ def main():
         info_md = call_info_analyzer(info_raw)
         if info_md and not info_md.startswith("API 调用失败"):
             info_context = f"## 信息差提炼（AI 提取关键事实）\n\n{info_md}"
-            report += f"\n\n---\n\n## 📋 信息差提炼\n\n{info_md}"
+            report += f"\n\n---\n\n## 信息差提炼\n\n{info_md}"
             print("  信息差提炼完成")
         else:
             print(f"  信息差提炼失败: {info_md[:100] if info_md else '无返回'}")
             info_context = f"## 信息差补充\n\n{info_raw}"
-            report += f"\n\n---\n\n## 📋 信息差补充\n\n{info_raw}"
+            report += f"\n\n---\n\n## 信息差补充\n\n{info_raw}"
 
     # 5. AI 选股 — 融合新闻 + UP主观点 + 信息差
     print("\n▸ 执行 AI 产业链选股（融合新闻+观点+信息差）...")
