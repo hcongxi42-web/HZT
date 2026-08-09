@@ -12,15 +12,10 @@ import re
 import urllib.request
 import urllib.error
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from utils import beijing_now as _beijing_now
 
-def _beijing_now():
-    """返回北京时间 datetime（UTC+8），兼容 CI 和本地环境。"""
-    try:
-        from zoneinfo import ZoneInfo
-        return datetime.now(ZoneInfo("Asia/Shanghai"))
-    except Exception:
-        return datetime.utcnow() + timedelta(hours=8)
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 
@@ -105,7 +100,8 @@ def fetch_em_kuaixun(type_id="102", market="A股", count=20):
         f"getlist_{type_id}_ajaxResult_{count}_1_.html"
     )
     headers = {"User-Agent": _UA, "Referer": _REFERER_EM}
-    try:
+
+    def _do_fetch():
         req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=15) as resp:
             raw = resp.read().decode()
@@ -130,6 +126,9 @@ def fetch_em_kuaixun(type_id="102", market="A股", count=20):
                 "type": "快讯",
             })
         return articles
+
+    try:
+        return _retry_fetch(_do_fetch)
     except Exception as e:
         return [{"error": f"东方财富快讯({market})抓取失败: {e}", "source": "东方财富", "market": market}]
 
@@ -142,7 +141,8 @@ def fetch_em_news_list(column="350", count=15):
         f"&needInteractData=0&page_index=1&page_size={count}&req_trace=a"
     )
     headers = {"User-Agent": _UA, "Referer": _REFERER_EM}
-    try:
+
+    def _do_fetch():
         req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode())
@@ -160,6 +160,9 @@ def fetch_em_news_list(column="350", count=15):
                 "type": "要闻",
             })
         return articles
+
+    try:
+        return _retry_fetch(_do_fetch)
     except Exception as e:
         return [{"error": f"东方财富要闻抓取失败: {e}", "source": "东方财富", "market": "A股"}]
 
@@ -171,7 +174,8 @@ def fetch_sina_a_news(count=10):
         f"?pageid=153&lid=2512&k=&num={count}&page=1"
     )
     headers = {"User-Agent": _UA, "Referer": _REFERER_SINA}
-    try:
+
+    def _do_fetch():
         req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode())
@@ -210,6 +214,9 @@ def fetch_sina_a_news(count=10):
                 "type": "滚动",
             })
         return articles
+
+    try:
+        return _retry_fetch(_do_fetch)
     except Exception as e:
         return [{"error": f"新浪A股抓取失败: {e}", "source": "新浪财经", "market": "A股"}]
 
@@ -248,7 +255,8 @@ def fetch_sina_us_stock(count=15):
         f"?pageid=153&lid=2509&k=&num={count}&page=1"
     )
     headers = {"User-Agent": _UA, "Referer": _REFERER_SINA}
-    try:
+
+    def _do_fetch():
         req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode())
@@ -278,6 +286,9 @@ def fetch_sina_us_stock(count=15):
                 "type": "滚动",
             })
         return articles
+
+    try:
+        return _retry_fetch(_do_fetch)
     except Exception as e:
         return [{"error": f"新浪美股抓取失败: {e}", "source": "新浪财经", "market": "美股"}]
 
@@ -307,7 +318,8 @@ def fetch_em_hk_news(count=15):
         f"&needInteractData=0&page_index=1&page_size={count}&req_trace=a"
     )
     headers = {"User-Agent": _UA, "Referer": "https://hk.eastmoney.com/"}
-    try:
+
+    def _do_fetch():
         req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode())
@@ -325,6 +337,9 @@ def fetch_em_hk_news(count=15):
                 "type": "要闻",
             })
         return articles
+
+    try:
+        return _retry_fetch(_do_fetch)
     except Exception as e:
         return [{"error": f"东方财富港股抓取失败: {e}", "source": "东方财富", "market": "港股"}]
 
@@ -425,20 +440,32 @@ def fetch_all_news(market="all"):
         "markets": {},
     }
 
-    if market in ("all", "a"):
-        news, errors = fetch_a_stock_news()
-        result["markets"]["a"] = {"news": news, "errors": errors}
+    # 并行抓取三个市场 + 资金流向（IO 密集型，ThreadPoolExecutor 最合适）
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {}
 
-    if market in ("all", "us"):
-        news, errors = fetch_us_stock_news()
-        result["markets"]["us"] = {"news": news, "errors": errors}
+        if market in ("all", "a"):
+            futures["a"] = executor.submit(fetch_a_stock_news)
+        if market in ("all", "us"):
+            futures["us"] = executor.submit(fetch_us_stock_news)
+        if market in ("all", "hk"):
+            futures["hk"] = executor.submit(fetch_hk_stock_news)
+        futures["fund"] = executor.submit(fetch_market_fund_flow, 5)
 
-    if market in ("all", "hk"):
-        news, errors = fetch_hk_stock_news()
-        result["markets"]["hk"] = {"news": news, "errors": errors}
-
-    # 资金面数据（始终抓取）
-    result["fund_flow"] = fetch_market_fund_flow(5)
+        for key, future in futures.items():
+            try:
+                if key == "fund":
+                    result["fund_flow"] = future.result()
+                else:
+                    news, errors = future.result()
+                    result["markets"][key] = {"news": news, "errors": errors}
+            except Exception as e:
+                if key == "fund":
+                    print(f"[FundFlow] 并行抓取异常: {e}")
+                    result["fund_flow"] = []
+                else:
+                    print(f"[News] {key}市场并行抓取异常: {e}")
+                    result["markets"][key] = {"news": [], "errors": [{"error": str(e), "market": key}]}
 
     return result
 

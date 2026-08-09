@@ -10,6 +10,9 @@ import re
 import urllib.request
 import urllib.error
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor
+
+from utils import beijing_now
 
 # 股票技术分析模块（可选依赖）
 try:
@@ -24,6 +27,16 @@ from news_fetcher import fetch_all_news_flat
 # ============================================================
 #  工具函数
 # ============================================================
+
+def _set_github_output(key, value):
+    """写入 GitHub Actions output 变量（本地运行时无操作）。"""
+    try:
+        output_file = os.environ.get("GITHUB_OUTPUT", "")
+        if output_file:
+            with open(output_file, "a") as f:
+                f.write(f"{key}={value}\n")
+    except Exception:
+        pass
 
 # ============================================================
 #  UP主观点 — 配置 & 文件扫描
@@ -140,15 +153,6 @@ def get_session_label():
         return "早报", "am"
     else:
         return "晚报", "pm"
-
-
-def beijing_now():
-    """返回北京时间 datetime（UTC+8），兼容 CI 和本地环境。"""
-    try:
-        from zoneinfo import ZoneInfo
-        return datetime.now(ZoneInfo("Asia/Shanghai"))
-    except Exception:
-        return datetime.utcnow() + timedelta(hours=8)
 
 
 # ============================================================
@@ -294,160 +298,26 @@ def format_news(news_list, fund_flow=None):
 
 
 # ============================================================
-#  LLM 分析 — 提示词
+#  LLM 分析 — 提示词（从 prompts/ 目录加载，方便独立调整）
 # ============================================================
 
-SYSTEM_PROMPT = (
-    "你是一位资深买方策略师，有 20 年 A 股投研经验。"
-    "你写报告的风格是：一针见血、不堆术语、用常识说话。"
-    "你不写废话，不套模板，每句话都要有信息量。"
-)
+def _load_prompt(name):
+    """从 prompts/ 目录加载提示词模板。"""
+    prompt_path = os.path.join("prompts", name)
+    if not os.path.exists(prompt_path):
+        print(f"[WARN] 提示词文件不存在: {prompt_path}，使用内置默认值")
+        return ""
+    with open(prompt_path, "r", encoding="utf-8") as f:
+        return f.read()
 
-USER_PROMPT_TEMPLATE = """基于以下资讯，写一份简短的盘中情报，直接给判断，别啰嗦。
-
-结构：
-- 资金面：1-2 句判断主力态度（进攻/防守/观望），提到关键数据支撑
-- 主线扫描：今天最值得关注的 3-5 条方向，点出方向的逻辑和持续性
-- 跨市场：美股/港股如有异动，说一下对 A 股可能的传导
-- 要闻速览：挑最重要的 8-10 条新闻，每条一行，标利好/利空/中性
-- 市场体温：给一个整体判断（偏热/偏暖/中性/偏冷/冰点），给出合理的逻辑推导和数据支持
-- 明天怎么看：2-3 种可能的情景推演
-
-风格：
-- 别用「值得关注的是」「总体来看」「综合来看」这种废话开头
-- 别用 emoji
-- 用「」标记股票和关键术语
-- 像给人发微信一样说话，不像在写论文
-
----
-数据：
-
-{news_text}"""
-
-
-# ============================================================
-#  AI 选股 — 提示词
-# ============================================================
-
-STOCK_PICKER_SYSTEM_PROMPT = (
-    "你是一位专攻产业链研究的买方分析师，"
-    "擅长从一条新闻出发，顺藤摸瓜找出整个供应链上真正受益或受损的公司。"
-    "你推的每只股票都有据可查，不拍脑袋，不编代码。"
-)
-
-STOCK_PICKER_TEMPLATE = """从以下资讯、UP主观点和信息差中，找出今天值得关注的个股机会和风险。
-
-怎么找：
-- 先看新闻里直接提到了哪些公司，如果有直接提及，分析这个新闻对公司的影响
-- 再沿产业链上下推导：供应商、客户、竞争对手、替代品玩家
-- 结合资金流向，优先挑资金在买的板块
-- 参考下方「UP主观点」的市场判断和「信息差」的补充事实，交叉验证你的选股逻辑
-- 禁止编造新闻里不存在的股票
-
-怎么标记优先级（别用 emoji，用文字）：
-- 「超核心关注」：公司位于产业链中的卡脖子环节，缺少了这个公司或其产品，会剧烈影响整个产业链的运作
-- 「核心关注」：逻辑直接、短期可能反应到产业链
-- 「可以看看」：产业链传导受益，逻辑成立但稍远
-- 「知道就行」：沾边但逻辑链条长
-
-输出格式：
-- 每条重要新闻 / 投资主题用 ### 做标题
-- 新闻下面放表格：| 股票及代码 | 为什么选它 | 看多/看空 | 把握度 |
--
-
-「超核心关注」、「核心关注」和「可以看看」放到"把握度"里
-- 「知道就行」的放在新闻末尾用 - 简单提一下
-- 如果有利空消息，用 ### 个股风险提示 单独列出（减持/业绩暴雷/监管处罚等）
-
-注意：
-- 表格每栏至少 3-5 行（可以更多），体现产业链推理
-- 每条资讯只用一次，别在不同板块里重复
-- **重要**：综合新闻事实 + UP主观点共识/分歧 + 信息差数据，给出最有把握的推荐。UP主集体看好的方向要重点覆盖
----
-数据：
-
-{news_text}
-
-{opinion_context}
-
-{info_context}"""
-
-
-# ============================================================
-#  财经观点蒸馏 — 提示词
-# ============================================================
-
-OPINION_SYSTEM_PROMPT = (
-    "你是一位专业财经信息编辑，擅长从自媒体观点的原始口播转录中"
-    "提取核心判断、去除口语噪音、保留个人风格。"
-    "你的职责是忠实还原每位UP主的观点，不添加你自己的判断，不模棱两可。"
-    "对每位UP主输出结构一致但语言保留其个人风格的分析。"
-)
-
-OPINION_USER_PROMPT_TEMPLATE = """以下是今日财经UP主的AI转录观点文本。请逐个UP主分析，提取核心观点。
-
-对每位UP主，请输出以下结构（用 ### 做标题）：
-
-### UP主名称：核心观点提炼
-
-- **核心逻辑**：用1句话概括这位UP主今天最核心的判断
-- **情绪倾向**：乐观 / 中性 / 悲观（标为 利好 / 中性 / 利空）
-- **看多方向**：列举UP主明确看好的板块/概念
-- **看空/谨慎方向**：列举UP主明确看空或提示风险的板块
-- **关键论据**：UP主给出的逻辑支撑（引用原文关键句，标注「」）
-- **置信度**：判断UP主对自己观点的确信程度（坚定 / 较强 / 一般 / 犹豫）
-
-末尾再加一个 ### 多方观点交叉比对 小节：
-- 横向量化：哪些板块被多位UP主同时看好？哪些存在分歧？
-- 列出表格：| 板块/概念 | 看多人数 | 看空人数 | UP主名称 | 板块逻辑 |观点
-- 板块逻辑中，总结UP主们的观点进行提炼
-- 1-2句话总结今日UP主观点的共识度和分歧度
-- 如果是看多但是要注意减仓；看空要注意抄底的观点，同步写到"观点"中
-
-风格要求：
-- 忠实还原UP主原意，不要润色过度失去个人风格
-- 别用「值得关注的是」「总体来看」这类废话开头
-- 「」标记板块和关键术语
-- 保留口语化的金句（如「血包逻辑」这种有辨识度的表达）
-- 别用 emoji
----
-今日观点文本：
-
-{opinion_text}"""
-
-
-# ============================================================
-#  信息差提炼 — 提示词
-# ============================================================
-
-INFO_GAP_SYSTEM_PROMPT = (
-    "你是一位专业财经信息编辑，擅长从碎片化的市场信息中提取关键事实。"
-    "你的任务是提炼核心信息、去除冗余、分类整理，不做主观判断。"
-    "输出简洁、有条理，每条信息都有据可查。"
-)
-
-INFO_GAP_USER_PROMPT_TEMPLATE = """以下是今日收集的市场信息差（碎片化财经信息）。请提炼核心信息，去除冗余和重复。
-
-输出结构：
-### 信息差提炼
-
-- **核心动态**：用 3-5 条要点概括今日最重要的市场信息（每条一句话，标注信息来源）
-- **行业/板块关注**：哪些行业或板块出现了值得关注的新信息（政策、供需、价格变动等）
-- **个股/公司动态**：具体公司的重要公告、业绩、订单、产能等信息
-- **数据/指标变动**：值得关注的商品价格、运价、汇率、行业数据等
-
-风格要求：
-- 只提炼事实，不做主观判断和多空评级
-- 每条信息标注来源
-- 别用「值得关注的是」「总体来看」这类废话
-- 「」标记关键术语和标的
-- 别用 emoji
-
----
-原始信息：
-
-{info_text}"""
-
+SYSTEM_PROMPT = _load_prompt("system_analyst.txt")
+USER_PROMPT_TEMPLATE = _load_prompt("user_analyst.txt")
+STOCK_PICKER_SYSTEM_PROMPT = _load_prompt("system_stock_picker.txt")
+STOCK_PICKER_TEMPLATE = _load_prompt("user_stock_picker.txt")
+OPINION_SYSTEM_PROMPT = _load_prompt("system_opinion.txt")
+OPINION_USER_PROMPT_TEMPLATE = _load_prompt("user_opinion.txt")
+INFO_GAP_SYSTEM_PROMPT = _load_prompt("system_info_gap.txt")
+INFO_GAP_USER_PROMPT_TEMPLATE = _load_prompt("user_info_gap.txt")
 
 # ============================================================
 #  LLM 输出清洗
@@ -545,22 +415,31 @@ def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096)
         return f"API 调用失败: {str(e)}"
 
 
+def _call_deepseek_safe(system_prompt, user_prompt, temperature=0.5, max_tokens=4096, section_name="AI分析"):
+    """带优雅降级的 DeepSeek API 调用。失败时返回友好提示而非原始错误文本。"""
+    result = _call_deepseek(system_prompt, user_prompt, temperature, max_tokens)
+    if result.startswith("错误") or result.startswith("API 调用失败"):
+        print(f"[LLM] {section_name} 调用失败，使用降级: {result[:100]}")
+        return f"*({section_name}暂时不可用，请稍后重试)*"
+    return result
+
+
 def call_llm(news_text):
     """调用 LLM 生成市场分析报告，并清理 #### / *** 标记。"""
-    raw = _call_deepseek(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
-                         temperature=0.5, max_tokens=4096)
+    raw = _call_deepseek_safe(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
+                              temperature=0.5, max_tokens=4096, section_name="市场分析")
     return _cleanup_report(raw)
 
 
 def call_stock_picker(news_text, opinion_context="", info_context=""):
     """调用 LLM 执行产业链选股分析（融合新闻+UP主观点+信息差），并清洗输出（含去 **）。"""
-    raw = _call_deepseek(STOCK_PICKER_SYSTEM_PROMPT,
-                         STOCK_PICKER_TEMPLATE.format(
-                             news_text=news_text,
-                             opinion_context=opinion_context,
-                             info_context=info_context,
-                         ),
-                         temperature=0.3, max_tokens=6144)
+    raw = _call_deepseek_safe(STOCK_PICKER_SYSTEM_PROMPT,
+                              STOCK_PICKER_TEMPLATE.format(
+                                  news_text=news_text,
+                                  opinion_context=opinion_context,
+                                  info_context=info_context,
+                              ),
+                              temperature=0.3, max_tokens=6144, section_name="AI选股")
     return _cleanup_report(raw, strip_bold=True)
 
 
@@ -577,22 +456,24 @@ def format_stock_picks(picks_md):
 
 def call_opinion_analyzer(opinion_text):
     """调用 LLM 分析UP主财经观点，返回结构化 markdown。"""
-    raw = _call_deepseek(
+    raw = _call_deepseek_safe(
         OPINION_SYSTEM_PROMPT,
         OPINION_USER_PROMPT_TEMPLATE.format(opinion_text=opinion_text),
         temperature=0.4,
         max_tokens=4096,
+        section_name="UP主观点蒸馏",
     )
     return _cleanup_report(raw)
 
 
 def call_info_analyzer(info_text):
     """调用 LLM 提炼信息差，提取核心事实（不做多空判断）。"""
-    raw = _call_deepseek(
+    raw = _call_deepseek_safe(
         INFO_GAP_SYSTEM_PROMPT,
         INFO_GAP_USER_PROMPT_TEMPLATE.format(info_text=info_text),
         temperature=0.3,
         max_tokens=3072,
+        section_name="信息差提炼",
     )
     return _cleanup_report(raw)
 
@@ -1002,529 +883,7 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MARKET BRIEF · {today} {session_label}</title>
-<style>
-/* ============================================================
-   Institutional Research — Clean Light Theme
-   ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
-
-:root {{
-  --bg: #f7f8fa;
-  --bg-card: #ffffff;
-  --bg-elevated: #eef0f4;
-  --border: #dde1e8;
-  --border-light: #e4e7ed;
-  --text-primary: #1a1d24;
-  --text-secondary: #4e5460;
-  --text-muted: #9096a2;
-  --accent: #e85d2c;
-  --accent-blue: #2070cc;
-  --green: #1a8a3f;
-  --red: #d63031;
-  --amber: #b8860b;
-  --purple: #7c3aed;
-}}
-
-* {{ margin:0; padding:0; box-sizing:border-box; }}
-
-body {{
-  font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
-  background: var(--bg);
-  color: var(--text-primary);
-  line-height: 1.65;
-  -webkit-font-smoothing: antialiased;
-}}
-
-/* ===== TOP BAR ===== */
-.topbar {{
-  background: #fff;
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 100;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}}
-.topbar-inner {{
-  max-width: 960px; margin:0 auto; padding: 10px 24px;
-  display:flex; align-items:center; justify-content:space-between;
-}}
-.logo {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 15px; font-weight: 700;
-  letter-spacing: 2px; color: var(--text-primary);
-}}
-.logo em {{ color: var(--accent); font-style: normal; }}
-.topbar-meta {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px; color: var(--text-muted);
-  text-align: right; line-height: 1.5;
-}}
-
-/* ===== TICKER STRIP ===== */
-.ticker-strip {{
-  background: #fff; border-bottom: 1px solid var(--border);
-  overflow-x: auto; white-space: nowrap;
-}}
-.ticker-strip::-webkit-scrollbar {{ height:0; }}
-.ticker-inner {{
-  max-width: 960px; margin:0 auto; padding: 8px 24px;
-  display:flex; gap:0;
-}}
-.tkr {{
-  flex:0 0 auto; padding: 6px 18px; text-align:center;
-  border-right: 1px solid var(--border); min-width: 120px;
-}}
-.tkr:last-child {{ border-right:none; }}
-.tkr-n {{
-  display:block; font-size:10px; color: var(--text-muted);
-  letter-spacing: 1px; font-weight: 600;
-  text-transform: uppercase; margin-bottom: 3px;
-}}
-.tkr-p {{
-  display:block; font-family: 'JetBrains Mono', monospace;
-  font-size: 16px; font-weight: 700; color: var(--text-primary);
-}}
-.tkr-c {{
-  display:block; font-family: 'JetBrains Mono', monospace;
-  font-size: 11px; font-weight: 600; margin-top: 2px;
-}}
-.tkr.up .tkr-c {{ color: var(--red); }}
-.tkr.dn .tkr-c {{ color: var(--green); }}
-
-/* ===== HISTORY NAV ===== */
-.hnav {{
-  max-width:960px; margin:0 auto; padding: 10px 24px;
-  border-bottom: 1px solid var(--border);
-  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
-  background: var(--bg-card);
-}}
-.hnav-label {{
-  font-size:11px; font-weight:700; color: var(--text-muted);
-  letter-spacing:1.5px; text-transform:uppercase; margin-right:6px;
-}}
-.hl {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:11px; font-weight:600; color: var(--text-secondary);
-  padding:4px 10px; border-radius:2px;
-  background: var(--bg); border:1px solid var(--border);
-  text-decoration:none; transition: all 0.15s;
-}}
-.hl:hover {{ color: var(--accent); border-color: var(--accent); }}
-.hnav-spacer {{
-  flex:1; min-width:12px;
-}}
-.hl-date {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:11px; color: var(--text-primary);
-  padding:4px 8px; border-radius:2px;
-  background: var(--bg); border:1px solid var(--border);
-  outline:none; transition: border-color 0.15s;
-  color-scheme: light;
-}}
-.hl-date:focus {{ border-color: var(--accent); }}
-.hl-date::-webkit-calendar-picker-indicator {{
-  cursor:pointer;
-}}
-.hl-go {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:11px; font-weight:700; color: #fff;
-  padding:4px 12px; border-radius:2px;
-  background: var(--accent); border:none;
-  cursor:pointer; transition: background 0.15s;
-  letter-spacing: 1px;
-}}
-.hl-go:hover {{ background: #e85d2c; }}
-
-/* ---- Session toggle (早报/晚报) ---- */
-.session-toggle {{
-  display: inline-flex; border: 1px solid var(--border);
-  border-radius: 2px; overflow: hidden; margin-left: 2px;
-}}
-.st-btn {{
-  font-family: 'JetBrains Mono', 'Inter', sans-serif;
-  font-size: 11px; font-weight: 600;
-  padding: 4px 12px; background: var(--bg);
-  border: none; color: var(--text-secondary);
-  cursor: pointer; transition: all 0.15s;
-  border-right: 1px solid var(--border);
-}}
-.st-btn:last-child {{ border-right: none; }}
-.st-btn.active {{
-  background: var(--accent); color: #fff;
-}}
-.st-btn:hover:not(.active) {{
-  color: var(--accent); background: var(--bg-elevated);
-}}
-
-/* ===== MASTHEAD ===== */
-.masthead {{
-  max-width:960px; margin:0 auto; padding: 40px 24px 28px;
-  text-align:center; border-bottom: 2px solid var(--border);
-}}
-.masthead-date {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:12px; color: var(--text-muted);
-  letter-spacing:3px; text-transform:uppercase;
-  font-weight:500; margin-bottom:12px;
-}}
-.masthead h1 {{
-  font-family: 'Inter', 'Noto Sans SC', sans-serif;
-  font-size:36px; font-weight:900; color: var(--text-primary);
-  letter-spacing: 1px; margin-bottom: 8px;
-}}
-.masthead-sub {{
-  font-size:14px; color: var(--text-secondary);
-  font-weight:400; font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 1px;
-}}
-.masthead-update {{
-  font-size:12px; color: var(--text-muted);
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.5px; margin-top: 8px;
-}}
-.masthead-tags {{
-  margin-top:18px; display:flex; justify-content:center; gap:8px; flex-wrap:wrap;
-}}
-.mtag {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:10px; font-weight:600; letter-spacing:1.5px;
-  padding:4px 12px; border-radius:2px; text-transform:uppercase;
-}}
-.mtag-a {{ background: rgba(255,107,53,0.12); color: var(--accent); border: 1px solid rgba(255,107,53,0.25); }}
-.mtag-us {{ background: rgba(88,166,255,0.10); color: var(--accent-blue); border: 1px solid rgba(88,166,255,0.20); }}
-.mtag-hk {{ background: rgba(210,153,29,0.10); color: var(--amber); border: 1px solid rgba(210,153,29,0.20); }}
-
-/* ===== CONTENT ===== */
-.content {{ max-width:960px; margin:0 auto; padding: 0 24px 40px; }}
-
-/* ===== SECTION HEADER ===== */
-.sec-hdr {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:10px; font-weight:700; letter-spacing:4px;
-  text-transform:uppercase; color: var(--accent);
-  padding:24px 0 12px; margin-top:28px;
-  border-top: 2px solid var(--border-light);
-}}
-
-/* ===== FUND PANEL ===== */
-.fp-grid {{
-  display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap:16px; margin-top:16px;
-}}
-.fp {{
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  padding: 16px 20px;
-}}
-.fp-h {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:11px; font-weight:600; color: var(--text-secondary);
-  letter-spacing:1px; margin-bottom:14px;
-  text-transform:uppercase;
-}}
-.fp-bars {{ display:flex; flex-direction:column; gap:6px; }}
-.fp-bar-row {{
-  display:flex; align-items:center; gap:10px;
-}}
-.fp-date {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:10px; color: var(--text-muted); width:40px; flex-shrink:0;
-}}
-.fp-bar-bg {{
-  flex:1; height:6px; background: var(--bg);
-  border-radius: 3px; overflow:hidden;
-}}
-.fp-bar-fill {{
-  display:block; height:100%; border-radius:3px;
-  transition: width 0.6s ease;
-}}
-.fp-val {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:12px; font-weight:700; width:55px; text-align:right; flex-shrink:0;
-}}
-.fp-empty {{
-  font-size:12px; color: var(--text-muted);
-  padding: 8px 0;
-}}
-
-/* ===== CHARTS ROW ===== */
-.charts-row {{
-  display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;
-  margin-top:14px;
-}}
-.ch-cell {{
-  background: var(--bg-card); border: 1px solid var(--border);
-}}
-.ch-label {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:10px; font-weight:700; letter-spacing:1px;
-  color: var(--text-secondary); text-align:center;
-  padding: 8px 0 4px; border-bottom: 1px solid var(--border);
-  text-transform:uppercase;
-}}
-.ch-cell img {{ width:100%; display:block; }}
-
-/* ===== REPORT BODY ===== */
-.report-body {{ margin-top:18px; }}
-
-.sec {{ margin-bottom:24px; }}
-.sec:last-child {{ margin-bottom:0; }}
-
-.sec-h {{
-  font-family: 'Inter', 'Noto Sans SC', sans-serif;
-  font-size:18px; font-weight:700; color: var(--text-primary);
-  padding-bottom: 8px; margin-bottom: 14px;
-  border-bottom: 1px solid var(--border-light);
-}}
-
-/* ---- News items ---- */
-.ni {{
-  display:flex; align-items:flex-start; gap:12px;
-  padding:12px 16px; margin:8px 0;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  transition: border-color 0.2s;
-}}
-.ni:hover {{ border-left-color: var(--accent-blue); }}
-.ni-num {{
-  flex-shrink:0; width:22px; height:22px; line-height:22px;
-  text-align:center; font-family: 'JetBrains Mono', monospace;
-  font-size:12px; font-weight:700; color: var(--accent);
-  border: 1px solid var(--border-light); border-radius:2px;
-}}
-.ni-text {{ font-size:14px; line-height:1.7; color: var(--text-primary); }}
-.ni-text strong {{ color: var(--accent); font-weight:700; background: rgba(232,93,44,0.05); padding: 0 2px; }}
-
-/* ---- Bullets ---- */
-.bi {{
-  padding:5px 18px 5px 28px; margin:3px 0; position:relative;
-  font-size:14px; line-height:1.7; color: var(--text-secondary);
-}}
-.bi::before {{
-  content:''; position:absolute; left:16px; top:13px;
-  width:4px; height:4px; background: var(--accent); opacity:0.7;
-}}
-.bi strong {{ color: var(--accent-blue); font-weight: 700; background: rgba(32,112,204,0.05); padding: 0 2px; }}
-
-/* ---- Paragraphs ---- */
-.para {{
-  font-size:14.5px; line-height:1.8; color: var(--text-secondary);
-  margin:8px 0;
-}}
-.para strong {{ color: var(--accent); font-weight: 700; background: rgba(232,93,44,0.06); padding: 0 2px; border-radius: 1px; }}
-
-/* ---- Color highlight marks ---- */
-mark {{ background: transparent; }}
-.mk-bullish {{
-  color: var(--red); font-weight: 700;
-  background: rgba(214,48,49,0.08); padding: 1px 5px; border-radius: 2px;
-}}
-.mk-bearish {{
-  color: var(--green); font-weight: 700;
-  background: rgba(26,138,63,0.08); padding: 1px 5px; border-radius: 2px;
-}}
-.mk-neutral {{
-  color: var(--text-muted); font-weight: 600;
-  background: rgba(144,150,162,0.08); padding: 1px 5px; border-radius: 2px;
-}}
-.mk-hot {{
-  color: var(--red); font-weight: 700;
-  background: rgba(214,48,49,0.06); padding: 0 3px; border-radius: 2px;
-}}
-.mk-warm {{
-  color: var(--amber); font-weight: 700;
-  background: rgba(184,134,11,0.06); padding: 0 3px; border-radius: 2px;
-}}
-.mk-cool {{
-  color: var(--green); font-weight: 600;
-  background: rgba(26,138,63,0.06); padding: 0 3px; border-radius: 2px;
-}}
-.mk-ice {{
-  color: var(--green); font-weight: 700;
-  background: rgba(26,138,63,0.08); padding: 0 3px; border-radius: 2px;
-}}
-
-/* ---- Tables ---- */
-.tbl-wrap {{
-  overflow-x:auto; margin:14px 0;
-  border: 1px solid var(--border);
-}}
-.tbl {{
-  width:100%; border-collapse:collapse;
-  font-size:13px; line-height:1.6;
-  background: var(--bg-card);
-}}
-.tbl thead {{
-  background: var(--bg-elevated);
-}}
-.tbl th {{
-  padding: 10px 12px; font-family: 'JetBrains Mono', 'Inter', sans-serif;
-  font-size:11px; font-weight:700; letter-spacing:0.5px;
-  color: var(--text-secondary); text-transform:uppercase;
-  border-bottom: 1px solid var(--border-light);
-  white-space:nowrap;
-}}
-.tbl td {{
-  padding: 8px 12px; border-bottom: 1px solid var(--border);
-  color: var(--text-primary);
-}}
-.tbl tbody tr:hover {{
-  background: rgba(255,107,53,0.04);
-}}
-.tbl td strong {{ color: var(--accent); font-weight:700; }}
-
-/* ---- Chart images ---- */
-.chart-img {{
-  margin: 14px 0; background: var(--bg-card);
-  border: 1px solid var(--border); display:inline-block; max-width:100%;
-}}
-.chart-img img {{
-  max-width:600px; width:100%; height:auto; display:block;
-}}
-
-/* ===== FOOTER ===== */
-.site-footer {{
-  max-width:960px; margin:0 auto; padding: 28px 24px 48px;
-  border-top: 2px solid var(--border); text-align:center;
-}}
-.footer-logo {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:13px; font-weight:700; color: var(--text-primary);
-  letter-spacing:2px; margin-bottom:10px;
-}}
-.footer-info {{
-  font-size:11px; color: var(--text-muted); line-height:2;
-  font-family: 'JetBrains Mono', monospace;
-}}
-.footer-disclaimer {{
-  font-size:10px; color: var(--text-muted); margin-top:14px;
-  padding-top:14px; border-top: 1px solid var(--border);
-  line-height:1.8;
-}}
-.online-link {{
-  display:inline-block; margin-top:14px;
-  padding: 10px 24px; background: var(--accent); color: #fff;
-  font-family: 'JetBrains Mono', monospace;
-  font-size:12px; font-weight:600; letter-spacing:1.5px;
-  text-decoration:none; border-radius:2px;
-  text-transform:uppercase;
-  transition: background 0.2s;
-}}
-.online-link:hover {{ background: #e85d2c; }}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 680px) {{
-  .masthead h1 {{ font-size:26px; }}
-  .topbar-inner {{ flex-direction:column; gap:4px; text-align:center; }}
-  .topbar-meta {{ text-align:center; }}
-  .ticker-inner {{ padding:6px 12px; }}
-  .tkr {{ min-width:100px; padding:6px 12px; }}
-  .tkr-p {{ font-size:14px; }}
-  .charts-row {{ grid-template-columns:1fr; }}
-  .content {{ padding:0 14px 30px; }}
-  .sec-h {{ font-size:16px; }}
-  .ni {{ padding:10px 12px; }}
-  .fp-grid {{ grid-template-columns:1fr; }}
-  .chart-img img {{ max-width:100%; }}
-  .fav-panel {{ display:none; }}
-}}
-
-/* ===== FAVORITES PANEL ===== */
-.fav-btn {{
-  display:inline-block; background:none; border:none;
-  font-size:16px; cursor:pointer; padding:0 6px; margin-right:2px;
-  color: var(--text-muted); transition: all 0.2s;
-  vertical-align: middle; line-height:1;
-}}
-.fav-btn:hover {{ color: var(--amber); transform: scale(1.2); }}
-.fav-btn.on {{ color: var(--amber); }}
-
-.fav-panel {{
-  max-width:960px; margin:0 auto; padding: 0 24px 32px;
-}}
-.fav-panel-inner {{
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-top: 3px solid var(--amber);
-  border-radius: 0 0 4px 4px;
-}}
-.fav-panel-hdr {{
-  display:flex; align-items:center; justify-content:space-between;
-  padding: 12px 20px; border-bottom: 1px solid var(--border);
-  font-family: 'JetBrains Mono', monospace;
-  font-size:11px; font-weight:700; color: var(--text-secondary);
-  letter-spacing:1.5px; text-transform:uppercase;
-}}
-.fav-panel-hdr em {{ color: var(--amber); font-style:normal; }}
-.fav-count {{ font-size:11px; color: var(--text-muted); }}
-.fav-toggle {{
-  background:none; border:none; color: var(--text-muted);
-  font-size:18px; cursor:pointer; padding:0 4px; line-height:1;
-  transition: color 0.15s;
-}}
-.fav-toggle:hover {{ color: var(--text-primary); }}
-.fav-empty {{
-  text-align:center; padding: 24px; color: var(--text-muted);
-  font-size:13px;
-}}
-.fav-list {{ display:flex; flex-direction:column; }}
-.fav-item {{
-  display:flex; align-items:flex-start; gap:10px;
-  padding:10px 20px; border-bottom: 1px solid var(--border);
-  transition: background 0.15s;
-}}
-.fav-item:last-child {{ border-bottom:none; }}
-.fav-item:hover {{ background: var(--bg); }}
-.fav-item-date {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:10px; color: var(--text-muted); flex-shrink:0;
-  min-width:42px; padding-top:2px;
-}}
-.fav-item-title {{
-  flex:1; font-size:13px; font-weight:600; color: var(--text-primary);
-  cursor:pointer; line-height:1.5;
-}}
-.fav-item-title:hover {{ color: var(--accent); }}
-.fav-item-del {{
-  background:none; border:1px solid var(--border); color: var(--text-muted);
-  font-size:10px; cursor:pointer; padding:2px 8px; border-radius:2px;
-  flex-shrink:0; transition: all 0.15s;
-  font-family: 'JetBrains Mono', monospace;
-}}
-.fav-item-del:hover {{ color: var(--red); border-color: var(--red); }}
-
-/* ---- Fav action buttons ---- */
-.fav-act-btn {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size:9px; font-weight:600; letter-spacing:0.5px;
-  padding:2px 8px; border-radius:2px;
-  background: var(--bg); border:1px solid var(--border);
-  color: var(--text-muted); cursor:pointer;
-  transition: all 0.15s; white-space:nowrap;
-}}
-.fav-act-btn:hover {{ color: var(--accent); border-color: var(--accent); }}
-.fav-act-del:hover {{ color: var(--red); border-color: var(--red); }}
-
-/* ===== FAV TOAST ===== */
-.fav-toast {{
-  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-  background: var(--bg-elevated); color: var(--text-primary);
-  border: 1px solid var(--border); border-radius:4px;
-  padding:8px 20px; font-size:12px; font-weight:600;
-  z-index:999; opacity:0; transition: opacity 0.3s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08); pointer-events:none;
-}}
-.fav-toast.show {{ opacity:1; }}
-
-@media (max-width: 640px) {{
-  .fav-item {{ padding:10px 12px; gap:6px; }}
-  .fav-item-date {{ min-width:36px; font-size:9px; }}
-  .fav-item-title {{ font-size:12px; }}
-  .fav-panel-hdr {{ padding:10px 14px; }}
-  .fav-panel {{ padding: 0 14px 24px; }}
-}}
-
-/* ===== OPINIONS SECTION ===== */
-.opinions-body .sec {{ border-left: 2px solid var(--purple); padding-left: 16px; margin-bottom: 28px; }}
-.opinions-body .sec-h {{ color: var(--purple); }}
-</style>
+<link rel="stylesheet" href="{page_base_url}style.css?v={today}">
 </head>
 <body>
 
@@ -1616,345 +975,15 @@ mark {{ background: transparent; }}
 <div class="fav-toast" id="favToast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-//  自选新闻 · localStorage 持久化（轻量版）
-//  只存元数据索引，不存 HTML 副本 — 跨报告跳转时从源文件加载。
-// ═══════════════════════════════════════════════════════════════
-const STORAGE_KEY = 'market_brief_favs_v2';  // v2: 不再存储 html 字段
-const MAX_FAVS = 200;
-const FAV_DATE_KEY = '{fav_date_key}';
-const FAV_DATE = '{today}';
-const FAV_SESSION = '{session_label}';
-
-// ── 早报 / 晚报 切换 ──
-let CURRENT_SESSION = '{session_slug}';
-
-function switchSession(session) {{
-  if (session === CURRENT_SESSION) return;
-  CURRENT_SESSION = session;
-  document.getElementById('stAm').classList.toggle('active', session === 'am');
-  document.getElementById('stPm').classList.toggle('active', session === 'pm');
-  const picker = document.getElementById('historyPicker');
-  if (picker && picker.value) {{
-    const p = picker.value.split('-');
-    window.location.href = '{page_base_url}report_' + p[0] + p[1] + p[2] + '_' + session + '.html';
-  }}
-}}
-
-function goToDate() {{
-  const d = document.getElementById('historyPicker').value;
-  if (d) {{
-    const p = d.split('-');
-    window.location.href = '{page_base_url}report_' + p[0] + p[1] + p[2] + '_' + CURRENT_SESSION + '.html';
-  }}
-}}
-
-// ── 读写 localStorage（带错误处理 + 旧格式迁移）──
-function getFavs() {{
-  try {{
-    let raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!Array.isArray(raw)) return [];
-    // 迁移 v1 → v2: 丢弃 html 字段，只保留元数据
-    let migrated = false;
-    raw = raw.map(f => {{
-      if (f.html !== undefined) {{ migrated = true; }}
-      return {{
-        id: f.id || '',
-        sid: f.sid || '',
-        date: f.date || '',
-        session: f.session || '',
-        title: f.title || '',
-        saved_at: f.saved_at || ''
-      }};
-    }});
-    if (migrated) {{
-      saveFavsRaw(raw);
-      console.log('[Favs] 已从 v1 迁移到 v2 (丢弃HTML副本)');
-    }}
-    return raw;
-  }} catch(e) {{ return []; }}
-}}
-
-function saveFavsRaw(favs) {{
-  try {{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(favs));
-    renderFavPanel();
-    updateAllStarBtns();
-  }} catch(e) {{
-    // localStorage 满了 → 裁剪最旧的 25%
-    if (e.name === 'QuotaExceededError') {{
-      const drop = Math.ceil(favs.length * 0.25);
-      const trimmed = favs.slice(drop);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-      showToast('存储已满，已自动清理' + drop + '条旧收藏');
-      renderFavPanel();
-      updateAllStarBtns();
-    }}
-  }}
-}}
-
-function saveFavs(favs) {{
-  saveFavsRaw(favs);
-}}
-
-// ── 估算存储占用 ──
-function estimateStorage() {{
-  try {{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? new Blob([raw]).size : 0;
-  }} catch(e) {{ return 0; }}
-}}
-
-function fmtSize(bytes) {{
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
-  return (bytes/(1024*1024)).toFixed(1) + ' MB';
-}}
-
-// ── 从 sec-h 提取纯文本标题 ──
-function getTitleFromSec(sid) {{
-  const sec = document.querySelector(`[data-section-id="${{sid}}"]`);
-  if (!sec) return '';
-  const hEl = sec.querySelector('.sec-h');
-  if (!hEl) return '';
-  const btn = hEl.querySelector('.fav-btn');
-  const btnText = btn ? btn.textContent : '';
-  return (hEl.textContent || '').replace(btnText, '').trim();
-}}
-
-function makeFavId(sid) {{
-  return FAV_DATE_KEY + '_' + sid;
-}}
-
-// ── 收藏 / 取消收藏 ──
-function toggleFav(btn) {{
-  const sid = btn.getAttribute('data-sid');
-  const favId = makeFavId(sid);
-  const title = getTitleFromSec(sid);
-  if (!title) return;
-
-  let favs = getFavs();
-  const idx = favs.findIndex(f => f.id === favId);
-  if (idx >= 0) {{
-    favs.splice(idx, 1);
-    saveFavs(favs);
-    showToast('已取消收藏');
-  }} else {{
-    if (favs.length >= MAX_FAVS) {{
-      showToast('收藏已达上限 (' + MAX_FAVS + '条)，请先清理旧收藏');
-      return;
-    }}
-    favs.push({{
-      id: favId,
-      sid: sid,
-      date: FAV_DATE,
-      session: FAV_SESSION,
-      title: title,
-      saved_at: new Date().toISOString()
-    }});
-    saveFavs(favs);
-    showToast('已加入自选 ');
-  }}
-}}
-
-// ── 删除收藏项 ──
-function delFav(favId) {{
-  let favs = getFavs();
-  favs = favs.filter(f => f.id !== favId);
-  saveFavs(favs);
-  showToast('已删除');
-}}
-
-// ── 跳转到收藏项所在报告 ──
-function gotoFav(favId) {{
-  const favs = getFavs();
-  const f = favs.find(x => x.id === favId);
-  if (!f) return;
-  const sid = f.sid || '';
-  const dateDigits = f.date.replace(/-/g, '');
-
-  // 当前页面已有该 section → 直接滚动
-  const local = document.querySelector(`[data-section-id="${{sid}}"]`);
-  if (local) {{
-    local.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
-    local.style.boxShadow = '0 0 0 3px var(--amber)';
-    setTimeout(() => local.style.boxShadow = '', 2000);
-    return;
-  }}
-
-  // 跨报告跳转：构建目标 URL
-  const sessionSuffix = (f.session === '晚报') ? '_pm' : '_am';
-  const targetUrl = '{page_base_url}report_' + dateDigits + sessionSuffix + '.html';
-  window.location.href = targetUrl + '#' + sid;
-}}
-
-// ── 渲染底部自选面板 ──
-function renderFavPanel() {{
-  const favs = getFavs();
-  const countEl = document.getElementById('favCount');
-  const listEl = document.getElementById('favList');
-  const summaryEl = document.getElementById('favSummary');
-  const panel = document.getElementById('favPanel');
-  const sizeEl = document.getElementById('favSize');
-
-  const storageSize = estimateStorage();
-  if (countEl) countEl.textContent = favs.length + '条';
-  if (sizeEl) sizeEl.textContent = fmtSize(storageSize);
-  if (summaryEl) summaryEl.textContent = favs.length
-    ? favs.map(f => f.date.slice(5) + (f.session === '晚报' ? '晚' : '早')).slice(-10).join(' · ')
-    : '';
-  if (panel && favs.length > 0) panel.style.display = 'block';
-  else if (panel && favs.length === 0) panel.style.display = 'none';
-
-  if (!listEl) return;
-  if (favs.length === 0) {{
-    listEl.innerHTML = '<div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>';
-    return;
-  }}
-
-  // 最新在前，最多展示最近 100 条
-  const sorted = [...favs].reverse().slice(0, 100);
-  listEl.innerHTML = sorted.map(f => `
-    <div class="fav-item">
-      <span class="fav-item-date">${{f.date.slice(5)}}${{f.session === '晚报' ? '晚' : '早'}}</span>
-      <span class="fav-item-title" onclick="gotoFav('${{f.id}}')" title="点击跳转到 ${{f.date}} ${{f.session}} · ${{f.title}}">${{f.title}}</span>
-      <button class="fav-item-del" onclick="delFav('${{f.id}}')" title="删除">✕</button>
-    </div>
-  `).join('');
-
-  // 如果超过 100 条，显示提示
-  if (favs.length > 100) {{
-    listEl.innerHTML += '<div class="fav-item" style="color:var(--text-muted);font-size:11px;justify-content:center;">… 还有 ' + (favs.length - 100) + ' 条更早的收藏（已折叠）</div>';
-  }}
-}}
-
-// ── 批量清空 ──
-function clearAllFavs() {{
-  if (confirm('确定要清空全部收藏吗？此操作不可恢复。')) {{
-    localStorage.removeItem(STORAGE_KEY);
-    renderFavPanel();
-    updateAllStarBtns();
-    showToast('已清空全部收藏');
-  }}
-}}
-
-// ── 导出收藏为 JSON 文件 ──
-function exportFavs() {{
-  const favs = getFavs();
-  if (favs.length === 0) {{ showToast('没有收藏可导出'); return; }}
-  const blob = new Blob([JSON.stringify(favs, null, 2)], {{ type: 'application/json' }});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'market_brief_favs_' + new Date().toISOString().slice(0,10) + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('已导出 ' + favs.length + ' 条收藏');
-}}
-
-// ── 导入收藏（合并去重）──
-function importFavs() {{
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
-  input.onchange = function() {{
-    const file = this.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {{
-      try {{
-        const incoming = JSON.parse(e.target.result);
-        if (!Array.isArray(incoming)) throw new Error('格式错误');
-        let existing = getFavs();
-        const existingIds = new Set(existing.map(f => f.id));
-        let added = 0;
-        for (const f of incoming) {{
-          if (!f.id || !f.title) continue;
-          if (existingIds.has(f.id)) continue;
-          // 丢弃 html 字段（兼容旧格式）
-          existing.push({{
-            id: f.id, sid: f.sid || '', date: f.date || '',
-            session: f.session || '', title: f.title,
-            saved_at: f.saved_at || new Date().toISOString()
-          }});
-          existingIds.add(f.id);
-          added++;
-        }}
-        if (existing.length > MAX_FAVS) {{
-          existing = existing.slice(existing.length - MAX_FAVS);
-        }}
-        saveFavs(existing);
-        showToast('导入了 ' + added + ' 条，合并后共 ' + existing.length + ' 条');
-      }} catch(err) {{
-        showToast('导入失败：文件格式不正确');
-      }}
-    }};
-    reader.readAsText(file);
-  }};
-  input.click();
-}}
-
-// ── 更新所有 ☆ 按钮状态 ──
-function updateAllStarBtns() {{
-  const favs = getFavs();
-  const favIdSet = new Set(favs.map(f => f.id));
-  document.querySelectorAll('.fav-btn').forEach(btn => {{
-    const sid = btn.getAttribute('data-sid');
-    const favId = makeFavId(sid);
-    if (favIdSet.has(favId)) {{
-      btn.textContent = '★';
-      btn.classList.add('on');
-    }} else {{
-      btn.textContent = '☆';
-      btn.classList.remove('on');
-    }}
-  }});
-}}
-
-// ── 收起/展开面板 ──
-function toggleFavPanel() {{
-  const list = document.getElementById('favList');
-  const toggle = document.getElementById('favToggle');
-  const actions = document.getElementById('favActions');
-  if (list.style.display === 'none') {{
-    list.style.display = '';
-    if (actions) actions.style.display = '';
-    toggle.textContent = '▾';
-  }} else {{
-    list.style.display = 'none';
-    if (actions) actions.style.display = 'none';
-    toggle.textContent = '▸';
-  }}
-}}
-
-// ── Toast 提示 ──
-function showToast(msg) {{
-  const toast = document.getElementById('favToast');
-  if (!toast) return;
-  toast.textContent = msg;
-  toast.classList.add('show');
-  clearTimeout(toast._tid);
-  toast._tid = setTimeout(() => toast.classList.remove('show'), 1500);
-}}
-
-// ── 初始化 ──
-(function initFavs() {{
-  renderFavPanel();
-  updateAllStarBtns();
-  // 处理跨页面锚点跳转
-  const hash = window.location.hash;
-  if (hash) {{
-    const target = document.querySelector(`[data-section-id="${{hash.slice(1)}}"]`);
-    if (target) {{
-      setTimeout(() => {{
-        target.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
-        target.style.boxShadow = '0 0 0 3px var(--amber)';
-        setTimeout(() => target.style.boxShadow = '', 2500);
-      }}, 300);
-    }}
-  }}
-}})();
+window.MB_CONFIG = {{
+  fav_date_key: '{fav_date_key}',
+  today: '{today}',
+  session_label: '{session_label}',
+  session_slug: '{session_slug}',
+  page_base_url: '{page_base_url}'
+}};
 </script>
+<script src="{page_base_url}script.js?v={today}" defer></script>
 
 </body>
 </html>"""
@@ -2114,7 +1143,132 @@ def deploy_github_pages(html_content, session_slug="am"):
     print(f"详情页已生成: {report_path}")
     if full_url:
         print(f"GitHub Pages URL: {full_url}")
+
+    # 生成归档索引页面
+    generate_archive_page()
+
     return full_url
+
+
+def generate_archive_page():
+    """扫描 docs/ 下所有报告文件，生成按月份分组的归档索引页面。"""
+    import glob as _glob
+
+    archive_dir = "docs"
+    if not os.path.isdir(archive_dir):
+        return
+
+    # 收集所有报告文件（含场次后缀）
+    report_files = _glob.glob(os.path.join(archive_dir, "report_*.html"))
+    # 按日期分组：{(date_str, session): path}
+    entries = []
+    for fp in report_files:
+        fname = os.path.basename(fp)
+        # 匹配 report_YYYYMMDD.html 或 report_YYYYMMDD_am.html / report_YYYYMMDD_pm.html
+        m = re.match(r'report_(\d{8})(?:_(am|pm))?\.html', fname)
+        if not m:
+            continue
+        date_str = m.group(1)  # YYYYMMDD
+        session = m.group(2) or ""  # am/pm or empty (full day)
+        try:
+            year = date_str[:4]
+            month = date_str[4:6]
+            day = date_str[6:8]
+            display_date = f"{year}-{month}-{day}"
+        except (IndexError, ValueError):
+            continue
+        entries.append({
+            "date_str": date_str,
+            "display_date": display_date,
+            "year": year,
+            "month": month,
+            "day": day,
+            "session": session,
+            "filename": fname,
+            "label": "早报" if session == "am" else ("晚报" if session == "pm" else "全天"),
+        })
+
+    if not entries:
+        return
+
+    # 按日期倒序排列
+    entries.sort(key=lambda e: (e["date_str"], e["session"]), reverse=True)
+
+    # 构建 HTML
+    base_url = os.environ.get("GITHUB_REPOSITORY", "")
+    if base_url:
+        owner = base_url.split("/")[0].lower()
+        repo_name = base_url.split("/")[1]
+        page_base = f"https://{owner}.github.io/{repo_name}/"
+    else:
+        page_base = "./"
+
+    rows_html = []
+    current_month = ""
+    for e in entries:
+        month_label = f"{e['year']}年{e['month']}月"
+        if month_label != current_month:
+            current_month = month_label
+            rows_html.append(f'<tr class="mo-sep"><td colspan="3">{current_month}</td></tr>')
+
+        weekday_cn = ["一", "二", "三", "四", "五", "六", "日"]
+        try:
+            from datetime import date
+            wd = date(int(e["year"]), int(e["month"]), int(e["day"])).weekday()
+            wd_label = weekday_cn[wd]
+        except Exception:
+            wd_label = ""
+
+        rows_html.append(
+            f'<tr>'
+            f'<td class="ad">{e["display_date"]} <span class="aw">周{wd_label}</span></td>'
+            f'<td class="as">{e["label"]}</td>'
+            f'<td><a href="{page_base}{e["filename"]}">查看报告 →</a></td>'
+            f'</tr>'
+        )
+
+    archive_html = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARKET BRIEF · 报告归档</title>
+<link rel="stylesheet" href="{page_base}style.css?v=archive">
+<style>
+  body {{ background: var(--bg); font-family: 'Inter','Noto Sans SC',sans-serif; }}
+  .archive-wrap {{ max-width: 800px; margin: 40px auto; padding: 0 24px; }}
+  .archive-wrap h1 {{ font-size: 22px; margin-bottom: 6px; }}
+  .archive-wrap .sub {{ color: var(--text-muted); font-size: 13px; margin-bottom: 32px; }}
+  .archive-wrap table {{ width: 100%; border-collapse: collapse; }}
+  .archive-wrap td {{ padding: 8px 12px; border-bottom: 1px solid var(--border-light); font-size: 14px; }}
+  .archive-wrap td.ad {{ font-family: 'JetBrains Mono',monospace; font-size: 13px; }}
+  .archive-wrap td.as {{ color: var(--text-secondary); font-size: 12px; }}
+  .archive-wrap td a {{ color: var(--accent-blue); text-decoration: none; }}
+  .archive-wrap td a:hover {{ text-decoration: underline; }}
+  .archive-wrap .mo-sep td {{ background: var(--bg-elevated); font-weight: 700; font-size: 13px; padding: 12px; color: var(--accent); }}
+  .archive-wrap .aw {{ color: var(--text-muted); font-size: 11px; margin-left: 6px; }}
+  .back-link {{ display: inline-block; margin-bottom: 24px; font-size: 13px; color: var(--accent-blue); text-decoration: none; }}
+  .back-link:hover {{ text-decoration: underline; }}
+</style>
+</head>
+<body>
+<div class="archive-wrap">
+  <a class="back-link" href="{page_base}">← 返回最新报告</a>
+  <h1>报告归档</h1>
+  <p class="sub">{len(entries)} 份报告 · 最后更新 {entries[0]['display_date'] if entries else ''}</p>
+  <table>
+    <tbody>
+      {''.join(rows_html)}
+    </tbody>
+  </table>
+</div>
+</body>
+</html>"""
+
+    archive_path = os.path.join(archive_dir, "archive.html")
+    with open(archive_path, "w", encoding="utf-8") as f:
+        f.write(archive_html)
+    print(f"归档页面已生成: {archive_path}（{len(entries)} 份报告）")
 
 
 # ============================================================
@@ -2130,9 +1284,11 @@ def main():
     wd = beijing_now().weekday()  # 0=Mon ... 5=Sat 6=Sun
     if wd == 5:  # 周六
         print("⏭ 周六不更新，退出")
+        _set_github_output("skip", "1")
         return
     if wd == 6 and session_label == "早报":  # 周日早报不更新
         print("⏭ 周日不更新早报，退出")
+        _set_github_output("skip", "1")
         return
 
     # 1. 行情
@@ -2181,42 +1337,56 @@ def main():
     opinion_context = ""   # UP主蒸馏结果，传给选股
     info_context = ""      # 信息差原始内容，传给选股
     opinion_md = ""        # UP主蒸馏 markdown，追加到 report
+    info_md = ""           # 信息差提炼结果
 
-    # 4a. 处理UP主观点（蒸馏分析）
+    # 4a. 预处理：组装 UP主观点文本
+    combined_text = ""
     if opinion_files:
-        print(f"  发现 {len(opinion_files)} 位UP主观点，开始蒸馏...")
+        print(f"  发现 {len(opinion_files)} 位UP主观点")
         parts = []
         for o in opinion_files:
             parts.append(f"【UP主: {o['name']}（{o['filename']}，{o['char_count']}字）】\n{o['content']}")
         combined_text = "\n\n---\n\n".join(parts)
-        opinion_md = call_opinion_analyzer(combined_text)
-        if opinion_md and not opinion_md.startswith("API 调用失败"):
-            report += f"\n\n---\n\n{opinion_md_title}\n\n{opinion_md}"
-            opinion_context = f"## UP主市场观点（AI蒸馏）\n\n{opinion_md}"
-            print("  观点蒸馏完成")
-        else:
-            print(f"  观点分析失败: {opinion_md[:100] if opinion_md else '无返回'}")
-            opinion_md = ""
     else:
         print("  未找到UP主观点文件")
 
-    # 4b. 处理信息差（AI 提炼核心信息，不做多空判断）
+    # 4b. 预处理：组装信息差文本
+    info_raw = ""
     if info_files:
-        print(f"  发现 {len(info_files)} 条信息差，开始提炼...")
+        print(f"  发现 {len(info_files)} 条信息差")
         info_parts = []
         for o in info_files:
             info_parts.append(f"【{o['name']}（{o['filename']}，{o['char_count']}字）】\n{o['content']}")
             print(f"    ✓ {o['name']}: {o['char_count']}字")
         info_raw = "\n\n---\n\n".join(info_parts)
-        info_md = call_info_analyzer(info_raw)
-        if info_md and not info_md.startswith("API 调用失败"):
-            info_context = f"## 信息差提炼（AI 提取关键事实）\n\n{info_md}"
-            report += f"\n\n---\n\n## 信息差提炼\n\n{info_md}"
-            print("  信息差提炼完成")
-        else:
-            print(f"  信息差提炼失败: {info_md[:100] if info_md else '无返回'}")
-            info_context = f"## 信息差补充\n\n{info_raw}"
-            report += f"\n\n---\n\n## 信息差补充\n\n{info_raw}"
+
+    # 4c. 并行调用 LLM：观点蒸馏 + 信息差提炼（二者独立，无依赖）
+    if combined_text or info_raw:
+        print("  开始并行 AI 分析（观点蒸馏 + 信息差提炼）...")
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            opinion_future = executor.submit(call_opinion_analyzer, combined_text) if combined_text else None
+            info_future = executor.submit(call_info_analyzer, info_raw) if info_raw else None
+
+            if opinion_future:
+                opinion_md = opinion_future.result()
+                if opinion_md and not opinion_md.startswith("API 调用失败"):
+                    report += f"\n\n---\n\n{opinion_md_title}\n\n{opinion_md}"
+                    opinion_context = f"## UP主市场观点（AI蒸馏）\n\n{opinion_md}"
+                    print("  观点蒸馏完成")
+                else:
+                    print(f"  观点分析失败: {opinion_md[:100] if opinion_md else '无返回'}")
+                    opinion_md = ""
+
+            if info_future:
+                info_md = info_future.result()
+                if info_md and not info_md.startswith("API 调用失败"):
+                    info_context = f"## 信息差提炼（AI 提取关键事实）\n\n{info_md}"
+                    report += f"\n\n---\n\n## 信息差提炼\n\n{info_md}"
+                    print("  信息差提炼完成")
+                else:
+                    print(f"  信息差提炼失败: {info_md[:100] if info_md else '无返回'}")
+                    info_context = f"## 信息差补充\n\n{info_raw}"
+                    report += f"\n\n---\n\n## 信息差补充\n\n{info_raw}"
 
     # 5. AI 选股 — 融合新闻 + UP主观点 + 信息差
     print("\n▸ 执行 AI 产业链选股（融合新闻+观点+信息差）...")
