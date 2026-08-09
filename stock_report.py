@@ -1291,6 +1291,17 @@ def main():
         _set_github_output("skip", "1")
         return
 
+    # 防重复：自动 cron 触发时，如本场次报告已存在则跳过（手动触发不受限制）
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+    if event_name == "schedule":
+        today_str = beijing_now().strftime("%Y%m%d")
+        existing_report = f"docs/report_{today_str}_{session_slug}.html"
+        if os.path.exists(existing_report):
+            print(f"⏭ 本场次报告已存在（{existing_report}），跳过重复生成")
+            print("  （如确需重新生成，请通过 Actions 页面手动触发 workflow_dispatch）")
+            _set_github_output("skip", "1")
+            return
+
     # 1. 行情
     print("▸ 抓取指数行情...")
     quotes = fetch_index_quotes()

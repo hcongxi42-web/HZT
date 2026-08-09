@@ -39,6 +39,7 @@ jobs:
           SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: python stock_report.py
 
       - name: Commit HTML + Charts to Repo
