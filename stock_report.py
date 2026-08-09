@@ -827,17 +827,34 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     # ---- 资金面面板 ----
     fund_panel = ""
     if fund_flow:
-        fund_panel += '<div class="fp"><div class="fp-h">主力资金流向（近5日 · 亿元）</div><div class="fp-bars">'
+        # 计算 5 日汇总
+        total_flow = sum(r["net_flow"] for r in fund_flow)
+        total_color = "#00c853" if total_flow >= 0 else "#ff1744"
+        total_label = "累计流入" if total_flow >= 0 else "累计流出"
+
+        fund_panel += (
+            '<div class="fp">'
+            '<div class="fp-h">'
+            f'主力资金流向（近5日 · 亿元）'
+            f'<span class="fp-total" style="color:{total_color}">'
+            f'{total_label} {total_flow:+.1f} 亿'
+            f'</span>'
+            f'</div>'
+            f'<div class="fp-bars">'
+        )
         max_val = max(abs(r["net_flow"]) for r in fund_flow) if fund_flow else 1
         for row in fund_flow:
             net = row["net_flow"]
             is_pos = net >= 0
             pct = min(abs(net) / max_val * 100, 100) if max_val else 0
             color = "#00c853" if is_pos else "#ff1744"
+            bar_class = "fp-bar-fill in" if is_pos else "fp-bar-fill out"
             fund_panel += (
                 f'<div class="fp-bar-row">'
                 f'<span class="fp-date">{row["date"][-5:]}</span>'
-                f'<span class="fp-bar-bg"><span class="fp-bar-fill" style="width:{pct}%;background:{color}"></span></span>'
+                f'<span class="fp-bar-bg">'
+                f'<span class="{bar_class}" style="width:{pct}%;background:{color}"></span>'
+                f'</span>'
                 f'<span class="fp-val" style="color:{color}">{net:+.1f}</span>'
                 f'</div>'
             )

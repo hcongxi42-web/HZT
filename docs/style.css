@@ -59,28 +59,42 @@ body {
   background: #fff;
   border-bottom: 1px solid var(--border-light);
   overflow-x: auto; white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
 }
 .ticker-strip::-webkit-scrollbar { height: 0; }
 .ticker-inner {
   max-width: 960px; margin:0 auto;
-  display:flex; gap:0;
+  display:flex; gap:0; padding:0;
 }
-.ticker-cell {
-  flex:0 0 auto; min-width:100px; padding:8px 18px;
+/* ── 每个指数卡片 ── */
+.tkr {
+  flex:1 1 0; min-width:130px; padding:14px 20px;
   text-align:center; border-right:1px solid var(--border-light);
+  transition: background .2s;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
 }
-.ticker-name {
-  font-size:9px; color:var(--text-muted); text-transform:uppercase;
-  letter-spacing:0.5px; margin-bottom:2px;
+.tkr:last-child { border-right:none; }
+.tkr:hover { background: #fafbfd; }
+.tkr.up   { /* color set on children */ }
+.tkr.dn   { /* color set on children */ }
+.tkr-n {
+  font-size:10px; color:var(--text-muted);
+  letter-spacing:0.5px; white-space:nowrap;
 }
-.ticker-price {
-  font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:500;
+.tkr-p {
+  font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700;
+  color:var(--text-primary); letter-spacing:-0.5px;
 }
-.ticker-change {
-  font-family:'JetBrains Mono',monospace; font-size:10px; margin-top:1px;
+.tkr-c {
+  font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500;
+  padding:3px 10px; border-radius:12px; white-space:nowrap;
 }
-.ticker-up .ticker-price, .ticker-up .ticker-change { color: var(--red); }
-.ticker-down .ticker-price, .ticker-down .ticker-change { color: var(--green); }
+/* 涨跌颜色 */
+.tkr.up  .tkr-p, .tkr.up  .tkr-c { color:var(--red); }
+.tkr.dn  .tkr-p, .tkr.dn  .tkr-c { color:var(--green); }
+.tkr:not(.up):not(.dn) .tkr-c { color:var(--text-muted); background:var(--bg-elevated); }
+.tkr.up  .tkr-c { background:#fef0ef; }
+.tkr.dn  .tkr-c { background:#edf7f0; }
 
 /* ===== HISTORY NAV ===== */
 .hnav {
@@ -163,19 +177,47 @@ body {
 }
 
 /* ===== FUND FLOW PANEL ===== */
-.fp-grid { display:flex; flex-direction:column; gap:8px; }
-.fp-row {
-  display:flex; align-items:center; gap:12px;
-  font-family:'JetBrains Mono',monospace; font-size:11px;
-  padding:6px 0; border-bottom:1px solid var(--border-light);
+.fp {
+  background:var(--bg-card); border:1px solid var(--border-light);
+  border-radius:8px; overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,0.03);
 }
-.fp-date { min-width:80px; color:var(--text-secondary); }
-.fp-bar-wrap { flex:1; height:16px; background:var(--bg-elevated); border-radius:3px; overflow:hidden; position:relative; }
-.fp-bar-in  { position:absolute; left:0; top:0; height:100%; background:var(--red); border-radius:3px 0 0 3px; }
-.fp-bar-out { position:absolute; right:0; top:0; height:100%; background:var(--green); border-radius:0 3px 3px 0; }
-.fp-net { min-width:80px; text-align:right; font-weight:500; }
-.fp-net.inflow { color:var(--red); }
-.fp-net.outflow { color:var(--green); }
+.fp-h {
+  font-family:'JetBrains Mono',monospace; font-size:10px;
+  font-weight:600; letter-spacing:1px; color:var(--accent);
+  padding:14px 20px 10px;
+  border-bottom:2px solid var(--accent);
+  text-transform:uppercase;
+  display:flex; justify-content:space-between; align-items:baseline;
+}
+.fp-total {
+  font-size:11px; font-weight:700;
+}
+.fp-bars {
+  padding:10px 20px 16px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.fp-bar-row {
+  display:flex; align-items:center; gap:12px;
+  font-family:'JetBrains Mono',monospace;
+}
+.fp-date {
+  min-width:46px; font-size:11px; color:var(--text-secondary);
+  text-align:right;
+}
+.fp-bar-bg {
+  flex:1; height:20px; background:var(--bg-elevated);
+  border-radius:4px; overflow:hidden; position:relative;
+}
+.fp-bar-fill {
+  position:absolute; left:0; top:0; height:100%;
+  border-radius:4px; transition: width .4s ease;
+  opacity:0.85;
+}
+.fp-val {
+  min-width:64px; font-size:12px; font-weight:700;
+  text-align:right;
+}
 
 /* ===== INTRADAY CHARTS ===== */
 .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:8px; }
@@ -333,8 +375,8 @@ mark { padding:1px 6px; border-radius:3px; font-size:inherit; font-weight:500; }
   .masthead { padding:20px 16px 16px; }
   .topbar-inner { flex-direction:column; gap:4px; padding:8px 16px; }
   .topbar-meta { text-align:center; font-size:10px; }
-  .ticker-cell { min-width:70px; padding:6px 10px; }
-  .ticker-price { font-size:11px; }
+  .tkr { min-width:90px; padding:10px 12px; }
+  .tkr-p { font-size:15px; }
   .charts-row { grid-template-columns:1fr; }
   .content { padding:8px 12px 32px; }
   .sec { padding:14px 16px; }
