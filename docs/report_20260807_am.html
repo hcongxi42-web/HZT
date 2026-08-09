@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARKET BRIEF · 2026-08-07 早报</title>
+<style>
+/* ============================================================
+   Institutional Research — Clean Light Theme
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+:root {
+  --bg: #f7f8fa;
+  --bg-card: #ffffff;
+  --bg-elevated: #eef0f4;
+  --border: #dde1e8;
+  --border-light: #e4e7ed;
+  --text-primary: #1a1d24;
+  --text-secondary: #4e5460;
+  --text-muted: #9096a2;
+  --accent: #e85d2c;
+  --accent-blue: #2070cc;
+  --green: #1a8a3f;
+  --red: #d63031;
+  --amber: #b8860b;
+  --purple: #7c3aed;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== TOP BAR ===== */
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.topbar-inner {
+  max-width: 960px; margin:0 auto; padding: 10px 24px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px; font-weight: 700;
+  letter-spacing: 2px; color: var(--text-primary);
+}
+.logo em { color: var(--accent); font-style: normal; }
+.topbar-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text-muted);
+  text-align: right; line-height: 1.5;
+}
+
+/* ===== TICKER STRIP ===== */
+.ticker-strip {
+  background: #fff; border-bottom: 1px solid var(--border);
+  overflow-x: auto; white-space: nowrap;
+}
+.ticker-strip::-webkit-scrollbar { height:0; }
+.ticker-inner {
+  max-width: 960px; margin:0 auto; padding: 8px 24px;
+  display:flex; gap:0;
+}
+.tkr {
+  flex:0 0 auto; padding: 6px 18px; text-align:center;
+  border-right: 1px solid var(--border); min-width: 120px;
+}
+.tkr:last-child { border-right:none; }
+.tkr-n {
+  display:block; font-size:10px; color: var(--text-muted);
+  letter-spacing: 1px; font-weight: 600;
+  text-transform: uppercase; margin-bottom: 3px;
+}
+.tkr-p {
+  display:block; font-family: 'JetBrains Mono', monospace;
+  font-size: 16px; font-weight: 700; color: var(--text-primary);
+}
+.tkr-c {
+  display:block; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600; margin-top: 2px;
+}
+.tkr.up .tkr-c { color: var(--red); }
+.tkr.dn .tkr-c { color: var(--green); }
+
+/* ===== HISTORY NAV ===== */
+.hnav {
+  max-width:960px; margin:0 auto; padding: 10px 24px;
+  border-bottom: 1px solid var(--border);
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  background: var(--bg-card);
+}
+.hnav-label {
+  font-size:11px; font-weight:700; color: var(--text-muted);
+  letter-spacing:1.5px; text-transform:uppercase; margin-right:6px;
+}
+.hl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:600; color: var(--text-secondary);
+  padding:4px 10px; border-radius:2px;
+  background: var(--bg); border:1px solid var(--border);
+  text-decoration:none; transition: all 0.15s;
+}
+.hl:hover { color: var(--accent); border-color: var(--accent); }
+.hnav-spacer {
+  flex:1; min-width:12px;
+}
+.hl-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; color: var(--text-primary);
+  padding:4px 8px; border-radius:2px;
+  background: var(--bg); border:1px solid var(--border);
+  outline:none; transition: border-color 0.15s;
+  color-scheme: light;
+}
+.hl-date:focus { border-color: var(--accent); }
+.hl-date::-webkit-calendar-picker-indicator {
+  cursor:pointer;
+}
+.hl-go {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:700; color: #fff;
+  padding:4px 12px; border-radius:2px;
+  background: var(--accent); border:none;
+  cursor:pointer; transition: background 0.15s;
+  letter-spacing: 1px;
+}
+.hl-go:hover { background: #e85d2c; }
+
+/* ---- Session toggle (早报/晚报) ---- */
+.session-toggle {
+  display: inline-flex; border: 1px solid var(--border);
+  border-radius: 2px; overflow: hidden; margin-left: 2px;
+}
+.st-btn {
+  font-family: 'JetBrains Mono', 'Inter', sans-serif;
+  font-size: 11px; font-weight: 600;
+  padding: 4px 12px; background: var(--bg);
+  border: none; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s;
+  border-right: 1px solid var(--border);
+}
+.st-btn:last-child { border-right: none; }
+.st-btn.active {
+  background: var(--accent); color: #fff;
+}
+.st-btn:hover:not(.active) {
+  color: var(--accent); background: var(--bg-elevated);
+}
+
+/* ===== MASTHEAD ===== */
+.masthead {
+  max-width:960px; margin:0 auto; padding: 40px 24px 28px;
+  text-align:center; border-bottom: 2px solid var(--border);
+}
+.masthead-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:12px; color: var(--text-muted);
+  letter-spacing:3px; text-transform:uppercase;
+  font-weight:500; margin-bottom:12px;
+}
+.masthead h1 {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size:36px; font-weight:900; color: var(--text-primary);
+  letter-spacing: 1px; margin-bottom: 8px;
+}
+.masthead-sub {
+  font-size:14px; color: var(--text-secondary);
+  font-weight:400; font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+}
+.masthead-update {
+  font-size:12px; color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px; margin-top: 8px;
+}
+.masthead-tags {
+  margin-top:18px; display:flex; justify-content:center; gap:8px; flex-wrap:wrap;
+}
+.mtag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; font-weight:600; letter-spacing:1.5px;
+  padding:4px 12px; border-radius:2px; text-transform:uppercase;
+}
+.mtag-a { background: rgba(255,107,53,0.12); color: var(--accent); border: 1px solid rgba(255,107,53,0.25); }
+.mtag-us { background: rgba(88,166,255,0.10); color: var(--accent-blue); border: 1px solid rgba(88,166,255,0.20); }
+.mtag-hk { background: rgba(210,153,29,0.10); color: var(--amber); border: 1px solid rgba(210,153,29,0.20); }
+
+/* ===== CONTENT ===== */
+.content { max-width:960px; margin:0 auto; padding: 0 24px 40px; }
+
+/* ===== SECTION HEADER ===== */
+.sec-hdr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; font-weight:700; letter-spacing:4px;
+  text-transform:uppercase; color: var(--accent);
+  padding:24px 0 12px; margin-top:28px;
+  border-top: 2px solid var(--border-light);
+}
+
+/* ===== FUND PANEL ===== */
+.fp-grid {
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap:16px; margin-top:16px;
+}
+.fp {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+}
+.fp-h {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:600; color: var(--text-secondary);
+  letter-spacing:1px; margin-bottom:14px;
+  text-transform:uppercase;
+}
+.fp-bars { display:flex; flex-direction:column; gap:6px; }
+.fp-bar-row {
+  display:flex; align-items:center; gap:10px;
+}
+.fp-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; color: var(--text-muted); width:40px; flex-shrink:0;
+}
+.fp-bar-bg {
+  flex:1; height:6px; background: var(--bg);
+  border-radius: 3px; overflow:hidden;
+}
+.fp-bar-fill {
+  display:block; height:100%; border-radius:3px;
+  transition: width 0.6s ease;
+}
+.fp-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:12px; font-weight:700; width:55px; text-align:right; flex-shrink:0;
+}
+.fp-empty {
+  font-size:12px; color: var(--text-muted);
+  padding: 8px 0;
+}
+
+/* ===== CHARTS ROW ===== */
+.charts-row {
+  display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;
+  margin-top:14px;
+}
+.ch-cell {
+  background: var(--bg-card); border: 1px solid var(--border);
+}
+.ch-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; font-weight:700; letter-spacing:1px;
+  color: var(--text-secondary); text-align:center;
+  padding: 8px 0 4px; border-bottom: 1px solid var(--border);
+  text-transform:uppercase;
+}
+.ch-cell img { width:100%; display:block; }
+
+/* ===== REPORT BODY ===== */
+.report-body { margin-top:18px; }
+
+.sec { margin-bottom:24px; }
+.sec:last-child { margin-bottom:0; }
+
+.sec-h {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size:18px; font-weight:700; color: var(--text-primary);
+  padding-bottom: 8px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* ---- News items ---- */
+.ni {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:12px 16px; margin:8px 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  transition: border-color 0.2s;
+}
+.ni:hover { border-left-color: var(--accent-blue); }
+.ni-num {
+  flex-shrink:0; width:22px; height:22px; line-height:22px;
+  text-align:center; font-family: 'JetBrains Mono', monospace;
+  font-size:12px; font-weight:700; color: var(--accent);
+  border: 1px solid var(--border-light); border-radius:2px;
+}
+.ni-text { font-size:14px; line-height:1.7; color: var(--text-primary); }
+.ni-text strong { color: var(--accent); font-weight:700; background: rgba(232,93,44,0.05); padding: 0 2px; }
+
+/* ---- Bullets ---- */
+.bi {
+  padding:5px 18px 5px 28px; margin:3px 0; position:relative;
+  font-size:14px; line-height:1.7; color: var(--text-secondary);
+}
+.bi::before {
+  content:''; position:absolute; left:16px; top:13px;
+  width:4px; height:4px; background: var(--accent); opacity:0.7;
+}
+.bi strong { color: var(--accent-blue); font-weight: 700; background: rgba(32,112,204,0.05); padding: 0 2px; }
+
+/* ---- Paragraphs ---- */
+.para {
+  font-size:14.5px; line-height:1.8; color: var(--text-secondary);
+  margin:8px 0;
+}
+.para strong { color: var(--accent); font-weight: 700; background: rgba(232,93,44,0.06); padding: 0 2px; border-radius: 1px; }
+
+/* ---- Color highlight marks ---- */
+mark { background: transparent; }
+.mk-bullish {
+  color: var(--red); font-weight: 700;
+  background: rgba(214,48,49,0.08); padding: 1px 5px; border-radius: 2px;
+}
+.mk-bearish {
+  color: var(--green); font-weight: 700;
+  background: rgba(26,138,63,0.08); padding: 1px 5px; border-radius: 2px;
+}
+.mk-neutral {
+  color: var(--text-muted); font-weight: 600;
+  background: rgba(144,150,162,0.08); padding: 1px 5px; border-radius: 2px;
+}
+.mk-hot {
+  color: var(--red); font-weight: 700;
+  background: rgba(214,48,49,0.06); padding: 0 3px; border-radius: 2px;
+}
+.mk-warm {
+  color: var(--amber); font-weight: 700;
+  background: rgba(184,134,11,0.06); padding: 0 3px; border-radius: 2px;
+}
+.mk-cool {
+  color: var(--green); font-weight: 600;
+  background: rgba(26,138,63,0.06); padding: 0 3px; border-radius: 2px;
+}
+.mk-ice {
+  color: var(--green); font-weight: 700;
+  background: rgba(26,138,63,0.08); padding: 0 3px; border-radius: 2px;
+}
+
+/* ---- Tables ---- */
+.tbl-wrap {
+  overflow-x:auto; margin:14px 0;
+  border: 1px solid var(--border);
+}
+.tbl {
+  width:100%; border-collapse:collapse;
+  font-size:13px; line-height:1.6;
+  background: var(--bg-card);
+}
+.tbl thead {
+  background: var(--bg-elevated);
+}
+.tbl th {
+  padding: 10px 12px; font-family: 'JetBrains Mono', 'Inter', sans-serif;
+  font-size:11px; font-weight:700; letter-spacing:0.5px;
+  color: var(--text-secondary); text-transform:uppercase;
+  border-bottom: 1px solid var(--border-light);
+  white-space:nowrap;
+}
+.tbl td {
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+.tbl tbody tr:hover {
+  background: rgba(255,107,53,0.04);
+}
+.tbl td strong { color: var(--accent); font-weight:700; }
+
+/* ---- Chart images ---- */
+.chart-img {
+  margin: 14px 0; background: var(--bg-card);
+  border: 1px solid var(--border); display:inline-block; max-width:100%;
+}
+.chart-img img {
+  max-width:600px; width:100%; height:auto; display:block;
+}
+
+/* ===== FOOTER ===== */
+.site-footer {
+  max-width:960px; margin:0 auto; padding: 28px 24px 48px;
+  border-top: 2px solid var(--border); text-align:center;
+}
+.footer-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:13px; font-weight:700; color: var(--text-primary);
+  letter-spacing:2px; margin-bottom:10px;
+}
+.footer-info {
+  font-size:11px; color: var(--text-muted); line-height:2;
+  font-family: 'JetBrains Mono', monospace;
+}
+.footer-disclaimer {
+  font-size:10px; color: var(--text-muted); margin-top:14px;
+  padding-top:14px; border-top: 1px solid var(--border);
+  line-height:1.8;
+}
+.online-link {
+  display:inline-block; margin-top:14px;
+  padding: 10px 24px; background: var(--accent); color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size:12px; font-weight:600; letter-spacing:1.5px;
+  text-decoration:none; border-radius:2px;
+  text-transform:uppercase;
+  transition: background 0.2s;
+}
+.online-link:hover { background: #e85d2c; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 680px) {
+  .masthead h1 { font-size:26px; }
+  .topbar-inner { flex-direction:column; gap:4px; text-align:center; }
+  .topbar-meta { text-align:center; }
+  .ticker-inner { padding:6px 12px; }
+  .tkr { min-width:100px; padding:6px 12px; }
+  .tkr-p { font-size:14px; }
+  .charts-row { grid-template-columns:1fr; }
+  .content { padding:0 14px 30px; }
+  .sec-h { font-size:16px; }
+  .ni { padding:10px 12px; }
+  .fp-grid { grid-template-columns:1fr; }
+  .chart-img img { max-width:100%; }
+  .fav-panel { display:none; }
+}
+
+/* ===== FAVORITES PANEL ===== */
+.fav-btn {
+  display:inline-block; background:none; border:none;
+  font-size:16px; cursor:pointer; padding:0 6px; margin-right:2px;
+  color: var(--text-muted); transition: all 0.2s;
+  vertical-align: middle; line-height:1;
+}
+.fav-btn:hover { color: var(--amber); transform: scale(1.2); }
+.fav-btn.on { color: var(--amber); }
+
+.fav-panel {
+  max-width:960px; margin:0 auto; padding: 0 24px 32px;
+}
+.fav-panel-inner {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-top: 3px solid var(--amber);
+  border-radius: 0 0 4px 4px;
+}
+.fav-panel-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 20px; border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size:11px; font-weight:700; color: var(--text-secondary);
+  letter-spacing:1.5px; text-transform:uppercase;
+}
+.fav-panel-hdr em { color: var(--amber); font-style:normal; }
+.fav-count { font-size:11px; color: var(--text-muted); }
+.fav-toggle {
+  background:none; border:none; color: var(--text-muted);
+  font-size:18px; cursor:pointer; padding:0 4px; line-height:1;
+  transition: color 0.15s;
+}
+.fav-toggle:hover { color: var(--text-primary); }
+.fav-empty {
+  text-align:center; padding: 24px; color: var(--text-muted);
+  font-size:13px;
+}
+.fav-list { display:flex; flex-direction:column; }
+.fav-item {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:10px 20px; border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.fav-item:last-child { border-bottom:none; }
+.fav-item:hover { background: var(--bg); }
+.fav-item-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:10px; color: var(--text-muted); flex-shrink:0;
+  min-width:42px; padding-top:2px;
+}
+.fav-item-title {
+  flex:1; font-size:13px; font-weight:600; color: var(--text-primary);
+  cursor:pointer; line-height:1.5;
+}
+.fav-item-title:hover { color: var(--accent); }
+.fav-item-del {
+  background:none; border:1px solid var(--border); color: var(--text-muted);
+  font-size:10px; cursor:pointer; padding:2px 8px; border-radius:2px;
+  flex-shrink:0; transition: all 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+}
+.fav-item-del:hover { color: var(--red); border-color: var(--red); }
+
+/* ---- Fav action buttons ---- */
+.fav-act-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size:9px; font-weight:600; letter-spacing:0.5px;
+  padding:2px 8px; border-radius:2px;
+  background: var(--bg); border:1px solid var(--border);
+  color: var(--text-muted); cursor:pointer;
+  transition: all 0.15s; white-space:nowrap;
+}
+.fav-act-btn:hover { color: var(--accent); border-color: var(--accent); }
+.fav-act-del:hover { color: var(--red); border-color: var(--red); }
+
+/* ===== FAV TOAST ===== */
+.fav-toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background: var(--bg-elevated); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius:4px;
+  padding:8px 20px; font-size:12px; font-weight:600;
+  z-index:999; opacity:0; transition: opacity 0.3s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08); pointer-events:none;
+}
+.fav-toast.show { opacity:1; }
+
+@media (max-width: 640px) {
+  .fav-item { padding:10px 12px; gap:6px; }
+  .fav-item-date { min-width:36px; font-size:9px; }
+  .fav-item-title { font-size:12px; }
+  .fav-panel-hdr { padding:10px 14px; }
+  .fav-panel { padding: 0 14px 24px; }
+}
+
+/* ===== OPINIONS SECTION ===== */
+.opinions-body .sec { border-left: 2px solid var(--purple); padding-left: 16px; margin-bottom: 28px; }
+.opinions-body .sec-h { color: var(--purple); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">MARKET<em>//</em>BRIEF</div>
+    <div class="topbar-meta">Friday<br>09:48 CST（北京时间）</div>
+  </div>
+</div>
+
+<!-- TICKER STRIP -->
+<div class="ticker-strip">
+  <div class="ticker-inner"><div class="tkr dn"><span class="tkr-n">上证指数</span><span class="tkr-p">3893.89</span><span class="tkr-c">▼ -0.17%</span></div><div class="tkr up"><span class="tkr-n">深证成指</span><span class="tkr-p">14132.42</span><span class="tkr-c">▲ +0.16%</span></div><div class="tkr up"><span class="tkr-n">创业板指</span><span class="tkr-p">3535.12</span><span class="tkr-c">▲ +0.56%</span></div><div class="tkr up"><span class="tkr-n">恒生指数</span><span class="tkr-p">25530.28</span><span class="tkr-c">▲ +0.00%</span></div><div class="tkr up"><span class="tkr-n">纳斯达克</span><span class="tkr-p">22484.07</span><span class="tkr-c">▲ +0.00%</span></div></div>
+</div>
+
+<!-- HISTORY NAV -->
+<div class="hnav">
+  <span class="hnav-label">HISTORY</span>
+  <a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260806.html">08月06日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260805.html">08月05日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260804.html">08月04日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260803.html">08月03日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20260802.html">08月02日</a><span class="hnav-spacer"></span><input type="date" id="historyPicker" class="hl-date" value="2026-08-07" max="2026-08-07" min="2025-01-01" title="选择日期查看历史简报"><button class="hl-go" onclick="goToDate()">GO</button><span class="session-toggle"><button class="st-btn active" id="stAm" onclick="switchSession('am')">早报</button><button class="st-btn" id="stPm" onclick="switchSession('pm')">晚报</button></span>
+</div>
+
+<!-- MASTHEAD -->
+<div class="masthead">
+  <div class="masthead-date">2026-08-07 · 星期五 · 早报</div>
+  <h1>每日市场情报</h1>
+  <div class="masthead-sub">INSTITUTIONAL · MARKET · INTELLIGENCE</div>
+  <div class="masthead-update">更新时间：2026-08-07 09:48（北京时间 CST）</div>
+  <div class="masthead-tags">
+    <span class="mtag mtag-a">A-SHARE · 38</span>
+    <span class="mtag mtag-us">US · 26</span>
+    <span class="mtag mtag-hk">HK · 13</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- FUND FLOW PANEL -->
+  <div class="sec-hdr">CAPITAL FLOWS</div>
+  <div class="fp-grid"><div class="fp"><div class="fp-h">主力资金流向（近5日 · 亿元）</div><div class="fp-bars"><div class="fp-bar-row"><span class="fp-date">07-31</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:95.69346651383658%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+175.3</span></div><div class="fp-bar-row"><span class="fp-date">08-03</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:50.18285028109819%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-91.9</span></div><div class="fp-bar-row"><span class="fp-date">08-04</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:100.0%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+183.2</span></div><div class="fp-bar-row"><span class="fp-date">08-05</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:57.682440914797226%;background:#00c853"></span></span><span class="fp-val" style="color:#00c853">+105.7</span></div><div class="fp-bar-row"><span class="fp-date">08-06</span><span class="fp-bar-bg"><span class="fp-bar-fill" style="width:32.694721903826206%;background:#ff1744"></span></span><span class="fp-val" style="color:#ff1744">-59.9</span></div></div></div></div>
+
+  <!-- INTRADAY CHARTS -->
+  <div class="sec-hdr">INTRADAY</div>
+  <div class="charts-row"><div class="ch-cell"><div class="ch-label">上证指数</div><img src="https://image.sinajs.cn/newchart/min/n/sh000001.gif" alt="上证指数" loading="lazy" onerror="this.parentElement.style.display='none'"></div><div class="ch-cell"><div class="ch-label">深证成指</div><img src="https://image.sinajs.cn/newchart/min/n/sz399001.gif" alt="深证成指" loading="lazy" onerror="this.parentElement.style.display='none'"></div></div>
+
+  <!-- AI ANALYSIS -->
+  <div class="sec-hdr">ANALYSIS</div>
+  <div class="report-body"><div class="sec" data-section-id="s0">
+<p class="para">盘前这碗面，味道有点杂。主力这几天进进出出，没个准谱，昨天又跑了60亿，态度是<strong><mark class="mk-bearish">防守</mark><mark class="mk-neutral">观望</mark></strong>，不敢猛打猛冲。</p>
+<p class="para"><strong>主线扫描</strong></p>
+<div class="bi"><strong>6G / PCB（算力硬件）：</strong> 这是今天开盘最硬的线。「通宇通讯」5天4板，「景旺电子」等一批PCB票涨停。逻辑是AI军备竞赛传导至硬件层，加上6G政策预期。热度高，但PCB有高潮迹象，别追后排。</div>
+<div class="bi"><strong>能源金属（钴锂）：</strong> 「寒锐钴业」、「腾远钴业」冲了10个点。这波不是简单的超跌反弹，导火索是特朗普对多晶硅加关税，市场在交易关键矿产的供应链安全和战略价值重估。逻辑比纯锂电反弹要新，可以多看两眼。</div>
+<div class="bi"><strong>化学制药：</strong> 「哈药股份」等涨停。这属于防御性板块的轮动，找不到太强的基本面新变化，更像是指数震荡、主线不稳时的资金避风港，持续性存疑。</div>
+<div class="bi"><strong>新股暴利：</strong> 「N展芯」开盘涨360%，一签赚4.2万。这种就是纯粹的情绪指标，说明市场不缺赌徒，但只看热闹不进场，对整体氛围没啥正向带动。</div>
+<p class="para"><strong>跨市场</strong></p>
+<div class="bi"><strong>美股传导压力：</strong> 隔夜美股全线下跌，核心<mark class="mk-bearish">利空</mark>是美联储9月加息概率超过50%，加息预期重燃。这对A股高估值成长股（尤其科技）估值是个压制，和今天A股炒6G硬件的热情有点矛盾，这种背离需要注意风险。</div>
+<div class="bi"><strong>港股传导：</strong> 港股PCB走强，跟A股联动，说明硬件逻辑得到跨市场认可。但韩国KOSPI跌2%、SK海力士跌超5%，存储芯片这块要小心情绪传导。</div>
+<p class="para"><strong>要闻速览</strong></p>
+<div class="bi">特朗普对多晶硅及其衍生产品加征关税，12月生效。【<mark class="mk-bearish">利空</mark>光伏，但<mark class="mk-bullish">利好</mark>国内自主供应链逻辑】</div>
+<div class="bi">美联储9月加息25个基点概率升至55%。【<mark class="mk-bearish">利空</mark>全球成长股】</div>
+<div class="bi">光伏硅料八巨头签署倡议，不得低于成本价销售。【<mark class="mk-bullish">利好</mark>光伏，内卷阶段性缓和】</div>
+<div class="bi">美国6月批发销售环比大降3%，远逊于预期。【<mark class="mk-bearish">利空</mark>，经济衰退信号】</div>
+<div class="bi">特朗普承认部分类型弹药供应“相对紧张”。【<mark class="mk-neutral">中性</mark>】</div>
+<div class="bi">特斯拉Terafab芯片项目落户得州。【<mark class="mk-neutral">中性</mark>偏<mark class="mk-bullish">利好</mark>，芯片需求故事延续】</div>
+<div class="bi">「广钢气体」与韩国AirFirst达成长期战略合作。【<mark class="mk-bullish">利好</mark>，半导体气体国产化出海】</div>
+<div class="bi">「科兴」无血清狂犬病疫苗获批。【<mark class="mk-bullish">利好</mark>个股，行业意义一般】</div>
+<div class="bi">铝土矿供应扰动，或推动成本上行。【<mark class="mk-neutral">中性</mark>偏多有色】</div>
+<div class="bi">“人工智能局”在多地相继挂牌。【<mark class="mk-neutral">中性</mark>偏多，政策端持续加码】</div>
+<p class="para"><strong>市场体温：<mark class="mk-neutral">中性</mark><mark class="mk-warm">偏暖</mark></strong></p>
+<p class="para">指数分化，创业板强沪指弱，说明资金在结构性的折腾，不是普涨。有「N展芯」这种爆款和6G的连板，情绪不冷。但主力资金在流出，叠加外部美联储加息的<mark class="mk-bearish">利空</mark>悬在头上，大资金不敢推仓位。结论就是：游资和短线资金主导的结构性行情，有点虚火，不是扎实的<mark class="mk-bullish">进攻</mark>。</p>
+<p class="para"><strong>明天怎么看</strong></p>
+<div class="ni"><span class="ni-num">1</span><div class="ni-text"><strong>情景一（概率最高）：强势题材分化。</strong> 6G/PCB前排加速、后排掉队。能源金属冲高回落。市场重新进入电风扇式轮动，成交量如果缩下来，当天追高的人会很难受。</div></div>
+<div class="ni"><span class="ni-num">2</span><div class="ni-text"><strong>情景二（小概率，但最危险）：热点共振下跌。</strong> 如果今晚美国非农数据好，强化加息预期，美股再跌，会把A股刚起来的科技苗头直接按住，叠加主力持续流出，可能形成单日普跌。</div></div>
+<div class="ni"><span class="ni-num">3</span><div class="ni-text"><strong>情景三（小概率）：逻辑扩散成功。</strong> 算力硬件从PCB扩散到整个AI基础设施（如散热、「金刚石」等新故事），有色从钴锂扩散到全链条。这需要成交量有效放大来配合，暂时看不见这个迹象。</div></div>
+</div>
+<div class="sec" data-section-id="abb3b166dd">
+<h3 class="sec-h"><button class="fav-btn" data-sid="abb3b166dd" title="收藏此条分析" onclick="toggleFav(this)">☆</button>昨日收盘UP主观点</h3>
+</div>
+<div class="sec" data-section-id="e57095cd60">
+<h3 class="sec-h"><button class="fav-btn" data-sid="e57095cd60" title="收藏此条分析" onclick="toggleFav(this)">☆</button>魔法师：核心观点提炼</h3>
+<div class="bi"><strong>核心逻辑</strong>：8月反弹不动摇，今天是上涨中继洗盘，周五继续<mark class="mk-bullish">进攻</mark>科技，红利板块只是<mark class="mk-bullish">进攻</mark>方向的血包。</div>
+<div class="bi"><strong>情绪倾向</strong>：<mark class="mk-bullish">利好</mark></div>
+<div class="bi"><strong>看多方向</strong>：「科技」（光模块、AI硬件、半导体设备、商业航天）、「电网设备」（分歧充分可接回）、「中证1000股指」（做指数反弹）。</div>
+<div class="bi"><strong>看空/谨慎方向</strong>：「红利/煤炭」：煤炭今天是明天的雪包，中期看回调，霍尔木兹海峡开放则煤炭必然回调；缩量上涨不适合追高，科技内部图形有强弱之分，CPO和设备偏弱。</div>
+<div class="bi"><strong>关键论据</strong>：「坚定8月反弹观点不动摇」「反弹目标位3942」「今天已经完成了40%的反弹」「红利板块肯定是<mark class="mk-bullish">进攻</mark>板块的血包」「缩量上涨没有持续性」「电网设备分歧比较充分，可能可以接到便宜价格」。</div>
+<div class="bi"><strong>置信度</strong>：坚定</div>
+</div>
+<div class="sec" data-section-id="104a298c8d">
+<h3 class="sec-h"><button class="fav-btn" data-sid="104a298c8d" title="收藏此条分析" onclick="toggleFav(this)">☆</button>无敌姜神：核心观点提炼</h3>
+<div class="bi"><strong>核心逻辑</strong>：该弱不弱就是强，2.5万亿成交量确认结构性牛市，AI应用二波涨停复制是当前选股核心思路。</div>
+<div class="bi"><strong>情绪倾向</strong>：<mark class="mk-bullish">利好</mark></div>
+<div class="bi"><strong>看多方向</strong>：「AI应用」（AI agent引领，7月31日领涨股回踩3-5天的二波机会）、「算力租赁」、「光通信」、「机器人」、「AI智能体」；具体票如普联软件、维宏股份、香江控股。</div>
+<div class="bi"><strong>看空/谨慎方向</strong>：操作难度加大，容错率降低，要去弱留强，不追涨不打板。</div>
+<div class="bi"><strong>关键论据</strong>：「成交量重回2.5万亿，不能再以熊市思维看待」「优先关注7月31号那批AI科技里面的领涨股」「这轮行情是AI agent引领的AI软件及应用」「涨停复制五个要素，主升浪期做厂字形，5日线买入」。</div>
+<div class="bi"><strong>置信度</strong>：较强</div>
+</div>
+<div class="sec" data-section-id="2be682a87a">
+<h3 class="sec-h"><button class="fav-btn" data-sid="2be682a87a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>缠论猎黑马：核心观点提炼</h3>
+<div class="bi"><strong>核心逻辑</strong>：8月行情值得期待，科技走出三连阳持续力度，A股韧性显现，主流题材调整就是低吸机会。</div>
+<div class="bi"><strong>情绪倾向</strong>：<mark class="mk-bullish">利好</mark></div>
+<div class="bi"><strong>看多方向</strong>：「MLCC」、「AI应用」、「电力」、「医药」；科创板三连阳代表多头夺回主导权，成交量逐步放量，资金承接意愿增强。</div>
+<div class="bi"><strong>看空/谨慎方向</strong>：不无脑追，等回踩企稳按五均十守法低吸；今天部分个股冲高回落是正常洗盘。</div>
+<div class="bi"><strong>关键论据</strong>：「科创终止三连阳，这在7月份从来没有过」「A股的韧劲慢慢体现出来」「主流题材有了延续性，MLCC连涨四天」「行情不可能天天上涨，分化下来是洗盘行为」「把心放肚子里」。</div>
+<div class="bi"><strong>置信度</strong>：坚定</div>
+</div>
+<div class="sec" data-section-id="9487d31d21">
+<h3 class="sec-h"><button class="fav-btn" data-sid="9487d31d21" title="收藏此条分析" onclick="toggleFav(this)">☆</button>股痴心养心：核心观点提炼</h3>
+<div class="bi"><strong>核心逻辑</strong>：缩量但2.5万亿及格线守住，科技方向反弹韧性足，融资盘数据止跌回稳，中期反弹目标看7月14日下影线。</div>
+<div class="bi"><strong>情绪倾向</strong>：<mark class="mk-neutral">中性</mark></div>
+<div class="bi"><strong>看多方向</strong>：「科技」整体（算力、CPU、机器人等）、「有色/黄金」（历史级别股基价差修复，黄金等鸽派信号）、「电池/证券/医药」（低位有业绩品种震荡反弹）。</div>
+<div class="bi"><strong>看空/谨慎方向</strong>：若成交量进一步紧缩需提防科技与非科技翘板效应；银行等红利反弹可能压制科技，但当下未见科技反弹风险信号。</div>
+<div class="bi"><strong>关键论据</strong>：「依旧站在2.5万亿的及格线上方」「融资盘数据已出现止跌回稳」「当下并没有看到明确科技方向反弹的风险信号」「缩量是基于外围大跌，可以接受」。</div>
+<div class="bi"><strong>置信度</strong>：一般</div>
+</div>
+<div class="sec" data-section-id="73bfa0d3df">
+<h3 class="sec-h"><button class="fav-btn" data-sid="73bfa0d3df" title="收藏此条分析" onclick="toggleFav(this)">☆</button>来去由心：核心观点提炼</h3>
+<div class="bi"><strong>核心逻辑</strong>：短线行情刚刚开启，趋势行情难主升而是轮动；爱丽家居爆量重置成本是安全买点，短线不看高低看强弱。</div>
+<div class="bi"><strong>情绪倾向</strong>：<mark class="mk-neutral">中性</mark>（短线偏乐观，趋势谨慎）</div>
+<div class="bi"><strong>看多方向</strong>：「短线情绪」（龙头断板后看反包或高低切，爱丽家居、风范股份、凯撒文化等有买点）、「AI应用」（可能回流）。</div>
+<div class="bi"><strong>看空/谨慎方向</strong>：「趋势科技」：拉升修复是高抛减仓点，难直接主升；「中位股」回避；利新能源、哈药股份等走弱。</div>
+<div class="bi"><strong>关键论据</strong>：「短线行情没有结束，甚至刚刚开启」「趋势行情没有这么快容易反弹，更多是轮动」「爆量意味着充分的筹码交换和成本重置」「短线不看高低，只看强弱」「龙头断板风险在次日，爆量当天不买（对小白）」。</div>
+<div class="bi"><strong>置信度</strong>：较强（对短线框架自信）</div>
+</div>
+<div class="sec" data-section-id="7c90633bb3">
+<h3 class="sec-h"><button class="fav-btn" data-sid="7c90633bb3" title="收藏此条分析" onclick="toggleFav(this)">☆</button>从股道金：核心观点提炼</h3>
+<div class="bi"><strong>核心逻辑</strong>：科技连续高潮后量能萎缩必然分歧，只能聚焦前排核心；爱丽家居基于主力成本可参与，短线回避中位股。</div>
+<div class="bi"><strong>情绪倾向</strong>：<mark class="mk-neutral">中性</mark></div>
+<div class="bi"><strong>看多方向</strong>：「科技前排核心」（云南锗业、江乌装备）、「短线爱丽家居」、「低位首板二板」（AI应用、医药中的卡位品种）。</div>
+<div class="bi"><strong>看空/谨慎方向</strong>：「科技后排」冲高减仓，整体科技上方套牢盘重，量不跟只能看超跌反弹，后续</div>
+</div>
+<div class="sec" data-section-id="e1b9459018">
+<h3 class="sec-h"><button class="fav-btn" data-sid="e1b9459018" title="收藏此条分析" onclick="toggleFav(this)">☆</button>信息差提炼</h3>
+</div>
+<div class="sec" data-section-id="e1b9459018">
+<h3 class="sec-h"><button class="fav-btn" data-sid="e1b9459018" title="收藏此条分析" onclick="toggleFav(this)">☆</button>信息差提炼</h3>
+<div class="bi"><strong>核心动态</strong>：</div>
+<div class="bi">日本央行将政策利率上调25个基点至1%，为1995年以来最高，部分委员主张以数月一次的速度持续加息至接近2%的<mark class="mk-neutral">中性</mark>水平。（信息差）</div>
+<div class="bi">美国25个州联合起诉特朗普政府以「强迫劳动」为由对60个国家和地区加征的关税，要求法院判定违法并废止，纽约州州长称该措施推高家庭生活成本。（信息差）</div>
+<div class="bi">中指研究院数据显示，1—7月全国300城住宅用地出让金7340亿元，同比降27.9%，但上海、杭州、北京核心地块维持高溢价争夺，土地市场「缩量提质、极度分化」特征显著。（信息差）</div>
+<div class="bi">福特汽车2026年7月美国SUV销量同比下滑21.3%至59,458辆，主要由于紧凑型SUV产品线停产造成的销量缺口，大型高利润SUV如「Explorer」增长未能完全对冲。（信息差）</div>
+<div class="bi">「古河电工」宣布斥资约1000亿日元在美、巴、日、印扩建光纤产能，目标2028年量产并已锁定长期订单，反映AI数据中心对高端光缆的拉动。（信息差）</div>
+<div class="bi"><strong>行业/板块关注</strong>：</div>
+<div class="bi"><strong>人工智能</strong>：英伟达CEO黄仁勋判断马斯克在AI竞赛中领先，依据是其横跨xAI认知智能、特斯拉自动驾驶与Optimus人形机器人的算力与真实世界数据护城河。（信息差）</div>
+<div class="bi"><strong>房地产</strong>：核心城市优质地块竞争白热化，上海杨浦一地块以161.2亿元、溢价率35.8%成交；三四线城市土地市场持续低温，平均溢价率仅2.9%，民企参与度低。（信息差）</div>
+<div class="bi"><strong>光通信</strong>：全球光通信需求从电信运营商转向超大规模数据中心，中国光纤市场正从传统集采驱动的规模扩张转向面向AI数据中心的高品质、高密度光缆的结构升级，长单锁定与认证壁垒成为新竞争要素。（信息差）</div>
+<div class="bi"><strong>电缆</strong>：加拿大边境服务署对中国「无铠装建筑电缆」作出反倾销和反补贴肯定性初裁，「河北华通线缆集团」合计税率约47%，增加相关产品进入加拿大市场的成本。（信息差）</div>
+<div class="bi"><strong>贸易摩擦（化工/钢铁）</strong>：日本对韩国「氢氧化钾」等产品征收按进口价格49.5%的临时反倾销税，标志其贸易政策从克制转向主动防御，可能加速东亚区域竞争格局分化。（信息差）</div>
+<div class="bi"><strong>个股/公司动态</strong>：</div>
+<div class="bi">「福特汽车」：2026年7月美国市场SUV销量59,458辆，同比降21.3%；大型SUV「Explorer」第二季度销量同比增长13.8%，产品组合向高利润方向转型。（信息差）</div>
+<div class="bi">「古河电工」：投资约1000亿日元扩建光纤产能，计划2028财年下半年量产，已将高端产品产能翻倍目标与已锁定的长期客户订单挂钩；另投550亿日元在亚洲布局数据中心冷却零部件。（信息差）</div>
+<div class="bi">「河北华通线缆集团」：被加拿大征收临时反倾销税和反补贴税，合计税率约47%。（信息差）</div>
+<div class="bi"><strong>数据/指标变动</strong>：</div>
+<div class="bi">土地市场：7月全国300城住宅用地成交规模环比降约10%，出让金环比降逾30%；前7月出让金7340亿元，同比降27.9%。（信息差）（来源：中指研究院）</div>
+<div class="bi">汽车销量：「福特」7月美国SUV销量同比降21.3%。（信息差）</div>
+<div class="bi">政策利率：日本央行加息至1%，前值0.75%。（信息差）</div>
+<div class="bi">反倾销税率：加拿大对华建筑电缆临时税率约47%（华通线缆）；日本对韩「氢氧化钾」临时反倾销税按进口价格49.5%计征。（信息差）</div>
+<div class="bi">溢价率：上海杨浦宅地溢价率35.8%；三四线城市平均溢价率2.9%。（信息差）</div>
+</div>
+<div class="sec" data-section-id="9568c10b4a">
+<h3 class="sec-h"><button class="fav-btn" data-sid="9568c10b4a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>AI选股</h3>
+<p class="para">目前市场呈现典型的政策驱动与产业趋势共振格局，结合资金流向、UP主观点及全产业链信息梳理，今日核心关注点聚焦于科技硬件的上游支撑、贸易摩擦的新一轮扩散及部分板块的内部自律反弹。今日开盘资金明显偏向能源金属、算力硬件等板块，与新闻面和技术趋势高度吻合。</p>
+</div>
+<div class="sec" data-section-id="ed6ae9b902">
+<h3 class="sec-h"><button class="fav-btn" data-sid="ed6ae9b902" title="收藏此条分析" onclick="toggleFav(this)">☆</button>【超核心关注】金刚石跻身AI散热核心材料，算力革命带动超硬材料企业价值重估</h3>
+<p class="para">金刚石作为顶级散热材料，是解决高功耗GPU“发烧”问题的关键卡脖子环节，其商业化落地将直接决定AI算力中心的运行极限。</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">力量钻石 (301071)</td><td style="text-align:left">新闻直接提及的龙头企业，其培育钻石产线可直接转化为AI散热用金刚石构件，是“从0到1”逻辑中产能与技术储备最核心的标的。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">四方达 (300179)</td><td style="text-align:left">作为超硬材料领域的老牌上市公司，拥有金刚石复合片及相关热管理材料核心技术，是高端金刚石散热产品国产替代的主力供应商之一。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">中兵红箭 (000519)</td><td style="text-align:left">旗下中南钻石是超硬材料龙头，具备大规模量产能力和技术积累，是算力产业链向上游材料端传导时，市值和流动性均为优质的受益标的。</td><td style="text-align:left">看多</td><td style="text-align:left">超核心关注</td></tr><tr><td style="text-align:left">黄河旋风 (600172)</td><td style="text-align:left">超硬材料行业主要企业之一，产品覆盖工业金刚石，直接受益于AI散热需求带来的新兴应用场景和增量市场。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr></tbody></table></div>
+<p class="para"><span style="color:#d63031;font-weight:600;"> 注：K线图仅保留近7天，历史图表将自动清理。如需长期保存，请右键另存为。</span></p>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/301071_SZ_20260807.png" alt="力量钻石 301071.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/300179_SZ_20260807.png" alt="四方达 300179.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/000519_SZ_20260807.png" alt="中兵红箭 000519.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600172_SH_20260807.png" alt="黄河旋风 600172.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+</div>
+<div class="sec" data-section-id="c32d5e5be5">
+<h3 class="sec-h"><button class="fav-btn" data-sid="c32d5e5be5" title="收藏此条分析" onclick="toggleFav(this)">☆</button>【核心关注】6G商业化预期再起，通宇通讯5天4板引爆通信设备全产业链</h3>
+<p class="para">6G概念持续走强，5天4板的龙头效应显著，资金正从天线、射频等硬科技上游加速挖掘。UP主集体看多科技硬件，该板块承接力强。</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">通宇通讯 (002792)</td><td style="text-align:left">新闻核心龙头，5天4板走势确立市场地位，作为基站天线和射频器件供应商，是6G网络建设的直接先行受益者。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">武汉凡谷 (002194)</td><td style="text-align:left">新闻直接提及，2连板，主营射频器件，是基站侧和终端设备的核心供应商，弹性紧随龙头。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">深南电路 (002916)</td><td style="text-align:left">新闻直接提及，作为通信板卡和封装基板龙头，是基站与数据中心建设的核心材料供应商，同时受益于6G与PCB板块双主线。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">广哈通信 (300711)</td><td style="text-align:left">新闻直接提及，涨超10%，为电力、国防等行业提供指挥调度系统，6G专网及物联网应用将极大拓展其市场边界。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">灿勤科技 (688182)</td><td style="text-align:left">滤波器为核心产品，是基站射频单元的关键器件，国产化需求叠加6G对滤波器更高性能的要求，具备长期增长逻辑。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002792_SZ_20260807.png" alt="通宇通讯 002792.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002194_SZ_20260807.png" alt="武汉凡谷 002194.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/002916_SZ_20260807.png" alt="深南电路 002916.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+</div>
+<div class="sec" data-section-id="a465000fca">
+<h3 class="sec-h"><button class="fav-btn" data-sid="a465000fca" title="收藏此条分析" onclick="toggleFav(this)">☆</button>【核心关注】光通信需求转向AI数据中心，古河电工千亿扩产印证行业高景气</h3>
+<p class="para">日本古河电工斥资千亿日元扩产光纤且已锁定订单，直接印证了AI数据中心对高端光缆的强劲拉动，国内具备出海替代能力的企业迎来机遇。UP主也对光模块、AI硬件方向持续看好。</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">长飞光纤 (601869)</td><td style="text-align:left">全球光纤光缆行业龙头，具备全产业链自研能力，是最有能力承接全球数据中心高端光缆订单替代的中国企业。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">亨通光电 (600487)</td><td style="text-align:left">光纤通信和海洋通信龙头之一，高密度、高品质光缆产品线齐全，有望受益于全球AI数据中心对高端产品需求的持续爆发。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">中天科技 (600522)</td><td style="text-align:left">光通信及电力传输业务并举，光纤预制棒产能和技术领先，数据中心建设是其通信业务增长的强劲驱动力。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">杰普特 (688025)</td><td style="text-align:left">新闻PCB板块联动提及，作为上游的光学检测和激光加工设备供应商，是光纤光缆和光模块生产环节中的卖铲人。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601869_SH_20260807.png" alt="长飞光纤 601869.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600487_SH_20260807.png" alt="亨通光电 600487.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600522_SH_20260807.png" alt="中天科技 600522.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+</div>
+<div class="sec" data-section-id="ff33e1b283">
+<h3 class="sec-h"><button class="fav-btn" data-sid="ff33e1b283" title="收藏此条分析" onclick="toggleFav(this)">☆</button>【核心关注】光伏行业自救信号明确，硅料八巨头签署“限价”倡议</h3>
+<p class="para">八大多晶硅巨头联合签署不得低于成本价销售的倡议书，是行业触底的明确信号，短期驱动产业链修复预期。需结合特朗普拟加征多晶硅关税的风险综合判断，但国内自律<mark class="mk-bullish">利好</mark>直接影响国内市场格局。</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">通威股份 (600438)</td><td style="text-align:left">全球多晶硅及电池片双龙头，是本次《倡议书》的主要参与者和受益方，其成本控制能力将有助于其在自律框架下最大限度获益。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">大全能源 (688303)</td><td style="text-align:left">国内多晶硅核心供应商之一，直接参与“限价”倡议，盈利修复弹性巨大，但需关注美国关税对其出口业务的扰动。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">隆基绿能 (601012)</td><td style="text-align:left">光伏一体化龙头，硅料成本是决定其最终组件成本的关键，上游价格企稳对其利润预测带来正面支撑。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">特变电工 (600089)</td><td style="text-align:left">旗下新特能源为多晶硅主力厂家，直接受益于行业价格自律。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/600438_SH_20260807.png" alt="通威股份 600438.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/688303_SH_20260807.png" alt="大全能源 688303.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/601012_SH_20260807.png" alt="隆基绿能 601012.SH" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="bi">东方日升 (300118)： 组件企业，上游硅料价格企稳将缓解其成本波动风险，逻辑链条稍长，知道就行。</div>
+</div>
+<div class="sec" data-section-id="24b8aba80d">
+<h3 class="sec-h"><button class="fav-btn" data-sid="24b8aba80d" title="收藏此条分析" onclick="toggleFav(this)">☆</button>【核心关注】新能源上游集体躁动，钴、锂、镍相关个股获主力资金扫货</h3>
+<p class="para">能源金属板块今日开盘大幅冲高，直接反映了市场对上游资源的情绪修复和对新能源产业链的重新审视，资金推动特征显著。</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">寒锐钴业 (300618)</td><td style="text-align:left">新闻直接提及，开盘涨超10%，是钴资源股的领涨先锋，资金攻击的急先锋，短期弹性最大。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">腾远钴业 (301219)</td><td style="text-align:left">新闻直接提及，与寒锐钴业联动上涨，是钴、铜资源的核心供应商，上游资源品的价值重估首选。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">华友钴业 (603799)</td><td style="text-align:left">新闻直接提及，全产业链布局的巨头，覆盖从钴镍资源开发到锂电池正极材料，是新能源上游的定海神针。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">天齐锂业 (002466)</td><td style="text-align:left">新闻直接提及，锂矿龙头企业，板块效应下跟涨明显，得益于市场对锂价阶段性见底的一致性预期。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr><tr><td style="text-align:left">西部矿业 (601168)</td><td style="text-align:left">新闻提及成立地质科技公司，延伸探矿和开采业务，是公司增强资源储备的长远布局，与能源金属板块热度相呼应。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/300618_SZ_20260807.png" alt="寒锐钴业 300618.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+<div class="chart-img"><img src="https://hcongxi42-web.github.io/HZT/charts/301219_SZ_20260807.png" alt="腾远钴业 301219.SZ" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+</div>
+<div class="sec" data-section-id="b15d78fafa">
+<h3 class="sec-h"><button class="fav-btn" data-sid="b15d78fafa" title="收藏此条分析" onclick="toggleFav(this)">☆</button>【核心关注】科技线利好频传，新股爆赚、PCB板块涨停潮激活整个硬件产业链</h3>
+<p class="para">展芯股份上市首日暴涨，带动PCB、半导体设备等硬件板块集体上攻，这是资金活跃度的直接体现。多个UP主力荐的“科技”主线在这些个股上得到验证。</p>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">为什么选它</th><th style="text-align:left">看多/看空</th><th style="text-align:left">把握度</th></tr></thead><tbody><tr><td style="text-align:left">景旺电子 (603228)</td><td style="text-align:left">新闻直接提及，PCB概念涨停先锋，汽车、通信、消费电子用板全覆盖，板块拉升的直接受益者与核心标的。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">依顿电子 (603328)</td><td style="text-align:left">新闻直接提及，协同涨停，主营高精度、高密度PCB板，受益于算力硬件和汽车电子的双重需求增长。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">芯碁微装 (688630)</td><td style="text-align:left">新闻直接提及，是PCB上游的激光直接成像（LDI）设备商，属于“卖铲人”角色，PCB厂扩产将直接增厚其订单。</td><td style="text-align:left">看多</td><td style="text-align:left">核心关注</td></tr><tr><td style="text-align:left">宝鼎科技 (002552)</td><td style="text-align:left">新闻提及涨停，覆铜板及PCB制造为业务之一，是板块情绪传导下跟涨明显的受益标的。</td><td style="text-align:left">看多</td><td style="text-align:left">可以看看</td></tr></tbody></table></div>
+</div>
+<div class="sec" data-section-id="bb0b02c95c">
+<h3 class="sec-h"><button class="fav-btn" data-sid="bb0b02c95c" title="收藏此条分析" onclick="toggleFav(this)">☆</button>个股风险提示</h3>
+<div class="bi">风险1：特朗普对多晶硅衍生品加征15%关税及设定最低进口价</div>
+<div class="bi">事件：美国宣布自2026年12月起，对进口多晶硅及其衍生产品加征关税。</div>
+<div class="bi">影响：直接从出口端<mark class="mk-bearish">利空</mark>国内多晶硅及光伏组件企业。尽管有国内“反内卷”倡议的支持，但出口受阻将抵消国内部分供给出清的<mark class="mk-bullish">利好</mark>。</div>
+<div class="bi">风险股票：大全能源、通威股份、隆基绿能等对美有出口或预期出口的光伏企业，需评估其海外收入敞口和美国市场替代难度。</div>
+<div class="bi">风险2：美股存储芯片龙头SK海力士暴跌，波及南方ETF及产业链情绪</div>
+<div class="bi">事件：SK海力士股价跌超5%，南方两倍做多海力士ETF跌超6%。</div>
+<div class="bi">影响：直接冲击存储芯片市场的短期情绪，并对港股相关ETF产品产生即时价格压力。需警惕作为AI硬件核心之一的存储芯片出现需求预期波动。</div>
+<div class="bi">风险标的：南方两倍做多海力士ETF，其底层资产剧烈波动，短期回避。</div>
+<div class="bi">风险3：河北华通线缆集团被加拿大加征反倾销税</div>
+<div class="bi">事件：加拿大对华建筑电缆作出反倾销初裁，华通线缆合计税率约47%。</div>
+<div class="bi">影响：出口成本大幅上升，将削弱该公司在加拿大市场的价格竞争力，直接影响其海外利润。短期对股价构成压制。</div>
+</div></div>
+
+  
+</div>
+
+<div class="site-footer">
+  <div class="footer-logo">MARKET//BRIEF</div>
+  <a class="online-link" href="https://hcongxi42-web.github.io/HZT/report_20260807.html">VIEW ONLINE</a>
+  <div class="footer-info">
+    DATA · East Money / Sina Finance<br>
+    AI · DeepSeek V4
+  </div>
+  <div class="footer-disclaimer">
+    本报告由 AI 自动生成，仅供研究参考，不构成任何投资建议。<br>
+    市场有风险，投资需谨慎。PAST PERFORMANCE IS NOT INDICATIVE OF FUTURE RESULTS.
+  </div>
+</div>
+
+<!-- ══════════════ 自选新闻面板 ══════════════ -->
+<div class="fav-panel" id="favPanel">
+  <div class="fav-panel-inner">
+    <div class="fav-panel-hdr">
+      <span> 自选新闻 · <em id="favCount">0</em></span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="fav-count" id="favSize" title="localStorage 占用"></span>
+        <button class="fav-act-btn" onclick="exportFavs()" title="导出收藏为 JSON 文件">↗导出</button>
+        <button class="fav-act-btn" onclick="importFavs()" title="从 JSON 文件导入收藏（合并去重）">↘导入</button>
+        <button class="fav-act-btn fav-act-del" onclick="clearAllFavs()" title="清空全部收藏">清空</button>
+        <button class="fav-toggle" id="favToggle" title="收起面板" onclick="toggleFavPanel()">▾</button>
+      </div>
+    </div>
+    <div id="favActions" style="padding:6px 20px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);">
+      收藏仅保存索引（不存HTML）· 上限 200 条 · 跨报告跳转需联网 · 可导出备份
+    </div>
+    <div class="fav-list" id="favList">
+      <div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 收藏提示浮层 ══════════════ -->
+<div class="fav-toast" id="favToast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  自选新闻 · localStorage 持久化（轻量版）
+//  只存元数据索引，不存 HTML 副本 — 跨报告跳转时从源文件加载。
+// ═══════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'market_brief_favs_v2';  // v2: 不再存储 html 字段
+const MAX_FAVS = 200;
+const FAV_DATE_KEY = '2026-08-07_am';
+const FAV_DATE = '2026-08-07';
+const FAV_SESSION = '早报';
+
+// ── 早报 / 晚报 切换 ──
+let CURRENT_SESSION = 'am';
+
+function switchSession(session) {
+  if (session === CURRENT_SESSION) return;
+  CURRENT_SESSION = session;
+  document.getElementById('stAm').classList.toggle('active', session === 'am');
+  document.getElementById('stPm').classList.toggle('active', session === 'pm');
+  const picker = document.getElementById('historyPicker');
+  if (picker && picker.value) {
+    const p = picker.value.split('-');
+    window.location.href = 'https://hcongxi42-web.github.io/HZT/report_' + p[0] + p[1] + p[2] + '_' + session + '.html';
+  }
+}
+
+function goToDate() {
+  const d = document.getElementById('historyPicker').value;
+  if (d) {
+    const p = d.split('-');
+    window.location.href = 'https://hcongxi42-web.github.io/HZT/report_' + p[0] + p[1] + p[2] + '_' + CURRENT_SESSION + '.html';
+  }
+}
+
+// ── 读写 localStorage（带错误处理 + 旧格式迁移）──
+function getFavs() {
+  try {
+    let raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!Array.isArray(raw)) return [];
+    // 迁移 v1 → v2: 丢弃 html 字段，只保留元数据
+    let migrated = false;
+    raw = raw.map(f => {
+      if (f.html !== undefined) { migrated = true; }
+      return {
+        id: f.id || '',
+        sid: f.sid || '',
+        date: f.date || '',
+        session: f.session || '',
+        title: f.title || '',
+        saved_at: f.saved_at || ''
+      };
+    });
+    if (migrated) {
+      saveFavsRaw(raw);
+      console.log('[Favs] 已从 v1 迁移到 v2 (丢弃HTML副本)');
+    }
+    return raw;
+  } catch(e) { return []; }
+}
+
+function saveFavsRaw(favs) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(favs));
+    renderFavPanel();
+    updateAllStarBtns();
+  } catch(e) {
+    // localStorage 满了 → 裁剪最旧的 25%
+    if (e.name === 'QuotaExceededError') {
+      const drop = Math.ceil(favs.length * 0.25);
+      const trimmed = favs.slice(drop);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+      showToast('存储已满，已自动清理' + drop + '条旧收藏');
+      renderFavPanel();
+      updateAllStarBtns();
+    }
+  }
+}
+
+function saveFavs(favs) {
+  saveFavsRaw(favs);
+}
+
+// ── 估算存储占用 ──
+function estimateStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? new Blob([raw]).size : 0;
+  } catch(e) { return 0; }
+}
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+// ── 从 sec-h 提取纯文本标题 ──
+function getTitleFromSec(sid) {
+  const sec = document.querySelector(`[data-section-id="${sid}"]`);
+  if (!sec) return '';
+  const hEl = sec.querySelector('.sec-h');
+  if (!hEl) return '';
+  const btn = hEl.querySelector('.fav-btn');
+  const btnText = btn ? btn.textContent : '';
+  return (hEl.textContent || '').replace(btnText, '').trim();
+}
+
+function makeFavId(sid) {
+  return FAV_DATE_KEY + '_' + sid;
+}
+
+// ── 收藏 / 取消收藏 ──
+function toggleFav(btn) {
+  const sid = btn.getAttribute('data-sid');
+  const favId = makeFavId(sid);
+  const title = getTitleFromSec(sid);
+  if (!title) return;
+
+  let favs = getFavs();
+  const idx = favs.findIndex(f => f.id === favId);
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+    saveFavs(favs);
+    showToast('已取消收藏');
+  } else {
+    if (favs.length >= MAX_FAVS) {
+      showToast('收藏已达上限 (' + MAX_FAVS + '条)，请先清理旧收藏');
+      return;
+    }
+    favs.push({
+      id: favId,
+      sid: sid,
+      date: FAV_DATE,
+      session: FAV_SESSION,
+      title: title,
+      saved_at: new Date().toISOString()
+    });
+    saveFavs(favs);
+    showToast('已加入自选 ');
+  }
+}
+
+// ── 删除收藏项 ──
+function delFav(favId) {
+  let favs = getFavs();
+  favs = favs.filter(f => f.id !== favId);
+  saveFavs(favs);
+  showToast('已删除');
+}
+
+// ── 跳转到收藏项所在报告 ──
+function gotoFav(favId) {
+  const favs = getFavs();
+  const f = favs.find(x => x.id === favId);
+  if (!f) return;
+  const sid = f.sid || '';
+  const dateDigits = f.date.replace(/-/g, '');
+
+  // 当前页面已有该 section → 直接滚动
+  const local = document.querySelector(`[data-section-id="${sid}"]`);
+  if (local) {
+    local.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    local.style.boxShadow = '0 0 0 3px var(--amber)';
+    setTimeout(() => local.style.boxShadow = '', 2000);
+    return;
+  }
+
+  // 跨报告跳转：构建目标 URL
+  const sessionSuffix = (f.session === '晚报') ? '_pm' : '_am';
+  const targetUrl = 'https://hcongxi42-web.github.io/HZT/report_' + dateDigits + sessionSuffix + '.html';
+  window.location.href = targetUrl + '#' + sid;
+}
+
+// ── 渲染底部自选面板 ──
+function renderFavPanel() {
+  const favs = getFavs();
+  const countEl = document.getElementById('favCount');
+  const listEl = document.getElementById('favList');
+  const summaryEl = document.getElementById('favSummary');
+  const panel = document.getElementById('favPanel');
+  const sizeEl = document.getElementById('favSize');
+
+  const storageSize = estimateStorage();
+  if (countEl) countEl.textContent = favs.length + '条';
+  if (sizeEl) sizeEl.textContent = fmtSize(storageSize);
+  if (summaryEl) summaryEl.textContent = favs.length
+    ? favs.map(f => f.date.slice(5) + (f.session === '晚报' ? '晚' : '早')).slice(-10).join(' · ')
+    : '';
+  if (panel && favs.length > 0) panel.style.display = 'block';
+  else if (panel && favs.length === 0) panel.style.display = 'none';
+
+  if (!listEl) return;
+  if (favs.length === 0) {
+    listEl.innerHTML = '<div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>';
+    return;
+  }
+
+  // 最新在前，最多展示最近 100 条
+  const sorted = [...favs].reverse().slice(0, 100);
+  listEl.innerHTML = sorted.map(f => `
+    <div class="fav-item">
+      <span class="fav-item-date">${f.date.slice(5)}${f.session === '晚报' ? '晚' : '早'}</span>
+      <span class="fav-item-title" onclick="gotoFav('${f.id}')" title="点击跳转到 ${f.date} ${f.session} · ${f.title}">${f.title}</span>
+      <button class="fav-item-del" onclick="delFav('${f.id}')" title="删除">✕</button>
+    </div>
+  `).join('');
+
+  // 如果超过 100 条，显示提示
+  if (favs.length > 100) {
+    listEl.innerHTML += '<div class="fav-item" style="color:var(--text-muted);font-size:11px;justify-content:center;">… 还有 ' + (favs.length - 100) + ' 条更早的收藏（已折叠）</div>';
+  }
+}
+
+// ── 批量清空 ──
+function clearAllFavs() {
+  if (confirm('确定要清空全部收藏吗？此操作不可恢复。')) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderFavPanel();
+    updateAllStarBtns();
+    showToast('已清空全部收藏');
+  }
+}
+
+// ── 导出收藏为 JSON 文件 ──
+function exportFavs() {
+  const favs = getFavs();
+  if (favs.length === 0) { showToast('没有收藏可导出'); return; }
+  const blob = new Blob([JSON.stringify(favs, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'market_brief_favs_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('已导出 ' + favs.length + ' 条收藏');
+}
+
+// ── 导入收藏（合并去重）──
+function importFavs() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const incoming = JSON.parse(e.target.result);
+        if (!Array.isArray(incoming)) throw new Error('格式错误');
+        let existing = getFavs();
+        const existingIds = new Set(existing.map(f => f.id));
+        let added = 0;
+        for (const f of incoming) {
+          if (!f.id || !f.title) continue;
+          if (existingIds.has(f.id)) continue;
+          // 丢弃 html 字段（兼容旧格式）
+          existing.push({
+            id: f.id, sid: f.sid || '', date: f.date || '',
+            session: f.session || '', title: f.title,
+            saved_at: f.saved_at || new Date().toISOString()
+          });
+          existingIds.add(f.id);
+          added++;
+        }
+        if (existing.length > MAX_FAVS) {
+          existing = existing.slice(existing.length - MAX_FAVS);
+        }
+        saveFavs(existing);
+        showToast('导入了 ' + added + ' 条，合并后共 ' + existing.length + ' 条');
+      } catch(err) {
+        showToast('导入失败：文件格式不正确');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ── 更新所有 ☆ 按钮状态 ──
+function updateAllStarBtns() {
+  const favs = getFavs();
+  const favIdSet = new Set(favs.map(f => f.id));
+  document.querySelectorAll('.fav-btn').forEach(btn => {
+    const sid = btn.getAttribute('data-sid');
+    const favId = makeFavId(sid);
+    if (favIdSet.has(favId)) {
+      btn.textContent = '★';
+      btn.classList.add('on');
+    } else {
+      btn.textContent = '☆';
+      btn.classList.remove('on');
+    }
+  });
+}
+
+// ── 收起/展开面板 ──
+function toggleFavPanel() {
+  const list = document.getElementById('favList');
+  const toggle = document.getElementById('favToggle');
+  const actions = document.getElementById('favActions');
+  if (list.style.display === 'none') {
+    list.style.display = '';
+    if (actions) actions.style.display = '';
+    toggle.textContent = '▾';
+  } else {
+    list.style.display = 'none';
+    if (actions) actions.style.display = 'none';
+    toggle.textContent = '▸';
+  }
+}
+
+// ── Toast 提示 ──
+function showToast(msg) {
+  const toast = document.getElementById('favToast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._tid);
+  toast._tid = setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+// ── 初始化 ──
+(function initFavs() {
+  renderFavPanel();
+  updateAllStarBtns();
+  // 处理跨页面锚点跳转
+  const hash = window.location.hash;
+  if (hash) {
+    const target = document.querySelector(`[data-section-id="${hash.slice(1)}"]`);
+    if (target) {
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.style.boxShadow = '0 0 0 3px var(--amber)';
+        setTimeout(() => target.style.boxShadow = '', 2500);
+      }, 300);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
