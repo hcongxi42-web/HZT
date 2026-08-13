@@ -407,10 +407,17 @@ def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096)
     try:
         req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=180) as resp:
-            data = json.loads(resp.read().decode())
-        content = data["choices"][0]["message"]["content"]
-        # 偶发返回空内容（如并行调用触发的瞬时限流），视为失败以便重试/降级
+            raw_body = resp.read().decode()
+        data = json.loads(raw_body)
+        msg = data["choices"][0]["message"]
+        content = msg.get("content", "")
+        # 推理型模型可能把正文放在 reasoning_content，content 为空时回退
         if not content or not content.strip():
+            content = msg.get("reasoning_content", "")
+        # 仍为空则打印原始响应，便于定位（限流 / 内容过滤 / 字段变更等）
+        if not content or not content.strip():
+            finish = data["choices"][0].get("finish_reason", "?")
+            print(f"[LLM-DEBUG] 空返回 finish_reason={finish} 原始响应前 600 字:\n{raw_body[:600]}")
             return "API 调用失败: 返回内容为空"
         return content
     except urllib.error.HTTPError as e:
