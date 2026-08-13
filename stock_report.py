@@ -9,6 +9,7 @@ import os
 import re
 import urllib.request
 import urllib.error
+import time
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 
@@ -389,7 +390,7 @@ def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096)
 
     url = "https://api.deepseek.com/v1/chat/completions"
     payload = json.dumps({
-        "model": "deepseek-v4-pro",
+        "model": "deepseek-v4-flash",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -407,7 +408,11 @@ def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096)
         req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=180) as resp:
             data = json.loads(resp.read().decode())
-        return data["choices"][0]["message"]["content"]
+        content = data["choices"][0]["message"]["content"]
+        # 偶发返回空内容（如并行调用触发的瞬时限流），视为失败以便重试/降级
+        if not content or not content.strip():
+            return "API 调用失败: 返回内容为空"
+        return content
     except urllib.error.HTTPError as e:
         body = e.read().decode() if e.fp else ""
         return f"API 调用失败: HTTP {e.code} - {body[:300]}"
@@ -418,6 +423,11 @@ def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096)
 def _call_deepseek_safe(system_prompt, user_prompt, temperature=0.5, max_tokens=4096, section_name="AI分析"):
     """带优雅降级的 DeepSeek API 调用。失败时返回友好提示而非原始错误文本。"""
     result = _call_deepseek(system_prompt, user_prompt, temperature, max_tokens)
+    # 空返回多为并行调用下的瞬时限流，短暂等待后重试一次
+    if result == "API 调用失败: 返回内容为空":
+        print(f"[LLM] {section_name} 返回空内容，3 秒后重试一次...")
+        time.sleep(3)
+        result = _call_deepseek(system_prompt, user_prompt, temperature, max_tokens)
     if result.startswith("错误") or result.startswith("API 调用失败"):
         print(f"[LLM] {section_name} 调用失败，使用降级: {result[:100]}")
         return f"*({section_name}暂时不可用，请稍后重试)*"
@@ -1397,17 +1407,22 @@ def main():
 
             if opinion_future:
                 opinion_md = opinion_future.result()
-                if opinion_md and not opinion_md.startswith("API 调用失败"):
+                if opinion_md and "暂时不可用" not in opinion_md:
                     report += f"\n\n---\n\n{opinion_md_title}\n\n{opinion_md}"
                     opinion_context = f"## UP主市场观点（AI蒸馏）\n\n{opinion_md}"
                     print("  观点蒸馏完成")
                 else:
                     print(f"  观点分析失败: {opinion_md[:100] if opinion_md else '无返回'}")
                     opinion_md = ""
+                    # 降级：直接展示原始观点文本，避免内容丢失
+                    if combined_text:
+                        opinion_context = f"## UP主市场观点（原文）\n\n{combined_text}"
+                        report += f"\n\n---\n\n{opinion_md_title}\n\n{combined_text}"
+                        print("  已降级展示UP主观点原文")
 
             if info_future:
                 info_md = info_future.result()
-                if info_md and not info_md.startswith("API 调用失败"):
+                if info_md and "暂时不可用" not in info_md:
                     info_context = f"## 信息差提炼（AI 提取关键事实）\n\n{info_md}"
                     report += f"\n\n---\n\n## 信息差提炼\n\n{info_md}"
                     print("  信息差提炼完成")
