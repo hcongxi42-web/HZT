@@ -596,7 +596,7 @@ def insert_charts_into_picks(stock_picks, chart_urls):
         chart_md_lines = []
         for name, code, url in section_charts:
             if first_chart:
-                chart_md_lines.append('<span style="color:#d63031;font-weight:600;"> 注：K线图仅保留近7天，历史图表将自动清理。如需长期保存，请右键另存为。</span>')
+                chart_md_lines.append('<span style="color:#9c3b3b;font-weight:600;"> 注：K线图仅保留近7天，历史图表将自动清理。如需长期保存，请右键另存为。</span>')
                 first_chart = False
             chart_md_lines.append(f'![{name} {code}]({url})')
 
@@ -784,9 +784,23 @@ def markdown_to_html(md):
 #  HTML 报告生成 —  Bloomberg Terminal Dark 审美
 # ============================================================
 
+def _load_asset(rel_path):
+    """读取 docs/ 下的静态资源（style.css / script.js），用于内联进报告。
+
+    读取失败返回 None，调用方会回退为外链，保证生成不中断。
+    """
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), rel_path)
+    try:
+        with open(p, encoding="utf-8") as _f:
+            return _f.read()
+    except OSError:
+        return None
+
+
 def generate_html_report(report, quotes, news_list, page_url="", page_base_url="",
                          fund_flow=None, session_label="早报", session_slug="am",
-                         opinion_html="", opinion_title="今日收盘UP主观点"):
+                         opinion_html="", opinion_title="今日收盘UP主观点",
+                         style_css=None, script_js=None):
     """生成 Bloomberg Terminal 风格 HTML 详情页。"""
     bj_now = beijing_now()
     today = bj_now.strftime("%Y-%m-%d")
@@ -846,7 +860,7 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     if fund_flow:
         # 计算 5 日汇总
         total_flow = sum(r["net_flow"] for r in fund_flow)
-        total_color = "#00c853" if total_flow >= 0 else "#ff1744"
+        total_color = "#9c3b3b" if total_flow >= 0 else "#3f6b4f"
         total_label = "累计流入" if total_flow >= 0 else "累计流出"
 
         fund_panel += (
@@ -864,7 +878,7 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
             net = row["net_flow"]
             is_pos = net >= 0
             pct = min(abs(net) / max_val * 100, 100) if max_val else 0
-            color = "#00c853" if is_pos else "#ff1744"
+            color = "#9c3b3b" if is_pos else "#3f6b4f"
             bar_class = "fp-bar-fill in" if is_pos else "fp-bar-fill out"
             fund_panel += (
                 f'<div class="fp-bar-row">'
@@ -904,11 +918,21 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     # ---- 观点蒸馏板块 ----
     if opinion_html:
         opinion_section = (
-            f'  <div class="sec-hdr" style="margin-top:40px;">{opinion_title}</div>\n'
+            f'  <div class="sec-hdr" style="margin-top:40px;"><span class="sec-main">{opinion_title}</span><span class="sec-sub">OPINION DISTILLATION · 自媒体观点蒸馏</span></div>\n'
             f'  <div class="report-body opinions-body">{opinion_html}</div>\n'
         )
     else:
         opinion_section = ""
+
+    # ---- 内联静态资源（旧模板格式：自包含，不再外链 style.css / script.js）----
+    if style_css is None:
+        style_css = _load_asset("docs/style.css") or ""
+    if script_js is None:
+        script_js = _load_asset("docs/script.js") or ""
+    css_link = (f'<style>\n{style_css}\n</style>' if style_css
+                else f'<link rel="stylesheet" href="{page_base_url}style.css?v={today}">')
+    js_block = (f'<script>\n{script_js}\n</script>' if script_js
+                else f'<script src="{page_base_url}script.js?v={today}" defer></script>')
 
     # ---- 组装 ----
     html = f"""<!DOCTYPE html>
@@ -917,7 +941,7 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MARKET BRIEF · {today} {session_label}</title>
-<link rel="stylesheet" href="{page_base_url}style.css?v={today}">
+{css_link}
 </head>
 <body>
 
@@ -956,15 +980,15 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
 <div class="content">
 
   <!-- FUND FLOW PANEL -->
-  <div class="sec-hdr">CAPITAL FLOWS</div>
+  <div class="sec-hdr"><span class="sec-main">主力资金流向</span><span class="sec-sub">CAPITAL FLOWS · 近5交易日 · 东方财富</span></div>
   <div class="fp-grid">{fund_panel}</div>
 
   <!-- INTRADAY CHARTS -->
-  <div class="sec-hdr">INTRADAY</div>
+  <div class="sec-hdr"><span class="sec-main">分时走势</span><span class="sec-sub">INTRADAY · 上证指数 / 深证成指 · 新浪财经</span></div>
   <div class="charts-row">{chart_html}</div>
 
   <!-- AI ANALYSIS -->
-  <div class="sec-hdr">ANALYSIS</div>
+  <div class="sec-hdr"><span class="sec-main">盘面分析与研判</span><span class="sec-sub">ANALYSIS · 由 AI 生成 · 仅供研究参考</span></div>
   <div class="report-body">{report_html}</div>
 
   {opinion_section}
@@ -1017,7 +1041,7 @@ window.MB_CONFIG = {{
   page_base_url: '{page_base_url}'
 }};
 </script>
-<script src="{page_base_url}script.js?v={today}" defer></script>
+{js_block}
 
 </body>
 </html>"""

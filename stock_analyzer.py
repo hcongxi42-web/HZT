@@ -54,12 +54,13 @@ def setup_matplotlib():
 
     # 优先匹配：非 VF (可变字体) 优先，避免 matplotlib VF 渲染兼容问题
     cjk_keywords_priority = [
-        # Windows 首选（.ttc 集合字体，兼容性最好）
+        # 学术首选：衬线中文字体（宋体 / 楷体 / 思源宋体）
+        "simsun.ttc", "simsun.ttf",  # 宋体（衬线，学术首选）
+        "simkai.ttf",                # 楷体（衬线）
+        "NotoSerifCJK", "NotoSerifSC", "SourceHanSerif", "SourceHanSerifSC",
+        # 无衬线兜底（仅在无衬线可用时）
         "msyh.ttc", "msyh.ttf",     # 微软雅黑
         "simhei.ttf",                # 黑体
-        "simsun.ttc", "simsun.ttf",  # 宋体
-        "simkai.ttf",                # 楷体
-        # Linux 首选
         "NotoSansCJK", "NotoSansSC",
         "NotoSansMonoCJK",
         "wqy-microhei", "WenQuanYi",
@@ -150,10 +151,10 @@ def setup_matplotlib():
                 pass
 
             # 设置全局字体
-            plt.rcParams["font.family"] = "sans-serif"
-            current_sans = plt.rcParams.get("font.sans-serif", [])
-            plt.rcParams["font.sans-serif"] = [font_name_from_file] + [
-                f for f in current_sans if f != font_name_from_file
+            plt.rcParams["font.family"] = "serif"
+            current_serif = plt.rcParams.get("font.serif", [])
+            plt.rcParams["font.serif"] = [font_name_from_file] + [
+                f for f in current_serif if f != font_name_from_file
             ]
             plt.rcParams["axes.unicode_minus"] = False
             applied = True
@@ -164,17 +165,18 @@ def setup_matplotlib():
     # ---- 4. 兜底：按名称设置（仅当文件注册失败时）----
     if not applied:
         fallback_names = [
+            "Noto Serif CJK SC", "Source Han Serif SC", "SimSun",
+            "Songti SC", "Noto Serif SC",
             "Microsoft YaHei", "SimHei", "Noto Sans CJK SC",
-            "Noto Sans SC", "WenQuanYi Micro Hei", "PingFang SC",
         ]
         for name in fallback_names:
             try:
                 # 检查字体是否确实存在
                 test_path = font_manager.findfont(name, fallback_to_default=False)
                 if test_path and _os.path.exists(test_path):
-                    plt.rcParams["font.family"] = "sans-serif"
-                    current = plt.rcParams.get("font.sans-serif", [])
-                    plt.rcParams["font.sans-serif"] = [name] + [f for f in current if f != name]
+                    plt.rcParams["font.family"] = "serif"
+                    current = plt.rcParams.get("font.serif", [])
+                    plt.rcParams["font.serif"] = [name] + [f for f in current if f != name]
                     plt.rcParams["axes.unicode_minus"] = False
                     applied = True
                     print(f"[Font] 按名称设置: {name} ({test_path})")
@@ -184,6 +186,34 @@ def setup_matplotlib():
 
     if not applied:
         print("[Font] 警告：未找到 CJK 字体，中文可能显示为方框")
+
+    # ---- 5. 学术期刊风格全局样式（去装饰化 · 数据优先）----
+    plt.rcParams.update({
+        "figure.facecolor": "white",
+        "axes.facecolor": "white",
+        "savefig.facecolor": "white",
+        "axes.edgecolor": "#333333",
+        "axes.linewidth": 0.8,
+        "axes.grid": True,
+        "grid.color": "#E0E0E0",
+        "grid.linestyle": "--",
+        "grid.linewidth": 0.6,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+        "font.family": "serif",
+        "mathtext.fontset": "stix",
+        "xtick.labelsize": 9,
+        "ytick.labelsize": 9,
+        "axes.labelsize": 10,
+        "axes.titlesize": 11,
+        "legend.frameon": False,
+        "legend.fontsize": 9,
+        "text.color": "#1a1a1a",
+        "axes.labelcolor": "#1a1a1a",
+        "xtick.color": "#555555",
+        "ytick.color": "#555555",
+        "axes.titlecolor": "#1a1a1a",
+    })
 
     return plt
 
@@ -309,8 +339,19 @@ def generate_chart(stock_name, stock_code, df, output_path):
         return False
 
     try:
-        fig, axes = plt.subplots(3, 1, figsize=(8, 5.5), gridspec_kw={"height_ratios": [3, 1, 1]})
-        fig.suptitle(f"{stock_name} {stock_code}", fontsize=12, fontweight="bold")
+        UP_C = "#9c3b3b"      # 砖红（涨 / 利好）
+        DN_C = "#3f6b4f"      # 灰绿（跌 / 利空）
+        NAVY = "#1f3a5f"      # 藏青
+        GRAYBLUE = "#5b7a99"  # 灰蓝
+        GRAY = "#8a8a8a"      # 灰阶
+
+        fig, axes = plt.subplots(3, 1, figsize=(8, 5.5),
+                                 gridspec_kw={"height_ratios": [3, 1, 1]})
+        # 标题：主标题 + 副标题（括号注明样本与方法论）
+        fig.suptitle(
+            f"{stock_name} {stock_code}\n(近60交易日 · MA5/10/20 + MACD · 技术分析)",
+            fontsize=12, fontweight="600", y=0.98,
+        )
 
         x = range(len(df))
         dates = df["date"].dt.strftime("%m-%d").tolist()
@@ -322,43 +363,39 @@ def generate_chart(stock_name, stock_code, df, output_path):
         ax1 = axes[0]
         for i in x:
             o, h, l, c = df["open"][i], df["high"][i], df["low"][i], df["close"][i]
-            color = "#e74c3c" if c >= o else "#27ae60"
+            color = UP_C if c >= o else DN_C
             ax1.plot([i, i], [l, h], color=color, linewidth=1)
-            ax1.plot([i, i], [o, c], color=color, linewidth=3)
-        ax1.plot(x, df["MA5"], label="MA5", color="#3498db", linewidth=1)
-        ax1.plot(x, df["MA10"], label="MA10", color="#f39c12", linewidth=1)
-        ax1.plot(x, df["MA20"], label="MA20", color="#9b59b6", linewidth=1)
+            ax1.plot([i, i], [o, c], color=color, linewidth=1.6)
+        ax1.plot(x, df["MA5"], label="MA5", color=NAVY, linewidth=1.4)
+        ax1.plot(x, df["MA10"], label="MA10", color=GRAYBLUE, linewidth=1.4, linestyle="--")
+        ax1.plot(x, df["MA20"], label="MA20", color=GRAY, linewidth=1.4, linestyle=":")
         ax1.set_ylabel("价格")
-        ax1.legend(loc="upper left")
+        ax1.legend(loc="upper left", frameon=False)
         ax1.set_xticks(xticks)
         ax1.set_xticklabels([])
-        ax1.grid(True, alpha=0.3)
 
         # ===== 子图2: 成交量 =====
         ax2 = axes[1]
-        colors = ["#e74c3c" if df["close"][i] >= df["open"][i] else "#27ae60" for i in x]
+        colors = [UP_C if df["close"][i] >= df["open"][i] else DN_C for i in x]
         ax2.bar(x, df["volume"], color=colors, width=0.8)
         ax2.set_ylabel("成交量")
         ax2.set_xticks(xticks)
         ax2.set_xticklabels([])
-        ax2.grid(True, alpha=0.3)
 
         # ===== 子图3: MACD =====
         ax3 = axes[2]
-        macd_colors = ["#e74c3c" if df["MACD_BAR"][i] >= 0 else "#27ae60" for i in x]
+        macd_colors = [UP_C if df["MACD_BAR"][i] >= 0 else DN_C for i in x]
         ax3.bar(x, df["MACD_BAR"], color=macd_colors, width=0.8, label="MACD柱")
-        ax3.plot(x, df["DIF"], label="DIF", color="#3498db", linewidth=1)
-        ax3.plot(x, df["DEA"], label="DEA", color="#f39c12", linewidth=1)
-        ax3.axhline(0, color="gray", linewidth=0.5)
+        ax3.plot(x, df["DIF"], label="DIF", color=NAVY, linewidth=1.2)
+        ax3.plot(x, df["DEA"], label="DEA", color=GRAYBLUE, linewidth=1.2, linestyle="--")
+        ax3.axhline(0, color="#999999", linewidth=0.6)
         ax3.set_ylabel("MACD")
         ax3.set_xticks(xticks)
-        ax3.set_xticklabels(xticklabels, rotation=45)
-        ax3.legend(loc="upper left")
-        ax3.grid(True, alpha=0.3)
+        ax3.set_xticklabels(xticklabels)   # 不倾斜文字
 
-        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        plt.tight_layout(rect=[0, 0, 1, 0.93])
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        plt.savefig(output_path, dpi=150, bbox_inches="tight")
+        plt.savefig(output_path, dpi=150, bbox_inches="tight", facecolor="white")
         plt.close(fig)
         print(f"[Chart] 已生成: {output_path}")
         return True
