@@ -347,3 +347,26 @@ function showToast(msg) {
     }
   }
 })();
+
+// ── 表格单元格注入 data-th（移动端卡片化标签）──
+(function initTableTh() {
+  document.querySelectorAll('.tbl').forEach(function(tbl) {
+    var ths = tbl.querySelectorAll('thead th');
+    tbl.querySelectorAll('tbody tr').forEach(function(tr) {
+      var tds = tr.querySelectorAll('td');
+      tds.forEach(function(td, i) {
+        if (ths[i]) td.setAttribute('data-th', ths[i].textContent.trim());
+      });
+    });
+  });
+})();
+
+// ── 回到顶部按钮 ──
+(function initToTop() {
+  var btn = document.getElementById('toTop');
+  if (!btn) return;
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > 600) btn.classList.add('show');
+    else btn.classList.remove('show');
+  }, { passive: true });
+})();

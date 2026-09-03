@@ -324,14 +324,61 @@ INFO_GAP_USER_PROMPT_TEMPLATE = _load_prompt("user_info_gap.txt")
 #  LLM 输出清洗
 # ============================================================
 
+def _strip_thinking(text):
+    """兜底：剔除 LLM 把思考过程/任务复述写进正文的情况。
+
+    即使提示词已禁止，推理模型偶尔仍会输出内心独白。这里做两道机械裁剪：
+      1) 若正文起点（首个 ### / ☆ / ## / - 内容行）之前存在元评论，整段丢弃前缀；
+      2) 删除行首即以典型元评论短语开头的整行。
+    不影响正常分析内容（表格、标题、要点均保留）。
+    """
+    import re as _re
+    if not text or not text.strip():
+        return text
+    lines = text.split("\n")
+
+    # ---- 第 1 道：截掉开头的思考前缀 ----
+    content_markers = ("###", "☆", "## ", "##\t", "- ", "* ", "|")
+    start_idx = None
+    for i, ln in enumerate(lines):
+        s = ln.lstrip()
+        if any(s.startswith(m) for m in content_markers):
+            start_idx = i
+            break
+    if start_idx is not None and start_idx > 0:
+        preamble = "\n".join(lines[:start_idx])
+        if _re.search(r"好的[，。：]|让我(仔细|先|梳理)|等一下|用户(要求|给|希望)|我需要|接下来|先看一下|首先我|梳理(一下|任务)|其实对于|按照用户|我理解为|我的理解是|这是(一道|一个任务)", preamble):
+            text = "\n".join(lines[start_idx:])
+            lines = text.split("\n")
+
+    # ---- 第 2 道：删掉残留的整行元评论 ----
+    meta_openers = (
+        "好的，", "好的。", "好的：", "让我仔细", "让我先", "让我梳理",
+        "等一下，", "等一下：", "用户要求", "用户给", "用户希望",
+        "我需要", "我应先", "接下来，", "接下来我", "先看一下", "先看看",
+        "首先我", "首先，让我", "梳理一下", "梳理任务", "其实对于", "其实这里",
+        "按照用户", "我理解为", "我的理解是", "我的理解", "这是一道", "这是一个任务",
+    )
+    cleaned = []
+    for ln in lines:
+        s = ln.lstrip()
+        if s.startswith(meta_openers) and not s.startswith(("###", "##", "|", "- ", "* ")):
+            continue
+        cleaned.append(ln)
+    return "\n".join(cleaned)
+
+
 def _cleanup_report(text, strip_bold=False):
-    """清洗 LLM 生成的报告：移除 #### / *** 标记。
+    """清洗 LLM 生成的报告：移除 #### / *** 标记，并兜底剔除思考过程。
 
     Args:
         text: 原始文本
         strip_bold: 是否移除 ** 加粗标记（选股输出用，主报告保留）
     """
     import re as _re
+
+    # 0. 兜底：剔除可能泄漏的思考过程 / 任务复述
+    text = _strip_thinking(text)
 
     # 1. 移除 #### 前缀（四级标题 → 保留其后的内容）
     text = _re.sub(r'^####\s+', '', text, flags=_re.MULTILINE)
@@ -461,14 +508,15 @@ def call_stock_picker(news_text, opinion_context="", info_context=""):
 
 
 def format_stock_picks(picks_md):
-    """将选股结果封装为日报板块。"""
+    """将选股结果封装为日报板块（前置方法论 + 免责声明）。"""
     if not picks_md or not picks_md.strip():
         return ""
-    return (
+    disclaimer = (
         "\n\n---\n\n"
+        "> 以下分析由 AI 基于当日新闻资讯、UP主观点共识与产业链逻辑推导生成，仅供研究参考，不构成投资建议。\n\n"
         "## AI选股\n\n"
-        f"{picks_md}\n"
     )
+    return disclaimer + f"{picks_md}\n"
 
 
 def call_opinion_analyzer(opinion_text):
@@ -629,8 +677,43 @@ def insert_charts_into_picks(stock_picks, chart_urls):
 #  Markdown → HTML（Bloomberg Terminal 风格）
 # ============================================================
 
-def markdown_to_html(md):
-    """两阶段 Markdown→HTML 转换，支持表格和图片。"""
+def _inline_md(text):
+    """行内 markdown：加粗 + 关键判断词高亮。"""
+    text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
+    return _highlight_inline(text)
+
+
+def _is_opinion_meta(text):
+    """判断列表项是否为 UP主结构化字段（情绪/风格/一句话操作），供意见模式下去重。"""
+    return bool(re.search(r"(情绪倾向|风格|一句话操作)(?:</?strong>)?\s*[：:]", text))
+
+
+def _render_opinion_tags(raw_lines):
+    """从 UP主小节的原始行中提取情绪/风格/一句话操作，渲染为标签条。"""
+    # raw 行可能已被加粗为 <strong>，先去除内联标签再按原始 markdown 匹配
+    text = re.sub(r"<[^>]+>", "", "\n".join(raw_lines))
+    sent = re.search(r"情绪倾向[：:]\s*(利好|中性|利空)", text)
+    style = re.search(r"风格[：:]\s*(.+)", text)
+    action = re.search(r"一句话操作[：:]\s*(.+)", text)
+    chips = []
+    if sent:
+        v = sent.group(1)
+        cls = {"利好": "op-bull", "中性": "op-neu", "利空": "op-bear"}[v]
+        chips.append(f'<span class="op-chip {cls}">{v}</span>')
+    if style:
+        chips.append(f'<span class="op-chip op-style">{style.group(1).strip()}</span>')
+    if not chips and not action:
+        return ""
+    html = '<div class="op-tags">' + "".join(chips) + '</div>'
+    if action:
+        html += f'<div class="op-action"><span class="op-action-k">一句话操作</span>{_inline_md(action.group(1).strip())}</div>'
+    return html
+
+
+def markdown_to_html(md, mode="default"):
+    """两阶段 Markdown→HTML 转换，支持表格和图片。
+    任意含「情绪倾向」的 ### 小节会自动渲染情绪/风格标签与一句话操作（UP主观点）。
+    """
 
     # ---- Phase 1: 表格提取 ----
     tables = []
@@ -683,7 +766,11 @@ def markdown_to_html(md):
     # ---- Phase 2: 标准解析 ----
     md_clean = "\n".join(processed_lines)
     sections = []
-    current_section = {"title": "", "content": []}
+    current_section = {"title": "", "content": [], "raw": []}
+
+    def _push(cur):
+        if cur["title"] or cur["content"]:
+            sections.append(cur)
 
     for line in md_clean.split("\n"):
         line = line.strip()
@@ -701,9 +788,8 @@ def markdown_to_html(md):
         # 标题
         h_match = re.match(r"^#{1,3}\s+(.+)$", line)
         if h_match:
-            if current_section["title"] or current_section["content"]:
-                sections.append(current_section)
-            current_section = {"title": h_match.group(1), "content": []}
+            _push(current_section)
+            current_section = {"title": h_match.group(1), "content": [], "raw": []}
             continue
 
         # 图片
@@ -715,28 +801,36 @@ def markdown_to_html(md):
             current_section["content"].append(("img", alt, url))
             continue
 
-        # Bold
+        # 引用（免责声明 / 说明）
+        if line.startswith(">"):
+            current_section["content"].append(("note", _inline_md(line[1:].strip())))
+            current_section["raw"].append(line)
+            continue
+
+        # 行内加粗
         line = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", line)
 
         # 有序列表
         ol_match = re.match(r"^(\d+)\.\s+(.+)$", line)
         if ol_match:
             current_section["content"].append(("ol", ol_match.group(1), _highlight_inline(ol_match.group(2))))
+            current_section["raw"].append(line)
             continue
 
         # 无序列表
         ul_match = re.match(r"^[-*]\s+(.+)$", line)
         if ul_match:
             current_section["content"].append(("ul", _highlight_inline(ul_match.group(1))))
+            current_section["raw"].append(line)
             continue
 
         if line == "---":
             continue
 
         current_section["content"].append(("p", _highlight_inline(line)))
+        current_section["raw"].append(line)
 
-    if current_section["title"] or current_section["content"]:
-        sections.append(current_section)
+    _push(current_section)
 
     # 渲染
     import hashlib as _hl
@@ -745,7 +839,7 @@ def markdown_to_html(md):
         sec_title = sec.get("title", "")
         # 生成唯一 section ID（基于标题 hash）
         sec_id = _hl.md5(sec_title.encode()).hexdigest()[:10] if sec_title else f"s{sec_idx}"
-        html_parts.append(f'<div class="sec" data-section-id="{sec_id}">')
+        html_parts.append(f'<div class="sec" id="{sec_id}" data-section-id="{sec_id}">')
         if sec["title"]:
             clean_title = re.sub(r"^[一二三四五六七八九十]+[、．.]?\s*", "", sec["title"])
             html_parts.append(
@@ -754,6 +848,11 @@ def markdown_to_html(md):
                 f'title="收藏此条分析" onclick="toggleFav(this)">☆</button>'
                 f'{clean_title}</h3>'
             )
+        # UP主小节（非共识/分歧）渲染情绪/风格标签 + 一句话操作
+        if sec_title and "共识" not in sec_title and "分歧" not in sec_title:
+            tag_html = _render_opinion_tags(sec.get("raw", []))
+            if tag_html:
+                html_parts.append(tag_html)
         for item in sec["content"]:
             typ = item[0]
             if typ == "ol":
@@ -762,6 +861,8 @@ def markdown_to_html(md):
                     f'<div class="ni-text">{item[2]}</div></div>'
                 )
             elif typ == "ul":
+                if _is_opinion_meta(item[1]):
+                    continue
                 html_parts.append(f'<div class="bi">{item[1]}</div>')
             elif typ == "raw_html":
                 html_parts.append(item[1])
@@ -773,6 +874,8 @@ def markdown_to_html(md):
                     f'onerror="this.parentElement.style.display=\'none\'">'
                     f'</div>'
                 )
+            elif typ == "note":
+                html_parts.append(f'<p class="note">{item[1]}</p>')
             else:
                 html_parts.append(f'<p class="para">{item[1]}</p>')
         html_parts.append("</div>")
@@ -783,6 +886,49 @@ def markdown_to_html(md):
 # ============================================================
 #  HTML 报告生成 —  Bloomberg Terminal Dark 审美
 # ============================================================
+
+def _split_lead(md, title="今日要点"):
+    """从 markdown 中抽取首个 '## {title}' 区块（到下一个同级 '## ' 前），返回 (lead_md, rest_md)。"""
+    lines = md.split("\n")
+    start = None
+    pat = re.compile(r"^##\s+" + re.escape(title) + r"\s*$")
+    for i, ln in enumerate(lines):
+        if pat.match(ln.strip()):
+            start = i
+            break
+    if start is None:
+        return "", md
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if re.match(r"^##\s+", lines[j].strip()):
+            end = j
+            break
+    lead = "\n".join(lines[start + 1:end]).strip()
+    rest = "\n".join(lines[:start] + lines[end:]).strip()
+    return lead, rest
+
+
+def _render_lead_box(lead_md):
+    """将 '## 今日要点' 区块渲染为学术风置顶摘要框。"""
+    rows = []
+    for ln in lead_md.split("\n"):
+        m = re.match(r"^[-*]\s+\*\*(.+?)\*\*[：:]\s*(.+)$", ln.strip())
+        if m:
+            rows.append(
+                f'<div class="lead-row">'
+                f'<span class="lead-k">{m.group(1)}</span>'
+                f'<span class="lead-v">{_highlight_inline(m.group(2).strip())}</span>'
+                f'</div>'
+            )
+    if not rows:
+        return ""
+    return (
+        '<div class="lead-box">'
+        '<div class="lead-h">今日要点 · DAILY BRIEF</div>'
+        '<div class="lead-body">' + "".join(rows) + '</div>'
+        '</div>'
+    )
+
 
 def _load_asset(rel_path):
     """读取 docs/ 下的静态资源（style.css / script.js），用于内联进报告。
@@ -800,7 +946,7 @@ def _load_asset(rel_path):
 def generate_html_report(report, quotes, news_list, page_url="", page_base_url="",
                          fund_flow=None, session_label="早报", session_slug="am",
                          opinion_html="", opinion_title="今日收盘UP主观点",
-                         style_css=None, script_js=None):
+                         style_css=None, script_js=None, up_count=0):
     """生成 Bloomberg Terminal 风格 HTML 详情页。"""
     bj_now = beijing_now()
     today = bj_now.strftime("%Y-%m-%d")
@@ -912,13 +1058,34 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
             f'</div>'
         )
 
-    # ---- 报告正文 ----
-    report_html = markdown_to_html(report)
+    # ---- 报告正文（抽取「今日要点」为置顶摘要）----
+    lead_md, report_rest = _split_lead(report, "今日要点")
+    lead_box_html = _render_lead_box(lead_md) if lead_md else ""
+    report_html = markdown_to_html(report_rest)
+
+    # ---- 目录锚点导航 ----
+    import hashlib as _hl
+    toc_items = [
+        ("盘面分析与研判", "sec-analysis"),
+        ("主力资金流向", "sec-fund"),
+        ("分时走势", "sec-intraday"),
+    ]
+    for _m in re.finditer(r"^##\s+(.+)$", report_rest, re.M):
+        _t = _m.group(1).strip()
+        if _t == "今日要点":
+            continue
+        toc_items.append((_t, _hl.md5(_t.encode()).hexdigest()[:10]))
+    toc_html = (
+        '<nav class="toc"><span class="toc-label">快速跳转</span>'
+        + "".join(f'<a class="toc-link" href="#{_tid}">{_t}</a>' for _t, _tid in toc_items)
+        + '</nav>'
+    )
+    up_src = f" · 综合 {up_count} 位 UP 主观点" if up_count > 0 else ""
 
     # ---- 观点蒸馏板块 ----
     if opinion_html:
         opinion_section = (
-            f'  <div class="sec-hdr" style="margin-top:40px;"><span class="sec-main">{opinion_title}</span><span class="sec-sub">OPINION DISTILLATION · 自媒体观点蒸馏</span></div>\n'
+            f'  <div class="sec-hdr" id="sec-opinion" style="margin-top:40px;"><span class="sec-main">{opinion_title}</span><span class="sec-sub">OPINION DISTILLATION · 自媒体观点蒸馏</span></div>\n'
             f'  <div class="report-body opinions-body">{opinion_html}</div>\n'
         )
     else:
@@ -975,20 +1142,26 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     <span class="mtag mtag-us">US · {us_count}</span>
     <span class="mtag mtag-hk">HK · {hk_count}</span>
   </div>
+  <div class="masthead-src">数据来源：东方财富 · 新浪财经{up_src}</div>
+  <div class="masthead-by">作者＆模型：HZT ＆ Deepseek V4 Flash</div>
 </div>
+
+{toc_html}
 
 <div class="content">
 
+  {lead_box_html}
+
   <!-- FUND FLOW PANEL -->
-  <div class="sec-hdr"><span class="sec-main">主力资金流向</span><span class="sec-sub">CAPITAL FLOWS · 近5交易日 · 东方财富</span></div>
+  <div class="sec-hdr" id="sec-fund"><span class="sec-main">主力资金流向</span><span class="sec-sub">CAPITAL FLOWS · 近5交易日 · 东方财富</span></div>
   <div class="fp-grid">{fund_panel}</div>
 
   <!-- INTRADAY CHARTS -->
-  <div class="sec-hdr"><span class="sec-main">分时走势</span><span class="sec-sub">INTRADAY · 上证指数 / 深证成指 · 新浪财经</span></div>
+  <div class="sec-hdr" id="sec-intraday"><span class="sec-main">分时走势</span><span class="sec-sub">INTRADAY · 上证指数 / 深证成指 · 新浪财经</span></div>
   <div class="charts-row">{chart_html}</div>
 
   <!-- AI ANALYSIS -->
-  <div class="sec-hdr"><span class="sec-main">盘面分析与研判</span><span class="sec-sub">ANALYSIS · 由 AI 生成 · 仅供研究参考</span></div>
+  <div class="sec-hdr" id="sec-analysis"><span class="sec-main">盘面分析与研判</span><span class="sec-sub">ANALYSIS · 由 AI 生成 · 仅供研究参考</span></div>
   <div class="report-body">{report_html}</div>
 
   {opinion_section}
@@ -1006,6 +1179,9 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     市场有风险，投资需谨慎。PAST PERFORMANCE IS NOT INDICATIVE OF FUTURE RESULTS.
   </div>
 </div>
+
+<!-- ══════════════ 回到顶部 ══════════════ -->
+<button class="to-top" id="toTop" onclick="window.scrollTo({{top:0,behavior:'smooth'}})" title="回到顶部">↑</button>
 
 <!-- ══════════════ 自选新闻面板 ══════════════ -->
 <div class="fav-panel" id="favPanel">
@@ -1514,7 +1690,8 @@ def main():
     print("\n▸ 生成详情页...")
     page_url = f"{page_base_url}report_{today_str}.html"
     html = generate_html_report(report, quotes, news_list, page_url, page_base_url,
-                                fund_flow, session_label=session_label, session_slug=session_slug)
+                                fund_flow, session_label=session_label, session_slug=session_slug,
+                                up_count=len(opinion_files))
     page_url = deploy_github_pages(html, session_slug=session_slug)
 
     # 7. PDF
