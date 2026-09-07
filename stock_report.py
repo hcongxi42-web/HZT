@@ -15,11 +15,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 from utils import beijing_now
 
-# 股票技术分析模块（可选依赖）
-try:
-    import stock_analyzer
-except ImportError:
-    stock_analyzer = None
 
 # 共享新闻 & 资金面抓取模块
 from news_fetcher import fetch_all_news_flat
@@ -328,9 +323,10 @@ def _strip_thinking(text):
     """兜底：剔除 LLM 把思考过程/任务复述写进正文的情况。
 
     即使提示词已禁止，推理模型偶尔仍会输出内心独白。这里做两道机械裁剪：
-      1) 若正文起点（首个 ### / ☆ / ## / - 内容行）之前存在元评论，整段丢弃前缀；
+      1) 若正文起点（首个 ### / ## / - / | 内容行）之前存在元评论，整段丢弃前缀；
       2) 删除行首即以典型元评论短语开头的整行。
-    不影响正常分析内容（表格、标题、要点均保留）。
+    本函数保持通用（不对特定标记做硬锚定），选股专用的「首个 ### 锚定」
+    由 _sanitize_stock_picks 负责，避免误伤以 ## 开头的盘面分析。
     """
     import re as _re
     if not text or not text.strip():
@@ -347,17 +343,31 @@ def _strip_thinking(text):
             break
     if start_idx is not None and start_idx > 0:
         preamble = "\n".join(lines[:start_idx])
-        if _re.search(r"好的[，。：]|让我(仔细|先|梳理)|等一下|用户(要求|给|希望)|我需要|接下来|先看一下|首先我|梳理(一下|任务)|其实对于|按照用户|我理解为|我的理解是|这是(一道|一个任务)", preamble):
+        if _re.search(
+            r"好的[，。：]|让我(仔细|先|梳理|想想)|等一下|用户(要求|给|希望)|我需要|接下来|先看一下|"
+            r"首先我|梳理(一下|任务)|其实对于|按照用户|我理解为|我的理解是|这是(一道|一个任务)|"
+            r"这个要小心|再仔细考虑|我得知道|若我不确定|评级怎么分配|下面我来|现在分析|我们来分析|"
+            r"我思考|我的思路|康美特|应该怎么处理|其实这里|"
+            r"就说|用[「\"]|需要确认的是|不纠结|不提|我倾向(给|给)?|如果落实到(投资)?|"
+            r"为了表格|不过用户|用户严格要求|注意是|再看资金面|具体各大行的|温度判断|"
+            r"今日要点\d*行|主线扫描\d|资金面$|跨市场[：:]美股",
+            preamble,
+        ):
             text = "\n".join(lines[start_idx:])
             lines = text.split("\n")
 
     # ---- 第 2 道：删掉残留的整行元评论 ----
     meta_openers = (
-        "好的，", "好的。", "好的：", "让我仔细", "让我先", "让我梳理",
+        "好的，", "好的。", "好的：", "让我仔细", "让我先", "让我梳理", "让我想想",
         "等一下，", "等一下：", "用户要求", "用户给", "用户希望",
         "我需要", "我应先", "接下来，", "接下来我", "先看一下", "先看看",
         "首先我", "首先，让我", "梳理一下", "梳理任务", "其实对于", "其实这里",
         "按照用户", "我理解为", "我的理解是", "我的理解", "这是一道", "这是一个任务",
+        "这个要小心", "再仔细考虑", "我得知道", "若我不确定", "评级怎么分配",
+        "下面我来", "现在分析", "我们来分析", "我思考", "我的思路",
+        "就说", "用「", "用\"", "需要确认的是", "不纠结", "不提", "我倾向给",
+        "我倾向", "如果落实到投资", "如果落实到", "为了表格", "不过用户",
+        "用户严格要求", "注意是", "再看资金面", "具体各大行的", "温度判断",
     )
     cleaned = []
     for ln in lines:
@@ -366,6 +376,145 @@ def _strip_thinking(text):
             continue
         cleaned.append(ln)
     return "\n".join(cleaned)
+
+
+# 选股生成异常时的降级文案（绝不把草稿推上 Pages）
+PICKS_FALLBACK = (
+    "今日 AI 选股生成异常（模型未返回结构化结果），本节已跳过，"
+    "未发布任何未经验证的草稿。请检查提示词或重新运行工作流。"
+)
+
+
+def _sanitize_stock_picks(text):
+    """选股专用清洗：以首个 ### 为唯一合法起点，剥离思考草稿；失败返回 None。
+
+    选股提示词要求正文「只能以第一个 ### 小节开头」且禁止思考过程，但推理模型
+    仍可能把整段独白写进正文。这里做选股特有的强裁剪：
+      1) 截取首个 ### 标题及其之后内容，其前全部丢弃；
+      2) 逐行删除自问式独白（以 ？/? 结尾且含 怎么/如何/应该/是否/为什么 等）；
+      3) 逐行删除元评论短语开头的行；
+      4) 删除独立的 ☆ 分隔行（与收藏按钮 glyph 冲突，且违学术风）；
+      5) 若结果不含任何 ### 标题或表格/列表，判定生成失败，返回 None。
+    """
+    import re as _re
+    if not text or not text.strip():
+        return None
+    lines = text.split("\n")
+
+    # 1) 首个 ### 为起点
+    start = None
+    for i, ln in enumerate(lines):
+        if ln.lstrip().startswith("###"):
+            start = i
+            break
+    if start is None:
+        return None  # 完全没有结构化标题 → 生成失败
+    lines = lines[start:]
+
+    meta_openers = (
+        "好的，", "好的。", "让我", "等一下", "用户", "我需要", "接下来", "先看一下",
+        "首先我", "梳理", "其实对于", "其实这里", "按照用户", "我理解为", "我的理解",
+        "这是一道", "这是一个任务", "这个要小心", "再仔细考虑", "我得知道", "若我不确定",
+        "评级怎么分配", "下面我来", "现在分析", "我们来分析", "我思考", "我的思路",
+    )
+    self_q = _re.compile(r"[？?]")  # 句中或句尾含问号均视为自问
+    self_q_kw = ("怎么", "如何", "应该", "是否", "为什么", "能不能", "要不要", "该不该", "分配")
+
+    out = []
+    for ln in lines:
+        s = ln.lstrip()
+        # 合法结构行直接保留
+        if s.startswith(("###", "##", "|", "- ", "* ", ">")):
+            out.append(ln)
+            continue
+        # 独立 ☆ 分隔行删除
+        if _re.fullmatch(r"☆+", s):
+            continue
+        # 元评论行删除
+        if s.startswith(meta_openers):
+            continue
+        # 自问式独白删除
+        if self_q.search(s) and any(k in s for k in self_q_kw):
+            continue
+        out.append(ln)
+
+    result = "\n".join(out).strip()
+    # 5) 校验：必须含 ### 标题，且至少有一个表格行或内容列表项
+    has_table = bool(_re.search(r"^\s*\|.*\|\s*$", result, _re.MULTILINE))
+    has_bullet = bool(_re.search(r"^\s*-\s+\S", result, _re.MULTILINE))
+    if "###" not in result or not (has_table or has_bullet):
+        return None
+    return result
+
+
+def _sanitize_analyst(text):
+    """盘面分析专用清洗：锚定首个真实内容行，剥离思考草稿与结构清单回声。
+
+    盘面提示词要求「直接以第一个 `- **市场体温**：` 要点开头」，但推理模型仍可能：
+      1) 把提示词里的结构清单（今日要点5行 / 资金面 / 主线扫描…）原样复述到开头；
+      2) 在正文里夹带自问式独白（如「就说偏暖吧」「用「偏暖」」「不纠结」）。
+    这里做盘面特有的强裁剪（与 _sanitize_stock_picks 不同，本函数不返回 None，
+    盘面无降级文案机制，仅尽力清洗；硬约束主要由提示词保证）：
+      1) 以首个真实内容行（`- **` 要点 / `## ` 标题 / 数字编号 / 章节名）为起点，其前全丢；
+      2) 逐行删除自问式独白（含 ？/? 且带 怎么/如何/应该/是否/用哪个 等）；
+      3) 逐行删除元评论短语开头的行；
+      4) 删除独立的 ☆ 分隔行。
+    带 `- **` 标签的内容要点一律保留，避免误伤正常输出。
+    """
+    import re as _re
+    if not text or not text.strip():
+        return text
+    lines = text.split("\n")
+
+    # 1) 锚定首个真实内容行（仅认带标签要点 / 标题 / 编号 / 今日要点: / 市场体温:，
+    #    不认裸章节名如「资金面」「跨市场：美股/港股」，避免把结构清单当起点）
+    start = None
+    for i, ln in enumerate(lines):
+        s = ln.lstrip()
+        is_marker = (
+            s.startswith(("- ", "**", "## ", "### ", "* "))
+            or _re.match(r"^\d+[、.．]\s", s)
+            or s.startswith(("今日要点：", "市场体温："))
+        )
+        if is_marker:
+            start = i
+            break
+    if start is not None and start > 0:
+        lines = lines[start:]
+
+    # 2) 逐行剥离元评论 / 自问独白（带标签要点与标题先放行）
+    meta_openers = (
+        "好的，", "好的。", "好的：", "让我", "等一下", "用户", "我需要", "接下来", "先看一下",
+        "首先我", "梳理", "其实对于", "其实这里", "按照用户", "我理解为", "我的理解",
+        "这是一道", "这是一个任务", "这个要小心", "再仔细考虑", "我得知道", "若我不确定",
+        "评级怎么分配", "下面我来", "现在分析", "我们来分析", "我思考", "我的思路",
+        "就说", "用「", "用\"", "需要确认的是", "不纠结", "不提", "我倾向给", "我倾向",
+        "如果落实到投资", "如果落实到", "为了表格", "不过用户", "用户严格要求", "注意是",
+        "再看资金面", "具体各大行的", "温度判断", "最大共识：", "最大分歧：", "最大风险：",
+        "一句话策略：", "今日要点第一行", "整体放摘要", "具体写作", "也可以选",
+    )
+    self_q = _re.compile(r"[？?]")
+    self_q_kw = ("用哪个", "加不加息", "算什么", "按什么", "该不该", "要不要")
+
+    out = []
+    for ln in lines:
+        s = ln.lstrip()
+        # 结构标题 / 表格 / 引用 / 带标签要点：直接保留
+        if s.startswith(("###", "##", "|", "* ", "**", ">")) or s.startswith("- **"):
+            out.append(ln)
+            continue
+        # 独立 ☆ 分隔行删除
+        if _re.fullmatch(r"☆+", s):
+            continue
+        # 元评论行删除
+        if s.startswith(meta_openers):
+            continue
+        # 自问式独白删除
+        if self_q.search(s) and any(k in s for k in self_q_kw):
+            continue
+        out.append(ln)
+
+    return "\n".join(out).strip()
 
 
 def _cleanup_report(text, strip_bold=False):
@@ -489,22 +638,33 @@ def _call_deepseek_safe(system_prompt, user_prompt, temperature=0.5, max_tokens=
 
 
 def call_llm(news_text):
-    """调用 LLM 生成市场分析报告，并清理 #### / *** 标记。"""
+    """调用 LLM 生成市场分析报告，并清理 #### / *** 标记与思考过程。"""
     raw = _call_deepseek_safe(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
-                              temperature=0.5, max_tokens=4096, section_name="市场分析")
-    return _cleanup_report(raw)
+                              temperature=0.5, max_tokens=6000, section_name="市场分析")
+    return _sanitize_analyst(_cleanup_report(raw))
 
 
 def call_stock_picker(news_text, opinion_context="", info_context=""):
-    """调用 LLM 执行产业链选股分析（融合新闻+UP主观点+信息差），并清洗输出（含去 **）。"""
+    """调用 LLM 执行产业链选股分析（融合新闻+UP主观点+信息差），并清洗输出（含去 **）。
+
+    经 _cleanup_report 通用清洗后，再用选股专用的 _sanitize_stock_picks 做
+    「首个 ### 锚定 + 自问句剥离 + 结构化校验」；若校验失败（模型吐出思考草稿
+    或无表格），返回 PICKS_FALLBACK 降级文案，绝不把草稿推上 Pages。
+    """
     raw = _call_deepseek_safe(STOCK_PICKER_SYSTEM_PROMPT,
                               STOCK_PICKER_TEMPLATE.format(
                                   news_text=news_text,
                                   opinion_context=opinion_context,
                                   info_context=info_context,
                               ),
-                              temperature=0.3, max_tokens=6144, section_name="AI选股")
-    return _cleanup_report(raw, strip_bold=True)
+                              temperature=0.3, max_tokens=8000, section_name="AI选股")
+    cleaned = _cleanup_report(raw, strip_bold=True)
+    sanitized = _sanitize_stock_picks(cleaned)
+    if sanitized is None:
+        print("  ⚠️ AI选股生成异常（思考泄漏或无结构化输出），返回降级文案，不发布草稿")
+        _set_github_output("picks_status", "fallback")
+        return PICKS_FALLBACK
+    return sanitized
 
 
 def format_stock_picks(picks_md):
@@ -542,135 +702,6 @@ def call_info_analyzer(info_text):
     )
     return _cleanup_report(raw)
 
-
-# ============================================================
-#  图表嵌入
-# ============================================================
-
-def insert_charts_into_picks(stock_picks, chart_urls):
-    """将技术分析图精准插入到对应股票所在的 section 下方。
-
-    策略：
-      1. 将选股文本按 ### 标题拆分为多个 section
-      2. 每个 section 独立处理：扫描其中的股票代码 → 匹配图表 → 插入到该 section 的表格之后
-      3. 每张图只插入一次（优先插在第一个提到该股票代码的 section）
-      4. 未匹配的图表追加在末尾
-      5. 移除任何残留的独立「技术分析图」板块
-    """
-    if not chart_urls:
-        return stock_picks
-
-    # 移除旧版独立「技术分析图」板块（兼容历史数据）
-    stock_picks = re.sub(
-        r'\n*###\s*\s*技术分析图\s*\n(?:\*\*.*?\*\*[^\n]*\n|!\[.*?\]\(.*?\)\n|\n)*',
-        '', stock_picks
-    )
-
-    # 构建代码 → 图表 URL 的映射
-    code_to_chart = {}
-    for name, code, _stars, url in chart_urls:
-        num_match = re.search(r'(\d{6})', code)
-        if num_match:
-            code6 = num_match.group(1)
-            if code6 not in code_to_chart:
-                code_to_chart[code6] = (name, code, url)
-
-    placed_codes = set()
-    first_chart = True  # 在第一张图上方标注保留期限
-
-    # ---- 按 ### 标题拆分 section ----
-    # 使用正则可以保留分隔符
-    section_pattern = re.compile(r'^(?=###\s)', re.MULTILINE)
-    raw_sections = section_pattern.split(stock_picks)
-
-    if not raw_sections:
-        return stock_picks
-
-    # 第一个分段可能是 preamble（### 之前的内容），保留它
-    processed_sections = []
-    for sec_text in raw_sections:
-        if not sec_text.strip():
-            processed_sections.append(sec_text)
-            continue
-
-        # 如果是 preamble（不以 ### 开头），不做图表插入
-        if not re.match(r'^###\s', sec_text.strip()):
-            processed_sections.append(sec_text)
-            continue
-
-        # ---- 找到这个 section 里的所有股票代码 ----
-        codes_in_section = set()
-        for m in re.finditer(r'(\d{6})', sec_text):
-            codes_in_section.add(m.group(1))
-
-        # ---- 找到 section 中表格的结束位置 ----
-        lines = sec_text.split('\n')
-        in_table = False
-        table_last_line = -1
-        for i, line in enumerate(lines):
-            stripped = line.strip()
-            is_table_row = bool(re.match(r'^\|.+\|$', stripped))
-            if is_table_row and not in_table:
-                in_table = True
-                table_last_line = i
-            elif is_table_row and in_table:
-                table_last_line = i
-            elif not is_table_row and in_table:
-                break  # 表格结束
-
-        # ---- 收集该 section 匹配的图表（按文本中首次出现顺序排列）----
-        section_charts = []
-        for code6 in codes_in_section:
-            if code6 in code_to_chart and code6 not in placed_codes:
-                pos = sec_text.find(code6)
-                section_charts.append((pos, code_to_chart[code6]))
-                placed_codes.add(code6)
-        # 按在文本中首次出现位置排序
-        section_charts.sort(key=lambda x: x[0])
-        section_charts = [c for _, c in section_charts]
-
-        if not section_charts:
-            processed_sections.append(sec_text)
-            continue
-
-        # ---- 在表格后插入图表 ----
-        if table_last_line >= 0:
-            # 在表格最后一行之后插入
-            insert_pos = table_last_line + 1
-        else:
-            # 没有表格，追加到 section 末尾
-            insert_pos = len(lines)
-
-        chart_md_lines = []
-        for name, code, url in section_charts:
-            if first_chart:
-                chart_md_lines.append('<span style="color:#9c3b3b;font-weight:600;"> 注：K线图仅保留近7天，历史图表将自动清理。如需长期保存，请右键另存为。</span>')
-                first_chart = False
-            chart_md_lines.append(f'![{name} {code}]({url})')
-
-        # 在插入点后加一个空行分隔
-        result_lines = lines[:insert_pos]
-        if result_lines and result_lines[-1].strip() != '':
-            result_lines.append('')
-        result_lines.extend(chart_md_lines)
-        result_lines.append('')
-        result_lines.extend(lines[insert_pos:])
-
-        processed_sections.append('\n'.join(result_lines))
-
-    result = ''.join(processed_sections)
-
-    # ---- 追加未匹配的图表 ----
-    unmatched = []
-    for code6, (name, code, url) in code_to_chart.items():
-        if code6 not in placed_codes:
-            unmatched.append(f'![{name} {code}]({url})')
-
-    if unmatched:
-        result = result.rstrip() + '\n\n' + '\n'.join(unmatched) + '\n'
-        print(f'[Charts] {len(unmatched)} 张图表未匹配到对应section，已追加到末尾')
-
-    return result
 
 
 # ============================================================
@@ -1657,23 +1688,6 @@ def main():
     # 6. 清理旧文件
     cleanup_old_files(days=7)
 
-    # 7. 技术分析图表
-    if stock_picks and stock_analyzer:
-        print("  解析高评分股票...")
-        stock_list = stock_analyzer.parse_stock_picks(stock_picks)
-        if stock_list:
-            print(f"  发现 {len(stock_list)} 只高评分股票，生成技术分析图...")
-            charts_dir = os.path.join("docs", "charts")
-            chart_urls = stock_analyzer.analyze_stocks(stock_list, charts_dir, page_base_url)
-            if chart_urls:
-                stock_picks = insert_charts_into_picks(stock_picks, chart_urls)
-                print(f"  已生成 {len(chart_urls)} 张 K 线图")
-            else:
-                print("  未能生成任何图表")
-        else:
-            print("  未解析到高评分股票")
-    elif not stock_analyzer:
-        print("  stock_analyzer 模块未加载，跳过图表")
 
     # 组装完整报告 — 产业链选股放在观点蒸馏后面
     if stock_picks:
