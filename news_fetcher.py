@@ -2,7 +2,7 @@
 股市新闻与资金面数据抓取器
 - 多市场新闻：A股 / 美股 / 港股
 - 资金面：大盘资金流向
-- 支持 Dify HTTP 服务模式 + 独立测试模式
+- 支持独立测试模式
 
 数据源优先级：东方财富快讯（全文） > 东方财富列表 > 新浪财经
 """
@@ -15,8 +15,6 @@ from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from utils import beijing_now as _beijing_now
-
-from http.server import HTTPServer, BaseHTTPRequestHandler
 
 
 # ============================================================
@@ -490,34 +488,6 @@ def fetch_all_news_flat(market="all"):
 
 
 # ============================================================
-#  HTTP 服务（Dify 集成用）
-# ============================================================
-
-class NewsHandler(BaseHTTPRequestHandler):
-    """HTTP 服务，供 Dify 通过 HTTP Request 节点调用。"""
-
-    def do_GET(self):
-        market = "all"
-        if "?" in self.path:
-            params = dict(
-                p.split("=") for p in self.path.split("?")[1].split("&") if "=" in p
-            )
-            market = params.get("market", "all")
-
-        data = fetch_all_news(market)
-        response = json.dumps(data, ensure_ascii=False, indent=2)
-
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(response.encode("utf-8"))
-
-    def log_message(self, format, *args):
-        print(f"[{_beijing_now().strftime('%H:%M:%S')}] {args[0]}")
-
-
-# ============================================================
 #  独立测试入口
 # ============================================================
 
@@ -559,13 +529,3 @@ if __name__ == "__main__":
         total_news = sum(len(m["news"]) for m in data["markets"].values())
         total_errs = sum(len(m["errors"]) for m in data["markets"].values())
         print(f"总计: {total_news} 条有效新闻, {total_errs} 个接口错误")
-
-    else:
-        port = 8766
-        server = HTTPServer(("0.0.0.0", port), NewsHandler)
-        print(f"股市新闻服务已启动: http://localhost:{port}")
-        print(f"  全部: http://localhost:{port}/news?market=all")
-        print(f"  A股:  http://localhost:{port}/news?market=a")
-        print(f"  美股: http://localhost:{port}/news?market=us")
-        print(f"  港股: http://localhost:{port}/news?market=hk")
-        server.serve_forever()
