@@ -19,6 +19,10 @@ from utils import beijing_now
 # 共享新闻 & 资金面抓取模块
 from news_fetcher import fetch_all_news_flat
 
+# 项目根目录（stock_report.py 所在目录）。所有文件路径锚定到此处，
+# 修复：从非仓库根目录启动时 prompts/ 静默为空、docs/ 写错位置的隐患。
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 # ============================================================
 #  工具函数
@@ -40,9 +44,8 @@ def _set_github_output(key, value):
 
 def _load_up_config():
     """加载 UP主 配置文件，文件不存在时返回空 dict。"""
-    import os as _os
-    config_path = _os.path.join("up主的每日观点", "up_config.json")
-    if not _os.path.exists(config_path):
+    config_path = os.path.join(_BASE_DIR, "up主的每日观点", "up_config.json")
+    if not os.path.exists(config_path):
         return {}
     try:
         with open(config_path, "r", encoding="utf-8") as f:
@@ -55,7 +58,7 @@ def _load_up_config():
 UP_CONFIG = _load_up_config()
 
 
-def find_today_opinions(opinion_dir="up主的每日观点", date_offset=0):
+def find_today_opinions(opinion_dir=None, date_offset=0):
     """扫描 UP主观点目录（含子目录），返回指定日期的转录文件列表。
 
     Args:
@@ -72,6 +75,8 @@ def find_today_opinions(opinion_dir="up主的每日观点", date_offset=0):
     """
     import glob as _glob
 
+    if opinion_dir is None:
+        opinion_dir = os.path.join(_BASE_DIR, "up主的每日观点")
     if not os.path.isdir(opinion_dir):
         return []
 
@@ -188,8 +193,9 @@ def fetch_index_quotes():
                     "high": f"{high:.2f}", "low": f"{low:.2f}",
                 })
             elif code.startswith("int_"):
+                # 2026-09 实测：新浪 int_ 接口仅返回4字段 [名称, 价格, 涨跌额, 涨跌幅]
                 price = float(parts[1])
-                change_pct = float(parts[5].replace("%", "")) if len(parts) > 5 else 0
+                change_pct = float(parts[3]) if len(parts) > 3 else 0
                 results.append({
                     "name": name, "code": code,
                     "price": f"{price:.2f}",
@@ -236,10 +242,11 @@ def _fmt_time_short(time_str):
 def format_news(news_list, fund_flow=None):
     """将多市场新闻和资金面数据格式化为 LLM 可读文本。"""
     today_str = beijing_now().strftime("%Y-%m-%d")
+    day_desc = "是交易日" if beijing_now().weekday() < 5 else "非交易日（周末）"
 
     lines = [
         f"日期: {beijing_now().strftime('%Y-%m-%d %H:%M')}",
-        f"今日 {today_str} 是交易日，以下为当日多市场资讯汇总。",
+        f"今日 {today_str} {day_desc}，以下为当日多市场资讯汇总。",
         "",
     ]
 
@@ -298,8 +305,8 @@ def format_news(news_list, fund_flow=None):
 # ============================================================
 
 def _load_prompt(name):
-    """从 prompts/ 目录加载提示词模板。"""
-    prompt_path = os.path.join("prompts", name)
+    """从 prompts/ 目录加载提示词模板（锚定脚本目录，不依赖 CWD）。"""
+    prompt_path = os.path.join(_BASE_DIR, "prompts", name)
     if not os.path.exists(prompt_path):
         print(f"[WARN] 提示词文件不存在: {prompt_path}，使用内置默认值")
         return ""
@@ -417,9 +424,9 @@ def _sanitize_stock_picks(text):
     echo_patterns = (
         "（表格至少", "(表格至少", "表格至少3",
         "每条新闻只用一次", "每条资讯只用一次",
-        "需要区分：", "需要区分:", "需要禁止", "需要确认", "需要检查", "需要建立",
-        "先梳理资讯", "先梳理", "需要梳理",
-        "可能的主题", "完整输出结构", "输出结构",
+        "需要区分：", "需要区分:", "需要禁止", "需要确认的是", "需要检查", "需要建立",
+        "先梳理资讯", "先梳理资讯：", "需要梳理资讯",
+        "可能的主题", "完整输出结构",
         "用户要求", "用户说", "用户强调", "注意用户", "用户禁止",
     )
     if any(p in text for p in echo_patterns):
@@ -716,6 +723,13 @@ def _call_deepseek_safe(system_prompt, user_prompt, temperature=0.5, max_tokens=
         print(f"[LLM] {section_name} 返回空内容，3 秒后重试一次...")
         time.sleep(3)
         result, finish = _call_deepseek(system_prompt, user_prompt, temperature, max_tokens)
+    # 429/5xx 为限流或服务端瞬时故障，退避后重试一次（此前直接降级，白白丢一节内容）
+    if result.startswith("API 调用失败") and any(
+        c in result for c in ("HTTP 429", "HTTP 500", "HTTP 502", "HTTP 503")
+    ):
+        print(f"[LLM] {section_name} 遇到限流/服务端错误，15 秒退避后重试一次...")
+        time.sleep(15)
+        result, finish = _call_deepseek(system_prompt, user_prompt, temperature, max_tokens)
     if result.startswith("错误") or result.startswith("API 调用失败"):
         print(f"[LLM] {section_name} 调用失败，使用降级: {result[:100]}")
         return (f"*({section_name}暂时不可用，请稍后重试)*", False)
@@ -734,8 +748,10 @@ def call_llm(news_text):
     raw, truncated = _call_deepseek_safe(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
                                          temperature=0.5, max_tokens=12000, section_name="市场分析")
     text = _sanitize_analyst(_cleanup_report(raw))
-    if truncated and "明天怎么看" not in text:
-        # 被截断且连情景推演都没写完 → 内容残缺，宁缺毋滥
+    # 截断完整性判断：不依赖单一魔法字符串，校验提示词要求的 6 个固定小节是否齐全
+    required_sections = ("## 资金面", "## 主线扫描", "## 跨市场", "## 要闻速览", "## 市场体温", "## 明天怎么看")
+    if truncated and not all(s in text for s in required_sections):
+        # 被截断且结构不完整 → 内容残缺，宁缺毋滥
         print("  ⚠️ 盘面分析被截断且结构不完整，返回降级文案")
         return ANALYST_FALLBACK
     return text
@@ -782,26 +798,39 @@ def format_stock_picks(picks_md):
 
 
 def call_opinion_analyzer(opinion_text):
-    """调用 LLM 分析UP主财经观点，返回结构化 markdown。"""
-    raw, _trunc = _call_deepseek_safe(
+    """调用 LLM 分析UP主财经观点，返回结构化 markdown。
+
+    截断的蒸馏结果是半成品，不能发布；返回空串触发主流程「展示原文」降级，
+    原文是完整输入，内容零丢失。
+    """
+    raw, truncated = _call_deepseek_safe(
         OPINION_SYSTEM_PROMPT,
         OPINION_USER_PROMPT_TEMPLATE.format(opinion_text=opinion_text),
         temperature=0.4,
         max_tokens=4096,
         section_name="UP主观点蒸馏",
     )
+    if truncated:
+        print("  ⚠️ UP主观点蒸馏被截断（内容不完整），降级为展示原文")
+        return ""
     return _cleanup_report(raw)
 
 
 def call_info_analyzer(info_text):
-    """调用 LLM 提炼信息差，提取核心事实（不做多空判断）。"""
-    raw, _trunc = _call_deepseek_safe(
+    """调用 LLM 提炼信息差，提取核心事实（不做多空判断）。
+
+    截断的提炼结果不发布；返回空串触发主流程「信息差补充（原文）」降级。
+    """
+    raw, truncated = _call_deepseek_safe(
         INFO_GAP_SYSTEM_PROMPT,
         INFO_GAP_USER_PROMPT_TEMPLATE.format(info_text=info_text),
         temperature=0.3,
         max_tokens=3072,
         section_name="信息差提炼",
     )
+    if truncated:
+        print("  ⚠️ 信息差提炼被截断（内容不完整），降级为展示原文")
+        return ""
     return _cleanup_report(raw)
 
 
@@ -810,8 +839,20 @@ def call_info_analyzer(info_text):
 #  Markdown → HTML（Bloomberg Terminal 风格）
 # ============================================================
 
+def _esc_html(text):
+    """最小 HTML 转义，阻断第三方新闻标题 / LLM 输出中的标签注入。
+
+    注入链路：数据源 title/summary → LLM 回流 → markdown_to_html → innerHTML。
+    不转义 &，避免对数据源已有的 HTML 实体（如 &amp;）二次转义。
+    """
+    if not isinstance(text, str):
+        return text
+    return text.replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
 def _inline_md(text):
-    """行内 markdown：加粗 + 关键判断词高亮。"""
+    """行内 markdown：加粗 + 关键判断词高亮（先转义再包标签）。"""
+    text = _esc_html(text)
     text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
     return _highlight_inline(text)
 
@@ -834,7 +875,7 @@ def _render_opinion_tags(raw_lines):
         cls = {"利好": "op-bull", "中性": "op-neu", "利空": "op-bear"}[v]
         chips.append(f'<span class="op-chip {cls}">{v}</span>')
     if style:
-        chips.append(f'<span class="op-chip op-style">{style.group(1).strip()}</span>')
+        chips.append(f'<span class="op-chip op-style">{_esc_html(style.group(1).strip())}</span>')
     if not chips and not action:
         return ""
     html = '<div class="op-tags">' + "".join(chips) + '</div>'
@@ -858,7 +899,7 @@ def markdown_to_html(md, mode="default"):
         stripped = raw.strip()
         if re.match(r"^\|.+\|$", stripped):
             if i + 1 < len(lines) and re.match(r"^\|(?:[\s\-:]+\|)+$", lines[i + 1].strip()):
-                header_cells = [c.strip() for c in stripped.split("|")[1:-1]]
+                header_cells = [_esc_html(c.strip()) for c in stripped.split("|")[1:-1]]
                 sep_cells = [c.strip() for c in lines[i + 1].strip().split("|")[1:-1]]
 
                 aligns = []
@@ -880,7 +921,7 @@ def markdown_to_html(md, mode="default"):
                 i += 2
                 while i < len(lines) and re.match(r"^\|.+\|$", lines[i].strip()):
                     row_line = lines[i].strip()
-                    cells = [c.strip() for c in row_line.split("|")[1:-1]]
+                    cells = [_esc_html(c.strip()) for c in row_line.split("|")[1:-1]]
                     html += "<tr>"
                     for j, cell in enumerate(cells):
                         al = aligns[j] if j < len(aligns) else "left"
@@ -930,6 +971,8 @@ def markdown_to_html(md, mode="default"):
         if img_match:
             alt = img_match.group(1)
             url = img_match.group(2)
+            alt = _esc_html(alt)
+            url = _esc_html(url)
             alt = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", alt)
             current_section["content"].append(("img", alt, url))
             continue
@@ -940,7 +983,8 @@ def markdown_to_html(md, mode="default"):
             current_section["raw"].append(line)
             continue
 
-        # 行内加粗
+        # 行内加粗（先转义外部文本再包 <strong>，阻断标签注入）
+        line = _esc_html(line)
         line = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", line)
 
         # 有序列表
@@ -977,6 +1021,7 @@ def markdown_to_html(md, mode="default"):
             # 去序号前缀；并剥掉模型惯用的 ☆ 装饰（与收藏按钮 glyph 冲突，且违学术风）
             clean_title = re.sub(r"^[一二三四五六七八九十]+[、．.]?\s*", "", sec["title"])
             clean_title = re.sub(r"^[☆★]+\s*", "", clean_title).strip()
+            clean_title = _esc_html(clean_title)
             html_parts.append(
                 f'<h3 class="sec-h">'
                 f'<button class="fav-btn" data-sid="{sec_id}" '
@@ -1080,8 +1125,8 @@ def _render_lead_box(lead_md):
         if m:
             rows.append(
                 f'<div class="lead-row">'
-                f'<span class="lead-k">{m.group(1)}</span>'
-                f'<span class="lead-v">{_highlight_inline(m.group(2).strip())}</span>'
+                f'<span class="lead-k">{_esc_html(m.group(1))}</span>'
+                f'<span class="lead-v">{_highlight_inline(_esc_html(m.group(2).strip()))}</span>'
                 f'</div>'
             )
     if not rows:
@@ -1126,11 +1171,16 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     # ---- 历史简报导航 ----
     history_links_html = ""
     if page_base_url:
+        docs_dir = os.path.join(_BASE_DIR, "docs")
         for i in range(1, 6):
             d = bj_now - timedelta(days=i)
+            dslug = d.strftime("%Y%m%d")
+            # 只渲染本地已存在的归档，避免导航死链
+            if not os.path.exists(os.path.join(docs_dir, f"report_{dslug}.html")):
+                continue
             label = d.strftime("%m月%d日")
             history_links_html += (
-                f'<a class="hl" href="{page_base_url}report_{d.strftime("%Y%m%d")}.html">'
+                f'<a class="hl" href="{page_base_url}report_{dslug}.html">'
                 f'{label}</a>'
             )
         # 日期选择器 + 早报/晚报切换按钮
@@ -1317,7 +1367,7 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
   {lead_box_html}
 
   <!-- FUND FLOW PANEL -->
-  <div class="sec-hdr" id="sec-fund"><span class="sec-main">主力资金流向</span><span class="sec-sub">CAPITAL FLOWS · 近5交易日 · 东方财富</span></div>
+  <div class="sec-hdr" id="sec-fund"><span class="sec-main">主力资金流向</span><span class="sec-sub">CAPITAL FLOWS · 沪深300口径 · 近5交易日 · 东方财富</span></div>
   <div class="fp-grid">{fund_panel}</div>
 
   <!-- INTRADAY CHARTS -->
@@ -1399,29 +1449,31 @@ def cleanup_old_files(days=7, max_per_run=50):
     所有签出文件的 mtime 都是 checkout 时间，用 mtime 判断不可靠）。
 
     保留逻辑：
-      - charts/: 删除文件名中日期超过 `days` 天的 PNG 文件
-      - pdf/:    删除文件名中日期超过 `days` 天的 PDF（保留 latest.pdf）
+      - charts/:       删除文件名中日期超过 `days` 天的 PNG 文件
+      - pdf/:          删除文件名中日期超过 `days` 天的 PDF（保留 latest.pdf）
+      - docs 根目录:   report_*.html 归档保留 90 天（index.html / archive.html 不匹配，不受影响）
       - max_per_run: 单次最多删除数量，防止首次运行产生超大 commit
     """
     import glob as _glob
     import re as _re
 
     today = beijing_now()
-    cutoff = today - timedelta(days=days)
-    cutoff_date = cutoff.date()
     total_removed = 0
     skipped = 0
 
     # 先收集所有待删除文件，按日期从旧到新排序
     to_delete = []
 
-    for subdir, pattern, date_re in [
+    for subdir, pattern, date_re, keep_days in [
         # charts:  000002_SZ_20260528.png → 2026-05-28
-        ("charts", "*.png", r'_(\d{4})(\d{2})(\d{2})\.png$'),
+        ("charts", "*.png", r'_(\d{4})(\d{2})(\d{2})\.png$', days),
         # pdf:     股市简报_2026-06-25_0020.pdf → 2026-06-25
-        ("pdf", "股市简报_*.pdf", r'(\d{4}-\d{2}-\d{2})_\d{4}\.pdf$'),
+        ("pdf", "股市简报_*.pdf", r'(\d{4}-\d{2}-\d{2})_\d{4}\.pdf$', days),
+        # 归档报告（含 am/pm 场次），90 天后清理，防止 docs/ 无限膨胀拖垮 Pages
+        ("", "report_*.html", r'report_(\d{4})(\d{2})(\d{2})(?:_(?:am|pm))?\.html$', 90),
     ]:
-        dir_path = os.path.join("docs", subdir)
+        cutoff_date = (today - timedelta(days=keep_days)).date()
+        dir_path = os.path.join(_BASE_DIR, "docs", subdir) if subdir else os.path.join(_BASE_DIR, "docs")
         if not os.path.isdir(dir_path):
             continue
         for fp in _glob.glob(os.path.join(dir_path, pattern)):
@@ -1454,10 +1506,10 @@ def cleanup_old_files(days=7, max_per_run=50):
     skipped = max(0, len(to_delete) - total_removed)
 
     if total_removed > 0:
-        print(f"[Cleanup] 已清理 {total_removed} 个旧文件 (>{days}天, cutoff={cutoff_date})"
+        print(f"[Cleanup] 已清理 {total_removed} 个旧文件"
               + (f", 剩余 {skipped} 个将在后续运行中逐步清理" if skipped else ""))
     else:
-        print(f"[Cleanup] 无需清理 (>{days}天, cutoff={cutoff_date})")
+        print("[Cleanup] 无需清理")
 
 
 def generate_pdf(html_path):
@@ -1467,7 +1519,7 @@ def generate_pdf(html_path):
 
     now = beijing_now()
     pdf_filename = f"股市简报_{now.strftime('%Y-%m-%d_%H%M')}.pdf"
-    pdf_dir = os.path.join("docs", "pdf")
+    pdf_dir = os.path.join(_BASE_DIR, "docs", "pdf")
     os.makedirs(pdf_dir, exist_ok=True)
     pdf_path = os.path.join(pdf_dir, pdf_filename)
 
@@ -1514,20 +1566,21 @@ def generate_pdf(html_path):
 def deploy_github_pages(html_content, session_slug="am"):
     """将 HTML 写入 docs/ 目录，同时生成主文件和场次文件。"""
     today = beijing_now().strftime("%Y%m%d")
-    os.makedirs("docs", exist_ok=True)
+    docs_dir = os.path.join(_BASE_DIR, "docs")
+    os.makedirs(docs_dir, exist_ok=True)
 
     # 主文件（最新报告，向后兼容）
-    report_path = f"docs/report_{today}.html"
+    report_path = os.path.join(docs_dir, f"report_{today}.html")
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
     # 场次文件（早报/晚报独立保存，不被覆盖）
-    session_path = f"docs/report_{today}_{session_slug}.html"
+    session_path = os.path.join(docs_dir, f"report_{today}_{session_slug}.html")
     with open(session_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
     # index.html → 最新报告
-    with open("docs/index.html", "w", encoding="utf-8") as f:
+    with open(os.path.join(docs_dir, "index.html"), "w", encoding="utf-8") as f:
         f.write(html_content)
 
     repo = os.environ.get("GITHUB_REPOSITORY", "")
@@ -1552,7 +1605,7 @@ def generate_archive_page():
     """扫描 docs/ 下所有报告文件，生成按月份分组的归档索引页面。"""
     import glob as _glob
 
-    archive_dir = "docs"
+    archive_dir = os.path.join(_BASE_DIR, "docs")
     if not os.path.isdir(archive_dir):
         return
 
@@ -1847,7 +1900,7 @@ def main():
     generate_pdf(html_file)
 
     # 8. 保存 Markdown
-    report_file = f"report_{beijing_now().strftime('%Y%m%d_%H%M')}.md"
+    report_file = os.path.join(_BASE_DIR, f"report_{beijing_now().strftime('%Y%m%d_%H%M')}.md")
     with open(report_file, "w", encoding="utf-8") as f:
         f.write(f"# 每日市场情报 - {beijing_now().strftime('%Y-%m-%d')} {session_label}\n\n")
         f.write(report)

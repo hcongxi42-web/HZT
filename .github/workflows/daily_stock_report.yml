@@ -52,7 +52,8 @@ jobs:
           git add docs/*.html docs/index.html docs/.nojekyll docs/style.css docs/script.js || true
           git add docs/charts/ || true
           git diff --cached --quiet || git commit -m "update: 股市日报 $(date +%Y-%m-%d)"
-          git push || true
+          # 推送失败必须显式暴露（此前 `git push || true` 会静默吞掉，报告丢失无任何告警）
+          git push || { sleep 15 && git pull origin main --rebase && git push; }
 
       - name: Setup Pages
         if: steps.generate.outputs.skip != '1'

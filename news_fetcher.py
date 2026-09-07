@@ -68,6 +68,13 @@ def _retry_fetch(fn, *args, max_retries=3, **kwargs):
     for attempt in range(max_retries):
         try:
             return fn(*args, **kwargs)
+        except urllib.error.HTTPError as e:
+            # 4xx（除 429 限流）重试无意义，立即抛出；5xx/429 走退避重试
+            if e.code < 500 and e.code != 429:
+                raise
+            last_err = e
+            if attempt < max_retries - 1:
+                time.sleep((attempt + 1) * 2)
         except (urllib.error.URLError, ConnectionResetError, TimeoutError) as e:
             last_err = e
             if attempt < max_retries - 1:
@@ -359,22 +366,25 @@ def fetch_hk_stock_news():
 # ============================================================
 
 def fetch_market_fund_flow(days=5):
-    """获取全市场主力资金流向（沪深两市合计）。
+    """获取大盘主力资金流向（沪深300口径）。
 
     返回格式:
       [{"date": "2026-06-05", "net_flow": -47.20, "main_in": 332.55, "main_out": 379.75}, ...]
 
-    kline 格式: date,主力净流入,超大单净流入,大单净流入,中单净流入,小单净流入 (单位：元)
-    secid=1.000300 为沪深300资金流向（股票+ETF合计）
+    kline 真实列序（2026-09 实测对齐，单位：元）:
+      f51=date, f52=主力净流入, f53=小单净流入, f54=中单净流入, f55=大单净流入, f56=超大单净流入
+      校验: 超大单+大单 == 主力净流入；主力+小单+中单 == 0
+    secid=1.000300 为沪深300成分（股票+ETF）口径，非全市场。
     """
     url = (
         f"https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get"
         f"?secid=1.000300"  # 沪深300
         f"&fields1=f1,f2,f3,f7"
-        f"&fields2=f51,f52,f53,f54,f55"
+        f"&fields2=f51,f52,f53,f54,f55,f56"
         f"&klt=101&lmt=30"
     )
-    headers = {"User-Agent": _UA}
+    # 实测：不带 Referer 时 push2his 偶发直接断开连接（Remote end closed）
+    headers = {"User-Agent": _UA, "Referer": _REFERER_EM}
 
     def _do_fetch():
         req = urllib.request.Request(url, headers=headers)
@@ -385,13 +395,14 @@ def fetch_market_fund_flow(days=5):
         klines = data.get("data", {}).get("klines", [])
         for row in klines[-days:]:
             parts = row.split(",")
-            if len(parts) >= 5:
+            if len(parts) >= 6:
                 try:
-                    super_large = float(parts[1]) / 1e8  # 超大单净流入
-                    large = float(parts[2]) / 1e8         # 大单净流入
-                    medium = float(parts[3]) / 1e8        # 中单净流入
-                    small = float(parts[4]) / 1e8         # 小单净流入
-                    net_flow = super_large + large        # 主力 = 超大单 + 大单
+                    main_net = float(parts[1]) / 1e8   # f52 主力净流入（=超大单+大单）
+                    small = float(parts[2]) / 1e8      # f53 小单净流入
+                    medium = float(parts[3]) / 1e8     # f54 中单净流入
+                    large = float(parts[4]) / 1e8      # f55 大单净流入
+                    super_large = float(parts[5]) / 1e8  # f56 超大单净流入
+                    net_flow = main_net                # 主力净流入即最终口径
                     main_in = max(0, super_large) + max(0, large)
                     main_out = abs(min(0, super_large)) + abs(min(0, large))
                 except (ValueError, IndexError):
