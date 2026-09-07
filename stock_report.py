@@ -329,6 +329,10 @@ def _strip_thinking(text):
     由 _sanitize_stock_picks 负责，避免误伤以 ## 开头的盘面分析。
     """
     import re as _re
+    # 防御：下游若误传非字符串（如未解包的元组），直接原样返回，避免整条流水线崩溃
+    if not isinstance(text, str):
+        print(f"[WARN] _strip_thinking 收到非字符串输入（{type(text).__name__}），已跳过清洗")
+        return text
     if not text or not text.strip():
         return text
     lines = text.split("\n")
@@ -744,13 +748,18 @@ def call_stock_picker(news_text, opinion_context="", info_context=""):
     「首个 ### 锚定 + 自问句剥离 + 结构化校验」；若校验失败（模型吐出思考草稿
     或无表格），返回 PICKS_FALLBACK 降级文案，绝不把草稿推上 Pages。
     """
-    raw = _call_deepseek_safe(STOCK_PICKER_SYSTEM_PROMPT,
+    raw, truncated = _call_deepseek_safe(STOCK_PICKER_SYSTEM_PROMPT,
                               STOCK_PICKER_TEMPLATE.format(
                                   news_text=news_text,
                                   opinion_context=opinion_context,
                                   info_context=info_context,
                               ),
                               temperature=0.3, max_tokens=8000, section_name="AI选股")
+    if truncated:
+        # 被 max_tokens 截断 → 表格/正文 100% 不完整，残缺草稿风险高，宁缺毋滥
+        print("  ⚠️ AI选股输出被截断（max_tokens），内容不完整，返回降级文案，不发布草稿")
+        _set_github_output("picks_status", "fallback")
+        return PICKS_FALLBACK
     cleaned = _cleanup_report(raw, strip_bold=True)
     sanitized = _sanitize_stock_picks(cleaned)
     if sanitized is None:
