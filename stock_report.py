@@ -384,6 +384,11 @@ PICKS_FALLBACK = (
     "未发布任何未经验证的草稿。请检查提示词或重新运行工作流。"
 )
 
+ANALYST_FALLBACK = (
+    "今日盘面分析生成异常（模型输出被长度限制截断，内容不完整），本节已跳过，"
+    "未发布任何未完成的草稿。请提高 max_tokens 或重新运行工作流。"
+)
+
 
 def _sanitize_stock_picks(text):
     """选股专用清洗：以首个 ### 为唯一合法起点，剥离思考草稿；失败返回 None。
@@ -399,6 +404,24 @@ def _sanitize_stock_picks(text):
     import re as _re
     if not text or not text.strip():
         return None
+
+    # 0) 提示词回声检测：模型把提示词里的格式说明 / 模板占位符原样输出时，
+    #    整段都是废稿（2026-09-07 线上事故：输出了「| 股票以及代码 |…|」「（表格至少3-5行）」
+    #    「☆标题」「需要区分：」「先梳理资讯：」等），必须整体判失败，不能靠逐行删。
+    # 注意：表头「| 股票及代码 | 选股逻辑 | 方向 | 评级 |」是模型照抄示例的正常行为，
+    # 不能算回声；真正的回声是提示词里的「过程性指令」被原样输出。
+    echo_patterns = (
+        "（表格至少", "(表格至少", "表格至少3",
+        "每条新闻只用一次", "每条资讯只用一次",
+        "需要区分：", "需要区分:", "需要禁止", "需要确认", "需要检查", "需要建立",
+        "先梳理资讯", "先梳理", "需要梳理",
+        "可能的主题", "完整输出结构", "输出结构",
+        "用户要求", "用户说", "用户强调", "注意用户", "用户禁止",
+    )
+    if any(p in text for p in echo_patterns):
+        print("  ⚠️ AI选股检测到提示词回声（模板/指令原文被输出），判定生成失败")
+        return None
+
     lines = text.split("\n")
 
     # 1) 首个 ### 为起点
@@ -439,10 +462,40 @@ def _sanitize_stock_picks(text):
         out.append(ln)
 
     result = "\n".join(out).strip()
-    # 5) 校验：必须含 ### 标题，且至少有一个表格行或内容列表项
-    has_table = bool(_re.search(r"^\s*\|.*\|\s*$", result, _re.MULTILINE))
-    has_bullet = bool(_re.search(r"^\s*-\s+\S", result, _re.MULTILINE))
-    if "###" not in result or not (has_table or has_bullet):
+
+    # 5) 结构化强校验
+    #    5a) 必须存在真实 ### 标题（排除「标题」「主题名」「XXX」等未替换的占位符）
+    placeholder_titles = {"标题", "主题", "主题名", "主题名称", "xxx", "XXX", "标题名", "小节"}
+    real_titles = []
+    for m in _re.finditer(r"^\s*#{2,3}\s*(.+?)\s*$", result, _re.MULTILINE):
+        t = _re.sub(r"[☆★*`\s]+", "", m.group(1))
+        if t and t not in placeholder_titles:
+            real_titles.append(t)
+    if not real_titles:
+        return None
+
+    #    5b) 必须存在「完整表格」：表头 + 分隔行 |---| + 至少 3 行数据行。
+    #        仅有一行 `| 股票及代码 |…|` 属模板回显，不算表格。
+    has_full_table = False
+    lines_r = result.split("\n")
+    for i, ln in enumerate(lines_r):
+        if not _re.match(r"^\s*\|[\s\-:|]+\|\s*$", ln):
+            continue
+        if i == 0 or not _re.match(r"^\s*\|.*\|\s*$", lines_r[i - 1]):
+            continue  # 没有表头行
+        data_rows = 0
+        for j in range(i + 1, len(lines_r)):
+            if _re.match(r"^\s*\|.*\|\s*$", lines_r[j]):
+                data_rows += 1
+            else:
+                break
+            if data_rows >= 3:
+                has_full_table = True
+                break
+        if has_full_table:
+            break
+
+    if not has_full_table:
         return None
     return result
 
@@ -578,14 +631,38 @@ def _highlight_inline(text):
 #  LLM 调用
 # ============================================================
 
+def _post_deepseek(payload, headers, url):
+    """发起一次 DeepSeek 请求，返回 (content, finish_reason)。"""
+    req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+    with urllib.request.urlopen(req, timeout=180) as resp:
+        raw_body = resp.read().decode()
+    data = json.loads(raw_body)
+    msg = data["choices"][0]["message"]
+    content = msg.get("content", "")
+    finish = data["choices"][0].get("finish_reason", "?")
+    # 推理型模型可能把正文放在 reasoning_content，content 为空时回退
+    if not content or not content.strip():
+        content = msg.get("reasoning_content", "")
+    # 仍为空则打印原始响应，便于定位（限流 / 内容过滤 / 字段变更等）
+    if not content or not content.strip():
+        print(f"[LLM-DEBUG] 空返回 finish_reason={finish} 原始响应前 600 字:\n{raw_body[:600]}")
+        return ("API 调用失败: 返回内容为空", finish)
+    return (content, finish)
+
+
 def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096):
-    """通用 DeepSeek API 调用。"""
+    """通用 DeepSeek API 调用，返回 (content, finish_reason)。
+
+    关键：deepseek-v4-flash 会把推理链写进 content（而非 reasoning_content），
+    思考会吃掉大量 token 导致正文被截断。这里显式传 thinking=disabled 请求关闭思考；
+    若服务端不识别该参数（返回 400），自动去掉重试，保证兼容性。
+    """
     api_key = os.environ.get("DEEPSEEK_API_KEY", "")
     if not api_key:
-        return "错误：未设置 DEEPSEEK_API_KEY 环境变量"
+        return ("错误：未设置 DEEPSEEK_API_KEY 环境变量", "error")
 
     url = "https://api.deepseek.com/v1/chat/completions"
-    payload = json.dumps({
+    base = {
         "model": "deepseek-v4-flash",
         "messages": [
             {"role": "system", "content": system_prompt},
@@ -593,48 +670,56 @@ def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096)
         ],
         "temperature": temperature,
         "max_tokens": max_tokens,
-    }).encode("utf-8")
-
+    }
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
 
+    # 先尝试关闭思考（治本：不产出推理链，就不会被写进正文）
     try:
-        req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=180) as resp:
-            raw_body = resp.read().decode()
-        data = json.loads(raw_body)
-        msg = data["choices"][0]["message"]
-        content = msg.get("content", "")
-        # 推理型模型可能把正文放在 reasoning_content，content 为空时回退
-        if not content or not content.strip():
-            content = msg.get("reasoning_content", "")
-        # 仍为空则打印原始响应，便于定位（限流 / 内容过滤 / 字段变更等）
-        if not content or not content.strip():
-            finish = data["choices"][0].get("finish_reason", "?")
-            print(f"[LLM-DEBUG] 空返回 finish_reason={finish} 原始响应前 600 字:\n{raw_body[:600]}")
-            return "API 调用失败: 返回内容为空"
-        return content
+        payload = dict(base, thinking={"type": "disabled"})
+        return _post_deepseek(json.dumps(payload).encode("utf-8"), headers, url)
     except urllib.error.HTTPError as e:
         body = e.read().decode() if e.fp else ""
-        return f"API 调用失败: HTTP {e.code} - {body[:300]}"
+        if "thinking" not in body.lower():
+            return (f"API 调用失败: HTTP {e.code} - {body[:300]}", "error")
+        # 服务端不识别 thinking 参数 → 去掉重试
+        print("[LLM] 服务端不识别 thinking 参数，已自动回退为普通请求")
     except Exception as e:
-        return f"API 调用失败: {str(e)}"
+        return (f"API 调用失败: {str(e)}", "error")
+
+    try:
+        return _post_deepseek(json.dumps(base).encode("utf-8"), headers, url)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode() if e.fp else ""
+        return (f"API 调用失败: HTTP {e.code} - {body[:300]}", "error")
+    except Exception as e:
+        return (f"API 调用失败: {str(e)}", "error")
 
 
 def _call_deepseek_safe(system_prompt, user_prompt, temperature=0.5, max_tokens=4096, section_name="AI分析"):
-    """带优雅降级的 DeepSeek API 调用。失败时返回友好提示而非原始错误文本。"""
-    result = _call_deepseek(system_prompt, user_prompt, temperature, max_tokens)
+    """带优雅降级的 DeepSeek API 调用。失败时返回友好提示而非原始错误文本。
+
+    返回 (text, truncated)：
+      - text：正文（失败时为降级文案）
+      - truncated：是否因 finish_reason=length 被截断。截断的内容 100% 不完整
+        （表现为正文写一半或仍在思考阶段中断），调用方应据此降级，不可直接发布。
+    """
+    result, finish = _call_deepseek(system_prompt, user_prompt, temperature, max_tokens)
     # 空返回多为并行调用下的瞬时限流，短暂等待后重试一次
     if result == "API 调用失败: 返回内容为空":
         print(f"[LLM] {section_name} 返回空内容，3 秒后重试一次...")
         time.sleep(3)
-        result = _call_deepseek(system_prompt, user_prompt, temperature, max_tokens)
+        result, finish = _call_deepseek(system_prompt, user_prompt, temperature, max_tokens)
     if result.startswith("错误") or result.startswith("API 调用失败"):
         print(f"[LLM] {section_name} 调用失败，使用降级: {result[:100]}")
-        return f"*({section_name}暂时不可用，请稍后重试)*"
-    return result
+        return (f"*({section_name}暂时不可用，请稍后重试)*", False)
+
+    if finish == "length":
+        print(f"[LLM] ⚠️ {section_name} 输出被 max_tokens 截断（finish_reason=length），内容不完整")
+        return (result, True)
+    return (result, False)
 
 
 def call_llm(news_text):
@@ -642,9 +727,14 @@ def call_llm(news_text):
     # 注意：deepseek-v4-flash 会把推理链写进 content（而非 reasoning_content），
     # 思考约耗 4000-5000 token。若额度只给正文，正文会被截断（9/7 线上停在"理由："）。
     # 故给足额度，让"思考+正文"都写得完，再由 _sanitize_analyst 裁掉思考部分。
-    raw = _call_deepseek_safe(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
-                              temperature=0.5, max_tokens=12000, section_name="市场分析")
-    return _sanitize_analyst(_cleanup_report(raw))
+    raw, truncated = _call_deepseek_safe(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
+                                         temperature=0.5, max_tokens=12000, section_name="市场分析")
+    text = _sanitize_analyst(_cleanup_report(raw))
+    if truncated and "明天怎么看" not in text:
+        # 被截断且连情景推演都没写完 → 内容残缺，宁缺毋滥
+        print("  ⚠️ 盘面分析被截断且结构不完整，返回降级文案")
+        return ANALYST_FALLBACK
+    return text
 
 
 def call_stock_picker(news_text, opinion_context="", info_context=""):
@@ -684,7 +774,7 @@ def format_stock_picks(picks_md):
 
 def call_opinion_analyzer(opinion_text):
     """调用 LLM 分析UP主财经观点，返回结构化 markdown。"""
-    raw = _call_deepseek_safe(
+    raw, _trunc = _call_deepseek_safe(
         OPINION_SYSTEM_PROMPT,
         OPINION_USER_PROMPT_TEMPLATE.format(opinion_text=opinion_text),
         temperature=0.4,
@@ -696,7 +786,7 @@ def call_opinion_analyzer(opinion_text):
 
 def call_info_analyzer(info_text):
     """调用 LLM 提炼信息差，提取核心事实（不做多空判断）。"""
-    raw = _call_deepseek_safe(
+    raw, _trunc = _call_deepseek_safe(
         INFO_GAP_SYSTEM_PROMPT,
         INFO_GAP_USER_PROMPT_TEMPLATE.format(info_text=info_text),
         temperature=0.3,
@@ -923,8 +1013,17 @@ def markdown_to_html(md, mode="default"):
 #  HTML 报告生成 —  Bloomberg Terminal Dark 审美
 # ============================================================
 
+_LEAD_KEYS = ("市场体温", "最大共识", "最大分歧", "最大风险", "一句话策略")
+
+
 def _split_lead(md, title="今日要点"):
-    """从 markdown 中抽取首个 '## {title}' 区块（到下一个同级 '## ' 前），返回 (lead_md, rest_md)。"""
+    """从 markdown 中抽取「今日要点」区块，返回 (lead_md, rest_md)。
+
+    两种写法都支持：
+      1) 有 `## 今日要点` 标题 → 抽取该标题下到下一个 `## ` 前的内容；
+      2) 无标题、开头直接是 `- **市场体温**：…` 五行要点（模型常见写法）→
+         直接从开头收集连续的要点行。此前只支持第 1 种，导致线上 lead-box 长期为空。
+    """
     lines = md.split("\n")
     start = None
     pat = re.compile(r"^##\s+" + re.escape(title) + r"\s*$")
@@ -932,7 +1031,27 @@ def _split_lead(md, title="今日要点"):
         if pat.match(ln.strip()):
             start = i
             break
+
     if start is None:
+        # fallback：开头连续的「- **要点键**：值」行即为今日要点
+        collected, idx = [], 0
+        for i, ln in enumerate(lines):
+            s = ln.strip()
+            if not s:
+                if collected:
+                    idx = i
+                    break
+                continue
+            m = re.match(r"^[-*]\s+\*\*(.+?)\*\*\s*[：:]\s*(.+)$", s)
+            if not m:
+                break
+            collected.append(s)
+            idx = i + 1
+        # 至少含 3 个今日要点固定键，才认定是要点区块（避免误抽普通列表）
+        hit = sum(1 for c in collected if any(k in c for k in _LEAD_KEYS))
+        if len(collected) >= 3 and hit >= 3:
+            rest = lines[idx:]
+            return "\n".join(collected), "\n".join(rest).strip()
         return "", md
     end = len(lines)
     for j in range(start + 1, len(lines)):
