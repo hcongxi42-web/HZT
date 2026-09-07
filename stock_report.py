@@ -466,17 +466,15 @@ def _sanitize_analyst(text):
         return text
     lines = text.split("\n")
 
-    # 1) 锚定首个真实内容行（仅认带标签要点 / 标题 / 编号 / 今日要点: / 市场体温:，
-    #    不认裸章节名如「资金面」「跨市场：美股/港股」，避免把结构清单当起点）
+    # 1) 锚定首个真实内容行。
+    #    只认「带标签要点 - **」与「标题 ##/###」两种。
+    #    绝不认裸 `- ` / `* ` 列表与裸章节名：实测模型会把结构清单写成
+    #    「- 首段必须是今日要点5行…」「- 资金面 1-2句」这类 bullet，
+    #    若把 `- ` 当起点则 start=0，前置思考一行都剪不掉（9/7 线上事故根因）。
     start = None
     for i, ln in enumerate(lines):
         s = ln.lstrip()
-        is_marker = (
-            s.startswith(("- ", "**", "## ", "### ", "* "))
-            or _re.match(r"^\d+[、.．]\s", s)
-            or s.startswith(("今日要点：", "市场体温："))
-        )
-        if is_marker:
+        if s.startswith(("- **", "**", "##")):
             start = i
             break
     if start is not None and start > 0:
@@ -492,6 +490,8 @@ def _sanitize_analyst(text):
         "如果落实到投资", "如果落实到", "为了表格", "不过用户", "用户严格要求", "注意是",
         "再看资金面", "具体各大行的", "温度判断", "最大共识：", "最大分歧：", "最大风险：",
         "一句话策略：", "今日要点第一行", "整体放摘要", "具体写作", "也可以选",
+        "先看资讯", "新闻里其他", "盘面温度判断", "可能写不下", "另外要注意",
+        "等等，", "等等:", "措辞要决断", "注意这里的环境", "只能说",
     )
     self_q = _re.compile(r"[？?]")
     self_q_kw = ("用哪个", "加不加息", "算什么", "按什么", "该不该", "要不要")
@@ -639,8 +639,11 @@ def _call_deepseek_safe(system_prompt, user_prompt, temperature=0.5, max_tokens=
 
 def call_llm(news_text):
     """调用 LLM 生成市场分析报告，并清理 #### / *** 标记与思考过程。"""
+    # 注意：deepseek-v4-flash 会把推理链写进 content（而非 reasoning_content），
+    # 思考约耗 4000-5000 token。若额度只给正文，正文会被截断（9/7 线上停在"理由："）。
+    # 故给足额度，让"思考+正文"都写得完，再由 _sanitize_analyst 裁掉思考部分。
     raw = _call_deepseek_safe(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
-                              temperature=0.5, max_tokens=6000, section_name="市场分析")
+                              temperature=0.5, max_tokens=12000, section_name="市场分析")
     return _sanitize_analyst(_cleanup_report(raw))
 
 
@@ -872,7 +875,9 @@ def markdown_to_html(md, mode="default"):
         sec_id = _hl.md5(sec_title.encode()).hexdigest()[:10] if sec_title else f"s{sec_idx}"
         html_parts.append(f'<div class="sec" id="{sec_id}" data-section-id="{sec_id}">')
         if sec["title"]:
+            # 去序号前缀；并剥掉模型惯用的 ☆ 装饰（与收藏按钮 glyph 冲突，且违学术风）
             clean_title = re.sub(r"^[一二三四五六七八九十]+[、．.]?\s*", "", sec["title"])
+            clean_title = re.sub(r"^[☆★]+\s*", "", clean_title).strip()
             html_parts.append(
                 f'<h3 class="sec-h">'
                 f'<button class="fav-btn" data-sid="{sec_id}" '
