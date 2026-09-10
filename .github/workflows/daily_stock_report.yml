@@ -26,12 +26,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq fonts-noto-cjk
-
       - name: Generate Stock Report
         id: generate
         env:
@@ -42,10 +36,10 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: python stock_report.py
 
-      - name: Commit HTML + Charts to Repo
+      - name: Commit HTML to Repo
         if: steps.generate.outputs.skip != '1'
         run: |
-          # 只提交轻量的 HTML 报告和图表（PDF 已被 gitignore 排除）
+          # 只提交轻量的 HTML 报告（PDF 与历史 charts 均已被 gitignore 排除）
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull origin main --rebase || true
@@ -68,13 +62,3 @@ jobs:
       - name: Deploy to GitHub Pages
         if: steps.generate.outputs.skip != '1'
         uses: actions/deploy-pages@v5
-
-      - name: Keep workflow alive
-        if: steps.generate.outputs.skip != '1'
-        run: |
-          if [ $(git log -1 --format=%ct) -lt $(date -d '50 days ago' +%s 2>/dev/null || date -v-50d +%s 2>/dev/null || echo 0) ]; then
-            date -u > .github/.keepalive
-            git add .github/.keepalive
-            git commit -m "chore: keep workflow alive" || true
-            git push || true
-          fi

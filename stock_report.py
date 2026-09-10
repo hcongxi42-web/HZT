@@ -1451,29 +1451,27 @@ def cleanup_old_files(days=7, max_per_run=50):
     保留逻辑：
       - charts/:       删除文件名中日期超过 `days` 天的 PNG 文件
       - pdf/:          删除文件名中日期超过 `days` 天的 PDF（保留 latest.pdf）
-      - docs 根目录:   report_*.html 归档保留 90 天（index.html / archive.html 不匹配，不受影响）
+      - 归档 HTML：     永不删除（用户要求保留全部历史简报与 UP 主内容）
       - max_per_run: 单次最多删除数量，防止首次运行产生超大 commit
     """
     import glob as _glob
     import re as _re
 
     today = beijing_now()
+    cutoff_date = (today - timedelta(days=days)).date()
     total_removed = 0
     skipped = 0
 
     # 先收集所有待删除文件，按日期从旧到新排序
     to_delete = []
 
-    for subdir, pattern, date_re, keep_days in [
+    for subdir, pattern, date_re in [
         # charts:  000002_SZ_20260528.png → 2026-05-28
-        ("charts", "*.png", r'_(\d{4})(\d{2})(\d{2})\.png$', days),
+        ("charts", "*.png", r'_(\d{4})(\d{2})(\d{2})\.png$'),
         # pdf:     股市简报_2026-06-25_0020.pdf → 2026-06-25
-        ("pdf", "股市简报_*.pdf", r'(\d{4}-\d{2}-\d{2})_\d{4}\.pdf$', days),
-        # 归档报告（含 am/pm 场次），90 天后清理，防止 docs/ 无限膨胀拖垮 Pages
-        ("", "report_*.html", r'report_(\d{4})(\d{2})(\d{2})(?:_(?:am|pm))?\.html$', 90),
+        ("pdf", "股市简报_*.pdf", r'(\d{4}-\d{2}-\d{2})_\d{4}\.pdf$'),
     ]:
-        cutoff_date = (today - timedelta(days=keep_days)).date()
-        dir_path = os.path.join(_BASE_DIR, "docs", subdir) if subdir else os.path.join(_BASE_DIR, "docs")
+        dir_path = os.path.join(_BASE_DIR, "docs", subdir)
         if not os.path.isdir(dir_path):
             continue
         for fp in _glob.glob(os.path.join(dir_path, pattern)):
@@ -1564,24 +1562,39 @@ def generate_pdf(html_path):
 # ============================================================
 
 def deploy_github_pages(html_content, session_slug="am"):
-    """将 HTML 写入 docs/ 目录，同时生成主文件和场次文件。"""
+    """将 HTML 写入 docs/ 目录：场次文件（真实内容）+ index.html + 主文件跳转桩。
+
+    历史做法把同一份 HTML 写三遍（report_日期.html / report_日期_场次.html /
+    index.html），每天白白多存 1-2 份 40-70KB 的完全相同副本。
+    现改为：真实内容只写场次文件与 index.html；无后缀主文件降级为 <1KB 的
+    跳转桩，老链接（含历史导航、收藏夹跨报告跳转）仍然可用。
+    """
     today = beijing_now().strftime("%Y%m%d")
     docs_dir = os.path.join(_BASE_DIR, "docs")
     os.makedirs(docs_dir, exist_ok=True)
 
-    # 主文件（最新报告，向后兼容）
-    report_path = os.path.join(docs_dir, f"report_{today}.html")
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
-
-    # 场次文件（早报/晚报独立保存，不被覆盖）
-    session_path = os.path.join(docs_dir, f"report_{today}_{session_slug}.html")
+    # 场次文件（早报/晚报独立保存，唯一真实内容副本）
+    session_name = f"report_{today}_{session_slug}.html"
+    session_path = os.path.join(docs_dir, session_name)
     with open(session_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
     # index.html → 最新报告
     with open(os.path.join(docs_dir, "index.html"), "w", encoding="utf-8") as f:
         f.write(html_content)
+
+    # 主文件（无后缀，向后兼容）→ 跳转桩，指向当日场次文件
+    report_path = os.path.join(docs_dir, f"report_{today}.html")
+    stub = (
+        "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n<meta charset=\"UTF-8\">\n"
+        f"<meta http-equiv=\"refresh\" content=\"0; url={session_name}\">\n"
+        "<meta name=\"robots\" content=\"noindex\">\n"
+        f"<title>MARKET BRIEF · {today} · 跳转中</title>\n</head>\n<body>\n"
+        f"<p>正在打开今日报告……如未自动跳转，请点击 <a href=\"{session_name}\">此处</a>。</p>\n"
+        "</body>\n</html>\n"
+    )
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write(stub)
 
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     if repo:
@@ -1621,6 +1634,9 @@ def generate_archive_page():
             continue
         date_str = m.group(1)  # YYYYMMDD
         session = m.group(2) or ""  # am/pm or empty (full day)
+        if not session:
+            # 无后缀主文件现为跳转桩，不再是独立报告，归档里不单列一行
+            continue
         try:
             year = date_str[:4]
             month = date_str[4:6]
@@ -1636,7 +1652,7 @@ def generate_archive_page():
             "day": day,
             "session": session,
             "filename": fname,
-            "label": "早报" if session == "am" else ("晚报" if session == "pm" else "全天"),
+            "label": "早报" if session == "am" else "晚报",
         })
 
     if not entries:
@@ -1896,7 +1912,8 @@ def main():
 
     # 7. PDF
     print("▸ 生成 PDF...")
-    html_file = f"docs/report_{today_str}.html"
+    # 必须渲染真实内容页：无后缀主文件已改为跳转桩，直接打印只会得到空白/跳转页
+    html_file = os.path.join(_BASE_DIR, "docs", f"report_{today_str}_{session_slug}.html")
     generate_pdf(html_file)
 
     # 8. 保存 Markdown
