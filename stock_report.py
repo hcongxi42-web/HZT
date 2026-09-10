@@ -1,12 +1,12 @@
 """
 独立版股市日报生成器 - 用于 GitHub Actions 定时运行
 多市场新闻聚合 + DeepSeek AI 分析 + 技术图表 + GitHub Pages 部署
-支持微信推送（Server酱）+ 多平台 Webhook
 """
 
 import json
 import os
 import re
+import sys
 import urllib.request
 import urllib.error
 import time
@@ -22,6 +22,15 @@ from news_fetcher import fetch_all_news_flat
 # 项目根目录（stock_report.py 所在目录）。所有文件路径锚定到此处，
 # 修复：从非仓库根目录启动时 prompts/ 静默为空、docs/ 写错位置的隐患。
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Windows 下 stdout/stderr 被重定向（写日志、管道、被外部工具捕获）时编码会退化为 GBK，
+# 日志里的 ⚠️ / ⏭ / ▸ 等字符会抛 UnicodeEncodeError，直接中断整条流水线。
+# 这里只把编码错误策略改成 replace（无法编码的字符变 "?"），不影响正常中文输出。
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(errors="replace")
+    except Exception:
+        pass
 
 
 # ============================================================
@@ -160,8 +169,44 @@ def get_session_label():
 #  指数行情抓取
 # ============================================================
 
+def _parse_sina_quote(code, name, parts):
+    """解析新浪行情字段为标准结构（纯函数，便于回归测试）。
+
+    字段实测（2026-09）:
+      - A股指数 sh/sz: [名称,今开,昨收,现价,最高,最低, ..., parts[30]=交易日, parts[31]=时间]
+      - 国际指数 int_: 仅 4 字段 [名称, 价格, 涨跌额, 涨跌幅]
+    """
+    if code.startswith("sh") or code.startswith("sz"):
+        price = float(parts[3])
+        prev_close = float(parts[2])
+        high = float(parts[4])
+        low = float(parts[5])
+        change_pct = (price - prev_close) / prev_close * 100 if prev_close else 0
+        return {
+            "name": name, "code": code,
+            "price": f"{price:.2f}",
+            "change": f"{change_pct:+.2f}%",
+            "high": f"{high:.2f}", "low": f"{low:.2f}",
+            "trade_date": parts[30] if len(parts) > 30 else "",
+        }
+    if code.startswith("int_"):
+        price = float(parts[1])
+        change_pct = float(parts[3]) if len(parts) > 3 else 0
+        return {
+            "name": name, "code": code,
+            "price": f"{price:.2f}",
+            "change": f"{change_pct:+.2f}%",
+            "high": "--", "low": "--",
+            "trade_date": "",
+        }
+    raise ValueError(f"未知行情代码: {code}")
+
+
 def fetch_index_quotes():
-    """从新浪财经抓取 A 股主要指数 + 恒生 + 纳斯达克 实时行情。"""
+    """从新浪财经抓取 A 股主要指数 + 恒生 + 纳斯达克 实时行情。
+
+    返回项含 trade_date（A 股指数的最新交易日，用于休市判断）。
+    """
     symbols = {
         "sh000001": "上证指数",
         "sz399001": "深证成指",
@@ -180,30 +225,10 @@ def fetch_index_quotes():
             with urllib.request.urlopen(req, timeout=10) as resp:
                 raw = resp.read().decode("gbk")
             parts = raw.split('"')[1].split(",")
-            if code.startswith("sh") or code.startswith("sz"):
-                price = float(parts[3])
-                prev_close = float(parts[2])
-                high = float(parts[4])
-                low = float(parts[5])
-                change_pct = (price - prev_close) / prev_close * 100 if prev_close else 0
-                results.append({
-                    "name": name, "code": code,
-                    "price": f"{price:.2f}",
-                    "change": f"{change_pct:+.2f}%",
-                    "high": f"{high:.2f}", "low": f"{low:.2f}",
-                })
-            elif code.startswith("int_"):
-                # 2026-09 实测：新浪 int_ 接口仅返回4字段 [名称, 价格, 涨跌额, 涨跌幅]
-                price = float(parts[1])
-                change_pct = float(parts[3]) if len(parts) > 3 else 0
-                results.append({
-                    "name": name, "code": code,
-                    "price": f"{price:.2f}",
-                    "change": f"{change_pct:+.2f}%",
-                    "high": "--", "low": "--",
-                })
+            results.append(_parse_sina_quote(code, name, parts))
         except Exception:
-            results.append({"name": name, "code": code, "price": "--", "change": "--", "high": "--", "low": "--"})
+            results.append({"name": name, "code": code, "price": "--", "change": "--",
+                            "high": "--", "low": "--", "trade_date": ""})
     return results
 
 
@@ -774,13 +799,11 @@ def call_stock_picker(news_text, opinion_context="", info_context=""):
     if truncated:
         # 被 max_tokens 截断 → 表格/正文 100% 不完整，残缺草稿风险高，宁缺毋滥
         print("  ⚠️ AI选股输出被截断（max_tokens），内容不完整，返回降级文案，不发布草稿")
-        _set_github_output("picks_status", "fallback")
         return PICKS_FALLBACK
     cleaned = _cleanup_report(raw, strip_bold=True)
     sanitized = _sanitize_stock_picks(cleaned)
     if sanitized is None:
         print("  ⚠️ AI选股生成异常（思考泄漏或无结构化输出），返回降级文案，不发布草稿")
-        _set_github_output("picks_status", "fallback")
         return PICKS_FALLBACK
     return sanitized
 
@@ -1775,6 +1798,18 @@ def main():
     for q in quotes:
         print(f"  {q['name']}: {q['price']} ({q['change']})")
 
+    # 休市判断（仅晚报）：收盘后，行情自带的最新交易日应等于今天；
+    # 若不等说明今天是节假日（A股休市），跳过以免生成"顶着今天日期、实则节前旧闻"的假报告。
+    # 注：早报在开盘前运行，行情最新交易日天然是上一交易日，不能套用该规则；
+    #     网络异常时 trade_date 为空 → 不拦截，保证正常出报。
+    if session_label == "晚报":
+        trade_date = next((q.get("trade_date") for q in quotes if q.get("trade_date")), "")
+        today_date = beijing_now().strftime("%Y-%m-%d")
+        if trade_date and trade_date != today_date:
+            print(f"⏭ 今日 A 股休市（行情最新交易日 {trade_date} ≠ 今天 {today_date}），跳过晚报")
+            _set_github_output("skip", "1")
+            return
+
     # 2. 新闻 + 资金面
     print("\n▸ 抓取多市场新闻 & 资金面数据...")
     news_list, fund_flow = fetch_all_news()
@@ -1790,6 +1825,8 @@ def main():
 
     if not a_news and not us_news and not hk_news:
         print("没有抓取到任何新闻，退出")
+        # 标记跳过：否则 workflow 仍会走提交 + 部署，空跑一次且无任何产出
+        _set_github_output("skip", "1")
         return
 
     # 3. 格式化 & LLM 分析

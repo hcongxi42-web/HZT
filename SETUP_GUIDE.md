@@ -49,8 +49,8 @@ GitHub Actions 部署到 GitHub Pages。
 | 变量 | 必填 | 说明 |
 |------|------|------|
 | `DEEPSEEK_API_KEY` | ✅ | DeepSeek 模型调用密钥 |
-| `SERVERCHAN_KEY` | ⬜ | Server 酱微信推送（可选） |
-| `WEBHOOK_URL` | ⬜ | 企业微信 / 钉钉 Webhook（可选） |
+
+> 本项目**没有**推送功能：报告通过 GitHub Pages 发布，需要通知请自行订阅 Pages 或另加脚本。
 
 `GITHUB_REPOSITORY` 与 `GITHUB_EVENT_NAME` 由 Actions 自动注入，无需配置。
 
@@ -77,7 +77,6 @@ python stock_report.py
   由 Python 内部判断交易日，非交易日跳过提交。
 - **手动触发**：在 Actions 页面点击 `Run workflow`（workflow_dispatch）。
 - **部署**：报告 HTML 提交回仓库后，自动上传并部署到 GitHub Pages。
-- **推送通知**：可选通过 `SERVERCHAN_KEY` / `WEBHOOK_URL` 发送。
 
 首次使用需在仓库 `Settings → Pages` 确认 Pages 源为 `GitHub Actions`。
 

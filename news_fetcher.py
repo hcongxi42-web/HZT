@@ -9,6 +9,7 @@
 
 import json
 import re
+import difflib
 import urllib.request
 import urllib.error
 from datetime import datetime, timedelta
@@ -47,17 +48,53 @@ def _clean_html(text):
     return re.sub(r"<[^>]+>", "", text or "")
 
 
-def _dedup_news(articles, key_fn=None):
-    """Remove duplicate articles by title similarity."""
+_PUNCT_RE = re.compile(
+    r"[\s\u3000【】\[\]（）()《》「」『』\"'“”‘’,，。、；;：:!！?？…—\-_/\\|*#☆★~～·]+"
+)
+
+
+def _norm_title(title):
+    """标题归一化：去标签/空白/标点/装饰符号并转小写，供跨源去重使用。
+
+    实测价值：同一件事被不同源写成「央行开展3000亿元MLF操作」/
+    「【央行】央行开展 3000 亿元 MLF 操作」时，旧的 title[:40] 精确匹配无法去重。
+    """
+    t = _clean_html(title or "")
+    return _PUNCT_RE.sub("", t).lower()
+
+
+def _dedup_news(articles, key_fn=None, similarity=0.9):
+    """移除重复文章：先按归一化标题精确去重，再做近似标题（相似度）合并。
+
+    - 标题长度 < 8 的短标题不做近似匹配，避免「央行降准 / 央行降息」被误合并
+    - 近似比较只针对已保留条目，n 很小（每市场数十条），开销可忽略
+    """
     if key_fn is None:
-        key_fn = lambda a: a.get("title", "")[:40]
+        def key_fn(a):
+            return _norm_title(a.get("title", ""))[:30]
+
     seen = set()
+    kept_keys = []
     result = []
     for a in articles:
         k = key_fn(a)
-        if k not in seen:
-            seen.add(k)
+        if not k:
+            # 标题为空的条目无法判重，保留（极少见）
             result.append(a)
+            continue
+        if k in seen:
+            continue
+        dup = False
+        if len(k) >= 8:
+            for rk in kept_keys:
+                if len(rk) >= 8 and difflib.SequenceMatcher(None, rk, k).ratio() >= similarity:
+                    dup = True
+                    break
+        if dup:
+            continue
+        seen.add(k)
+        kept_keys.append(k)
+        result.append(a)
     return result
 
 
@@ -298,12 +335,16 @@ def fetch_sina_us_stock(count=15):
         return [{"error": f"新浪美股抓取失败: {e}", "source": "新浪财经", "market": "美股"}]
 
 
-def fetch_us_stock_news():
-    """聚合美股新闻源。"""
+def fetch_us_stock_news(global_news=None):
+    """聚合美股新闻源。
+
+    global_news: 外部已抓取的「全球要闻」（由 fetch_all_news 统一请求一次后分发，
+    避免美股/港股各自重复请求同一接口）。
+    """
     all_articles = []
     all_articles.extend(fetch_sina_us_stock(15))
     all_articles.extend(fetch_em_kuaixun("111", "美股", 10))   # 美股快讯
-    all_articles.extend(fetch_em_kuaixun("105", "美股", 8))    # 全球要闻
+    all_articles.extend(global_news if global_news is not None else fetch_em_kuaixun("105", "美股", 8))
 
     valid = [a for a in all_articles if "error" not in a]
     errors = [a for a in all_articles if "error" in a]
@@ -349,11 +390,11 @@ def fetch_em_hk_news(count=15):
         return [{"error": f"东方财富港股抓取失败: {e}", "source": "东方财富", "market": "港股"}]
 
 
-def fetch_hk_stock_news():
-    """聚合港股新闻源。"""
+def fetch_hk_stock_news(global_news=None):
+    """聚合港股新闻源（global_news 语义同 fetch_us_stock_news）。"""
     all_articles = []
     all_articles.extend(fetch_em_hk_news(15))
-    all_articles.extend(fetch_em_kuaixun("105", "港股", 8))   # 全球要闻
+    all_articles.extend(global_news if global_news is not None else fetch_em_kuaixun("105", "港股", 8))
 
     valid = [a for a in all_articles if "error" not in a]
     errors = [a for a in all_articles if "error" in a]
@@ -364,6 +405,40 @@ def fetch_hk_stock_news():
 # ============================================================
 #  资金面数据 — 大盘资金流向
 # ============================================================
+
+def parse_fund_flow_klines(klines, days=5):
+    """把东财 fflow daykline 的原始行解析为结构化数据（纯函数，便于回归测试）。
+
+    真实列序（2026-09 实测对齐，单位：元）:
+      parts[0]=date, [1]=主力净流入, [2]=小单净流入,
+      [3]=中单净流入, [4]=大单净流入, [5]=超大单净流入
+    自洽校验: 超大单 + 大单 == 主力净流入；主力 + 小单 + 中单 == 0。
+    """
+    result = []
+    for row in klines[-days:]:
+        parts = row.split(",")
+        if len(parts) < 6:
+            continue
+        try:
+            main_net = float(parts[1]) / 1e8     # f52 主力净流入（=超大单+大单）
+            small = float(parts[2]) / 1e8        # f53 小单净流入
+            medium = float(parts[3]) / 1e8       # f54 中单净流入
+            large = float(parts[4]) / 1e8        # f55 大单净流入
+            super_large = float(parts[5]) / 1e8  # f56 超大单净流入
+        except ValueError:
+            continue
+        result.append({
+            "date": parts[0],
+            "net_flow": round(main_net, 2),
+            "main_in": round(max(0.0, super_large) + max(0.0, large), 2),
+            "main_out": round(abs(min(0.0, super_large)) + abs(min(0.0, large)), 2),
+            "super_large": round(super_large, 2),
+            "large": round(large, 2),
+            "medium": round(medium, 2),
+            "small": round(small, 2),
+        })
+    return result
+
 
 def fetch_market_fund_flow(days=5):
     """获取大盘主力资金流向（沪深300口径）。
@@ -391,33 +466,8 @@ def fetch_market_fund_flow(days=5):
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode())
 
-        result = []
         klines = data.get("data", {}).get("klines", [])
-        for row in klines[-days:]:
-            parts = row.split(",")
-            if len(parts) >= 6:
-                try:
-                    main_net = float(parts[1]) / 1e8   # f52 主力净流入（=超大单+大单）
-                    small = float(parts[2]) / 1e8      # f53 小单净流入
-                    medium = float(parts[3]) / 1e8     # f54 中单净流入
-                    large = float(parts[4]) / 1e8      # f55 大单净流入
-                    super_large = float(parts[5]) / 1e8  # f56 超大单净流入
-                    net_flow = main_net                # 主力净流入即最终口径
-                    main_in = max(0, super_large) + max(0, large)
-                    main_out = abs(min(0, super_large)) + abs(min(0, large))
-                except (ValueError, IndexError):
-                    continue
-                result.append({
-                    "date": parts[0],
-                    "net_flow": round(net_flow, 2),
-                    "main_in": round(main_in, 2),
-                    "main_out": round(main_out, 2),
-                    "super_large": round(super_large, 2),
-                    "large": round(large, 2),
-                    "medium": round(medium, 2),
-                    "small": round(small, 2),
-                })
-        return result
+        return parse_fund_flow_klines(klines, days)
 
     try:
         return _retry_fetch(_do_fetch)
@@ -453,12 +503,22 @@ def fetch_all_news(market="all"):
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = {}
 
+        # 「全球要闻」只请求一次，按市场打标签后分发给美股 / 港股
+        global_future = executor.submit(fetch_em_kuaixun, "105", "全球", 12)
+
+        def _global_for(mkt):
+            """取全球要闻并改写 market 标签（各市场分组显示需要）。"""
+            try:
+                return [dict(a, market=mkt) for a in global_future.result()]
+            except Exception:
+                return []
+
         if market in ("all", "a"):
             futures["a"] = executor.submit(fetch_a_stock_news)
         if market in ("all", "us"):
-            futures["us"] = executor.submit(fetch_us_stock_news)
+            futures["us"] = executor.submit(lambda: fetch_us_stock_news(_global_for("美股")))
         if market in ("all", "hk"):
-            futures["hk"] = executor.submit(fetch_hk_stock_news)
+            futures["hk"] = executor.submit(lambda: fetch_hk_stock_news(_global_for("港股")))
         futures["fund"] = executor.submit(fetch_market_fund_flow, 5)
 
         for key, future in futures.items():
