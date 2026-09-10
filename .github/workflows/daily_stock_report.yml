@@ -35,6 +35,8 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          # 触发本次运行的 cron 表达式：用于精确判定早报/晚报（调度延迟跨午夜也不会误判）
+          GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: python stock_report.py
 
       - name: Commit HTML to Repo

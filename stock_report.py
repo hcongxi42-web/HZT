@@ -67,12 +67,14 @@ def _load_up_config():
 UP_CONFIG = _load_up_config()
 
 
-def find_today_opinions(opinion_dir=None, date_offset=0):
+def find_today_opinions(opinion_dir=None, date_offset=0, base_date=None):
     """扫描 UP主观点目录（含子目录），返回指定日期的转录文件列表。
 
     Args:
         opinion_dir: 观点文件根目录
-        date_offset: 日期偏移量，0=今天，-1=昨天（早报用），1=明天
+        date_offset: 日期偏移量，0=当天，-1=前一天（早报用），1=后一天
+        base_date: 基准时间，默认取当前北京时间；延迟运行时传"报告归属时间"，
+                   避免跨午夜后取错日期的转录文件
 
     支持两种组织方式：
       - 扁平：up主的每日观点/xxx.ai-zh.txt
@@ -89,7 +91,7 @@ def find_today_opinions(opinion_dir=None, date_offset=0):
     if not os.path.isdir(opinion_dir):
         return []
 
-    target = beijing_now() + timedelta(days=date_offset)
+    target = (base_date or beijing_now()) + timedelta(days=date_offset)
     target_month = target.month
     target_day = target.day
 
@@ -156,13 +158,130 @@ def find_today_opinions(opinion_dir=None, date_offset=0):
     return results
 
 
-def get_session_label():
-    """根据北京时间判断报告场次（A股交易时段）。"""
-    hour = beijing_now().hour
-    if hour < 12:
-        return "早报", "am"
-    else:
-        return "晚报", "pm"
+# 定时任务 → 场次映射。必须按【触发本子的 cron】判定，不能按实际执行时刻：
+# GitHub Actions 定时任务常延迟数小时，22:17 的晚报一旦跨过午夜才执行，
+# 按小时判断就会误判为早报（文件名也写到次日 _am，导致晚报丢失、被早报顶掉）。
+CRON_SESSIONS = {
+    "17 14 * * *": ("晚报", "pm"),   # 北京时间 22:17
+    "17 23 * * *": ("早报", "am"),   # 北京时间次日 07:17
+}
+
+
+def get_session_label(now=None, schedule=None):
+    """判断本次报告场次，返回 (中文标签, 文件名后缀)。
+
+    优先级：
+      1) 定时触发 → 按触发用的 cron 精确映射（不受调度延迟影响）；
+      2) 手动触发 / 未知 cron / 本地运行 → 退回按小时判断（原行为）。
+    """
+    if schedule is None:
+        schedule = os.environ.get("GITHUB_EVENT_SCHEDULE", "")
+    key = " ".join(str(schedule).split())
+    if key in CRON_SESSIONS:
+        return CRON_SESSIONS[key]
+
+    now = now or beijing_now()
+    return ("早报", "am") if now.hour < 12 else ("晚报", "pm")
+
+
+def get_report_time(session_slug, now=None):
+    """本次报告【归属的发布时间】。
+
+    晚报纸定为 22:17：若实际执行已跨过午夜（0–11 点），归属时间回退一天，
+    保证晚报写进"当天"的 _pm 文件，而不是次日的 _am 文件。
+    """
+    now = now or beijing_now()
+    if session_slug == "pm" and now.hour < 12:
+        return now - timedelta(days=1)
+    return now
+
+
+# ============================================================
+#  交易日判断 & 运行摘要
+# ============================================================
+
+MARKET_HOLIDAYS_FILE = os.path.join(_BASE_DIR, "holidays.json")
+
+
+def load_market_holidays():
+    """读取法定休市日表 holidays.json，失败返回空集合。
+
+    格式: {"holidays": ["2026-10-01", ...]}
+    只填**工作日**休市日（周六周日由程序自动跳过，无需重复登记）。
+    """
+    if not os.path.exists(MARKET_HOLIDAYS_FILE):
+        return set()
+    try:
+        with open(MARKET_HOLIDAYS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        items = data.get("holidays", []) if isinstance(data, dict) else list(data)
+        return {d.strip() for d in items if isinstance(d, str) and d.strip()}
+    except Exception as e:
+        print(f"[WARN] holidays.json 解析失败，本次忽略节假日表: {e}")
+        return set()
+
+
+def get_skip_reason(quotes=None, session_label="晚报", now=None, holidays=None):
+    """统一判断本次运行是否应跳过（纯逻辑，便于回归测试）。
+
+    返回原因字符串；空串表示正常出报。规则自上而下：
+      1) 周六全天不更新；周日仅跳过早报（周日晚报是"周末版"，保留）；
+      2) 命中 holidays.json 的法定休市日 → 早报/晚报都跳过（解决早报拿不到当天行情、
+         无法自证的缺口）；
+      3) 晚报且在**工作日**：行情自带的最新交易日 ≠ 今天 → 判定休市（数据自证，
+         可兜住节假日表漏配的情况）。周末不做此判断，否则周日晚报会被误杀。
+         网络异常导致 trade_date 缺失时不拦截，保证正常出报。
+    """
+    now = now or beijing_now()
+    wd = now.weekday()  # 0=Mon ... 5=Sat 6=Sun
+
+    if wd == 5:
+        return "周六不更新"
+    if wd == 6 and session_label == "早报":
+        return "周日不更新早报"
+
+    today_date = now.strftime("%Y-%m-%d")
+    if holidays is None:
+        holidays = load_market_holidays()
+    if today_date in holidays:
+        return f"今日为法定休市日（{today_date}）"
+
+    if session_label == "晚报" and wd < 5 and quotes:
+        trade_date = next((q.get("trade_date") for q in quotes if q.get("trade_date")), "")
+        if trade_date and trade_date != today_date:
+            return f"今日 A 股休市（行情最新交易日 {trade_date} ≠ 今天 {today_date}）"
+    return ""
+
+
+def write_run_summary(rows, title="本次运行体检单"):
+    """输出运行摘要：stdout + GitHub Actions 运行页摘要（GITHUB_STEP_SUMMARY）。
+
+    rows: [(项目, 状态, 备注), ...]
+    目的：某节降级/失败不再只藏在几百行日志里，Actions 页面一眼可见。
+    """
+    lines = [f"## {title}", "", "| 项目 | 状态 | 备注 |", "|------|------|------|"]
+    for name, status, note in rows:
+        lines.append(f"| {name} | {status} | {note or '—'} |")
+
+    print("\n" + "-" * 60)
+    for name, status, note in rows:
+        print(f"  {name}: {status}" + (f"（{note}）" if note else ""))
+    print("-" * 60)
+
+    summary_file = os.environ.get("GITHUB_STEP_SUMMARY", "")
+    if summary_file:
+        try:
+            with open(summary_file, "a", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+        except Exception as e:
+            print(f"[WARN] 写入 Actions 摘要失败: {e}")
+
+
+def _abort_run(reason):
+    """统一的"跳过本次运行"出口：打印 + 标记 skip + 摘要页留痕。"""
+    print(f"⏭ {reason}")
+    _set_github_output("skip", "1")
+    write_run_summary([("本次运行", "跳过", reason)])
 
 
 # ============================================================
@@ -233,15 +352,170 @@ def fetch_index_quotes():
 
 
 # ============================================================
+#  市场情绪硬指标（涨跌家数 / 成交额 / 涨跌停 / 板块涨跌榜）
+#  目的：让"大盘情绪"有数据支撑，而不是让模型拿新闻语气去猜。
+# ============================================================
+
+_EM_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+          "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+_EM_REF = "https://quote.eastmoney.com/"
+
+
+def _em_get_json(url, referer=_EM_REF, timeout=12, retries=2):
+    """轻量 GET+JSON：失败退避重试，最终失败返回 None（调用方优雅降级，绝不编数据）。"""
+    last_err = None
+    for attempt in range(retries + 1):
+        try:
+            req = urllib.request.Request(
+                url, headers={"User-Agent": _EM_UA, "Referer": referer})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read().decode())
+        except Exception as e:
+            last_err = e
+            if attempt < retries:
+                time.sleep(2 * (attempt + 1))
+    print(f"  [WARN] 情绪指标接口失败（已省略该项）: {last_err}")
+    return None
+
+
+def parse_breadth_payload(data):
+    """解析 push2 ulist.np 返回 → 涨跌家数 / 两市成交额 / 各指数涨跌幅（纯函数）。
+
+    字段实测（2026-09-10）: f104=上涨家数 f105=下跌家数 f106=平盘家数 f6=成交额(元)。
+    """
+    diff = ((data or {}).get("data") or {}).get("diff") or []
+    up = down = flat = 0
+    turnover_yi = 0.0
+    indexes = []
+    for it in diff:
+        if not isinstance(it, dict):
+            continue
+        for key, acc in (("f104", "up"), ("f105", "down"), ("f106", "flat")):
+            v = it.get(key)
+            if isinstance(v, (int, float)):
+                if acc == "up":
+                    up += int(v)
+                elif acc == "down":
+                    down += int(v)
+                else:
+                    flat += int(v)
+        amt = it.get("f6")
+        if isinstance(amt, (int, float)):
+            turnover_yi += amt / 1e8
+        if isinstance(it.get("f3"), (int, float)):
+            indexes.append((str(it.get("f14", "")), float(it["f3"])))
+    if not indexes:
+        return None
+    return {"up": up, "down": down, "flat": flat,
+            "turnover_yi": round(turnover_yi, 1), "indexes": indexes}
+
+
+def parse_pool_count(data):
+    """解析涨停池/跌停池返回 → 家数（纯函数；实测 data.tc）。"""
+    tc = ((data or {}).get("data") or {}).get("tc")
+    return int(tc) if isinstance(tc, (int, float)) else None
+
+
+def parse_sector_list(data, limit=5):
+    """解析 clist 板块榜 → [(板块名, 涨跌幅%)]（纯函数）。"""
+    diff = ((data or {}).get("data") or {}).get("diff") or []
+    out = []
+    for it in diff:
+        if not isinstance(it, dict):
+            continue
+        name, chg = it.get("f14"), it.get("f3")
+        if name and isinstance(chg, (int, float)):
+            out.append((str(name), float(chg)))
+        if len(out) >= limit:
+            break
+    return out
+
+
+def fetch_market_sentiment(trade_date=""):
+    """抓取市场情绪硬指标：涨跌家数、两市成交额、涨跌停家数、板块涨跌榜。
+
+    trade_date: "YYYYMMDD"。涨停/跌停池必须传【最近交易日】（早报在开盘前运行，
+                当天尚无池数据，传当天会得到 0 家这种假数据）。
+    任一子项失败 → 该项缺失、报告中对应行省略；全部失败 → 返回 {}。
+    """
+    sentiment = {}
+
+    breadth = parse_breadth_payload(_em_get_json(
+        "https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2"
+        "&secids=1.000001,0.399001&fields=f12,f14,f3,f6,f104,f105,f106"))
+    if breadth:
+        sentiment["breadth"] = breadth
+
+    if trade_date:
+        zt = parse_pool_count(_em_get_json(
+            "https://push2ex.eastmoney.com/getTopicZTPool?ut=7eea3edcaed734bea9cbfc24409ed989"
+            f"&dpt=wz.ztzt&Pageindex=0&pagesize=1&sort=fbt:asc&date={trade_date}"))
+        dt_count = parse_pool_count(_em_get_json(
+            "https://push2ex.eastmoney.com/getTopicDTPool?ut=7eea3edcaed734bea9cbfc24409ed989"
+            f"&dpt=wz.ztzt&Pageindex=0&pagesize=1&sort=fund:asc&date={trade_date}"))
+        if zt is not None or dt_count is not None:
+            sentiment["limit"] = {"zt": zt, "dt": dt_count}
+
+    top = parse_sector_list(_em_get_json(
+        "https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=5&po=1&np=1&fltt=2&invt=2"
+        "&fid=f3&fs=m:90+t:2+f:!50&fields=f12,f14,f3"))
+    bottom = parse_sector_list(_em_get_json(
+        "https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=5&po=0&np=1&fltt=2&invt=2"
+        "&fid=f3&fs=m:90+t:2+f:!50&fields=f12,f14,f3"))
+    if top or bottom:
+        sentiment["sectors"] = {"top": top, "bottom": bottom}
+
+    return sentiment
+
+
+def format_sentiment_block(sentiment, trade_date_label=""):
+    """把情绪硬指标格式化为 LLM 可读文本（缺失项自动省略）。"""
+    if not sentiment:
+        return ""
+    suffix = f"（{trade_date_label}）" if trade_date_label else ""
+    lines = [f"## 市场情绪硬指标{suffix}", ""]
+
+    b = sentiment.get("breadth")
+    if b:
+        lines.append(f"- 涨跌家数（两市合计）：上涨 {b['up']} 家 / 下跌 {b['down']} 家 / 平盘 {b['flat']} 家")
+        lines.append(f"- 两市成交额：{b['turnover_yi']:.0f} 亿元")
+        if b.get("indexes"):
+            lines.append("- 指数涨跌：" + "、".join(f"{n} {c:+.2f}%" for n, c in b["indexes"]))
+
+    lim = sentiment.get("limit")
+    if lim:
+        parts = []
+        if lim.get("zt") is not None:
+            parts.append(f"涨停 {lim['zt']} 家")
+        if lim.get("dt") is not None:
+            parts.append(f"跌停 {lim['dt']} 家")
+        if parts:
+            lines.append("- 涨跌停：" + "、".join(parts))
+
+    sec = sentiment.get("sectors")
+    if sec:
+        if sec.get("top"):
+            lines.append("- 板块涨幅前五：" + "、".join(f"{n} {c:+.2f}%" for n, c in sec["top"]))
+        if sec.get("bottom"):
+            lines.append("- 板块跌幅前五：" + "、".join(f"{n} {c:+.2f}%" for n, c in sec["bottom"]))
+
+    lines.append("")
+    return "\n".join(lines)
+
+
+# ============================================================
 #  新闻抓取 & 格式化
 # ============================================================
 
 def fetch_all_news():
-    """抓取全市场新闻 + 资金面数据（已通过 news_fetcher 聚合）。"""
+    """抓取全市场新闻 + 资金面数据（已通过 news_fetcher 聚合）。
+
+    返回 (articles, fund_flow, errors)；errors 供运行摘要统计接口失败数。
+    """
     articles, errors, fund_flow = fetch_all_news_flat("all")
     for err in errors:
         print(f"  [WARN] {err.get('error', str(err))}")
-    return articles, fund_flow
+    return articles, fund_flow, errors
 
 
 def _fmt_time_short(time_str):
@@ -264,8 +538,51 @@ def _fmt_time_short(time_str):
     return time_str[:11] if len(time_str) >= 11 else time_str
 
 
-def format_news(news_list, fund_flow=None):
-    """将多市场新闻和资金面数据格式化为 LLM 可读文本。"""
+# 每市场送入 LLM 的条数上限 + 各来源的保底配额。
+# 旧行为是 articles[:30]：源顺序为 快讯(20)+公告要闻(10)+公司新闻(10)+要闻栏目(10)+新浪滚动(10)，
+# 前两个源就把 30 条吃满，导致后三个源（30 条原始请求量）每次都被整段截断丢弃。
+NEWS_MARKET_CAP = 45
+NEWS_SOURCE_QUOTAS = {
+    "em102": 12,         # 东财·全部快讯（时效性最强）
+    "em103": 8,          # 东财·公告要闻
+    "em110": 8,          # 东财·公司新闻
+    "em_news_list": 6,   # 东财·要闻栏目
+    "sina_roll": 6,      # 新浪·滚动
+    "em111": 10,         # 东财·美股快讯
+    "em105": 8,          # 东财·全球要闻
+    "hk_news": 12,       # 东财·港股栏目
+}
+NEWS_DEFAULT_QUOTA = 6
+
+
+def select_news_by_quota(articles, per_market_cap=NEWS_MARKET_CAP, quotas=None,
+                        default_quota=NEWS_DEFAULT_QUOTA):
+    """按来源配额挑选新闻，保证多源覆盖（纯函数，便于回归测试）。
+
+    先按来源各取保底 N 条，不足上限时再用剩余条目回填，最后受 per_market_cap 限制。
+    """
+    quotas = NEWS_SOURCE_QUOTAS if quotas is None else quotas
+    buckets = {}
+    for a in articles:
+        key = a.get("bucket") or a.get("type") or ""
+        buckets.setdefault(key, []).append(a)
+
+    picked, overflow = [], []
+    for key, items in buckets.items():
+        quota = quotas.get(key, default_quota)
+        picked.extend(items[:quota])
+        overflow.extend(items[quota:])
+
+    if len(picked) < per_market_cap:
+        picked.extend(overflow[:per_market_cap - len(picked)])
+    return picked[:per_market_cap]
+
+
+def format_news(news_list, fund_flow=None, sentiment=None, trade_date_label=""):
+    """将多市场新闻、资金面和情绪硬指标格式化为 LLM 可读文本。
+
+    sentiment: fetch_market_sentiment() 的结果，无数据时传 None/{}（该段自动省略）。
+    """
     today_str = beijing_now().strftime("%Y-%m-%d")
     day_desc = "是交易日" if beijing_now().weekday() < 5 else "非交易日（周末）"
 
@@ -274,6 +591,11 @@ def format_news(news_list, fund_flow=None):
         f"今日 {today_str} {day_desc}，以下为当日多市场资讯汇总。",
         "",
     ]
+
+    # ---- 情绪硬指标（最优先参考，缺失自动省略）----
+    sent_block = format_sentiment_block(sentiment or {}, trade_date_label)
+    if sent_block:
+        lines.append(sent_block)
 
     # ---- 资金面概览 ----
     if fund_flow:
@@ -303,9 +625,14 @@ def format_news(news_list, fund_flow=None):
     for mkt_name, articles in markets.items():
         if not articles:
             continue
+        selected = select_news_by_quota(articles)
         lines.append(f"\n## {mkt_name} ({len(articles)}条)")
+        if len(articles) < 5:
+            lines.append(f"（样本不足：该市场仅 {len(articles)} 条资讯，相关判断请谨慎，不要下重结论）")
+        elif len(selected) < len(articles):
+            lines.append(f"（按来源配额精选 {len(selected)} 条送入分析）")
 
-        for i, a in enumerate(articles[:30], 1):
+        for i, a in enumerate(selected, 1):
             title = a.get("title", "")
             summary = a.get("summary", "")
             time_str = a.get("time", "")
@@ -766,7 +1093,10 @@ def _call_deepseek_safe(system_prompt, user_prompt, temperature=0.5, max_tokens=
 
 
 def call_llm(news_text):
-    """调用 LLM 生成市场分析报告，并清理 #### / *** 标记与思考过程。"""
+    """调用 LLM 生成市场分析报告，并清理 #### / *** 标记与思考过程。
+
+    返回 (正文, 状态)，状态 ∈ {"ok", "fallback"}，供运行摘要展示。
+    """
     # 注意：deepseek-v4-flash 会把推理链写进 content（而非 reasoning_content），
     # 思考约耗 4000-5000 token。若额度只给正文，正文会被截断（9/7 线上停在"理由："）。
     # 故给足额度，让"思考+正文"都写得完，再由 _sanitize_analyst 裁掉思考部分。
@@ -778,8 +1108,8 @@ def call_llm(news_text):
     if truncated and not all(s in text for s in required_sections):
         # 被截断且结构不完整 → 内容残缺，宁缺毋滥
         print("  ⚠️ 盘面分析被截断且结构不完整，返回降级文案")
-        return ANALYST_FALLBACK
-    return text
+        return (ANALYST_FALLBACK, "fallback")
+    return (text, "ok")
 
 
 def call_stock_picker(news_text, opinion_context="", info_context=""):
@@ -1178,13 +1508,16 @@ def _load_asset(rel_path):
 def generate_html_report(report, quotes, news_list, page_url="", page_base_url="",
                          fund_flow=None, session_label="早报", session_slug="am",
                          opinion_html="", opinion_title="今日收盘UP主观点",
-                         style_css=None, script_js=None, up_count=0):
-    """生成 Bloomberg Terminal 风格 HTML 详情页。"""
-    bj_now = beijing_now()
+                         style_css=None, script_js=None, up_count=0, report_time=None):
+    """生成 Bloomberg Terminal 风格 HTML 详情页。
+
+    report_time 为报告【归属日期】（延迟运行时可能是昨天），未传则取当前时间。
+    """
+    bj_now = report_time or beijing_now()
     today = bj_now.strftime("%Y-%m-%d")
     today_en = bj_now.strftime("%B %d, %Y")
     now_str = bj_now.strftime("%H:%M")
-    update_datetime = bj_now.strftime("%Y-%m-%d %H:%M")  # 完整时间戳，页面展示用
+    update_datetime = beijing_now().strftime("%Y-%m-%d %H:%M")  # 实际生成时间戳，页面展示用
     weekday_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     weekday_cn = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
     weekday = weekday_names[bj_now.weekday()]
@@ -1766,30 +2099,32 @@ def generate_archive_page():
 # ============================================================
 
 def main():
+    # 场次由【触发的 cron】决定（不受 GitHub Actions 调度延迟影响），
+    # 报告归属时间在跨午夜延迟运行时回退一天，避免晚报被写成次日 _am。
     session_label, session_slug = get_session_label()
-    print(f"[{beijing_now()}] 开始生成每日市场情报（{session_label}）...")
+    report_time = get_report_time(session_slug)
+    today_str = report_time.strftime("%Y%m%d")
+    actual_now = beijing_now()
+    delay_note = ""
+    if report_time.date() != actual_now.date():
+        delay_note = (f" ⚠ 调度延迟：本子属于 {report_time.strftime('%Y-%m-%d')} {session_label}，"
+                      f"实际执行于 {actual_now.strftime('%Y-%m-%d %H:%M')}")
+    print(f"[{actual_now}] 开始生成每日市场情报（{session_label} · 报告日期 {report_time.strftime('%Y-%m-%d')}）...{delay_note}")
     print()
 
-    # 周末判断：周六全天不更新，周日只更新晚报
-    wd = beijing_now().weekday()  # 0=Mon ... 5=Sat 6=Sun
-    if wd == 5:  # 周六
-        print("⏭ 周六不更新，退出")
-        _set_github_output("skip", "1")
-        return
-    if wd == 6 and session_label == "早报":  # 周日早报不更新
-        print("⏭ 周日不更新早报，退出")
-        _set_github_output("skip", "1")
+    # 周末 / 法定休市日判断（周六全天、周日早报、节假日表命中 → 跳过）；按归属日期判断
+    early_reason = get_skip_reason(None, session_label, now=report_time)
+    if early_reason:
+        _abort_run(early_reason)
         return
 
     # 防重复：自动 cron 触发时，如本场次报告已存在则跳过（手动触发不受限制）
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
     if event_name == "schedule":
-        today_str = beijing_now().strftime("%Y%m%d")
-        existing_report = f"docs/report_{today_str}_{session_slug}.html"
+        existing_report = os.path.join(_BASE_DIR, "docs", f"report_{today_str}_{session_slug}.html")
         if os.path.exists(existing_report):
-            print(f"⏭ 本场次报告已存在（{existing_report}），跳过重复生成")
-            print("  （如确需重新生成，请通过 Actions 页面手动触发 workflow_dispatch）")
-            _set_github_output("skip", "1")
+            _abort_run(f"本场次报告已存在（report_{today_str}_{session_slug}.html），跳过重复生成；"
+                       "如需重新生成请在 Actions 页面手动触发")
             return
 
     # 1. 行情
@@ -1798,21 +2133,26 @@ def main():
     for q in quotes:
         print(f"  {q['name']}: {q['price']} ({q['change']})")
 
-    # 休市判断（仅晚报）：收盘后，行情自带的最新交易日应等于今天；
-    # 若不等说明今天是节假日（A股休市），跳过以免生成"顶着今天日期、实则节前旧闻"的假报告。
-    # 注：早报在开盘前运行，行情最新交易日天然是上一交易日，不能套用该规则；
-    #     网络异常时 trade_date 为空 → 不拦截，保证正常出报。
-    if session_label == "晚报":
-        trade_date = next((q.get("trade_date") for q in quotes if q.get("trade_date")), "")
-        today_date = beijing_now().strftime("%Y-%m-%d")
-        if trade_date and trade_date != today_date:
-            print(f"⏭ 今日 A 股休市（行情最新交易日 {trade_date} ≠ 今天 {today_date}），跳过晚报")
-            _set_github_output("skip", "1")
-            return
+    # 休市二次判断：用行情自带的最新交易日自证（兜住节假日表漏配）
+    late_reason = get_skip_reason(quotes, session_label, now=report_time)
+    if late_reason:
+        _abort_run(late_reason)
+        return
 
-    # 2. 新闻 + 资金面
+    # 2. 新闻 + 资金面 + 情绪硬指标（并行，互不依赖）
     print("\n▸ 抓取多市场新闻 & 资金面数据...")
-    news_list, fund_flow = fetch_all_news()
+    # 涨停/跌停池必须按【最近交易日】查询：早报在开盘前运行，当天尚无池数据
+    trade_date_label = next((q.get("trade_date") for q in quotes if q.get("trade_date")), "")
+    sent_date = trade_date_label.replace("-", "") or report_time.strftime("%Y%m%d")
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        news_future = executor.submit(fetch_all_news)
+        sentiment_future = executor.submit(fetch_market_sentiment, sent_date)
+        news_list, fund_flow, news_errors = news_future.result()
+        sentiment = sentiment_future.result()
+    if sentiment:
+        print(f"  情绪指标: 已获取 {list(sentiment.keys())}")
+    else:
+        print("  情绪指标: 未获取（本次报告不含该板块）")
 
     a_news = [n for n in news_list if n.get("market") == "A股" and "error" not in n]
     us_news = [n for n in news_list if n.get("market") == "美股" and "error" not in n]
@@ -1824,15 +2164,14 @@ def main():
         print(f"  主力资金({latest['date']}): {direction} {abs(latest['net_flow']):.1f}亿")
 
     if not a_news and not us_news and not hk_news:
-        print("没有抓取到任何新闻，退出")
         # 标记跳过：否则 workflow 仍会走提交 + 部署，空跑一次且无任何产出
-        _set_github_output("skip", "1")
+        _abort_run(f"未抓取到任何新闻（接口错误 {len(news_errors)} 个），跳过本次生成")
         return
 
     # 3. 格式化 & LLM 分析
-    news_text = format_news(news_list, fund_flow)
+    news_text = format_news(news_list, fund_flow, sentiment, trade_date_label)
     print("\n▸ 生成 AI 市场分析...")
-    report = call_llm(news_text)
+    report, analyst_status = call_llm(news_text)
 
     # 4. 财经观点蒸馏 + 信息差 — 先扫描UP主文件（选股需用到观点上下文）
     if session_label == "早报":
@@ -1845,7 +2184,7 @@ def main():
         date_offset = 0
 
     print(f"\n▸ 扫描UP主观点文件（{opinion_title}）...")
-    all_files = find_today_opinions(date_offset=date_offset)
+    all_files = find_today_opinions(date_offset=date_offset, base_date=report_time)
     opinion_files = [o for o in all_files if o["kind"] == "opinion"]
     info_files = [o for o in all_files if o["kind"] == "info"]
 
@@ -1853,6 +2192,8 @@ def main():
     info_context = ""      # 信息差原始内容，传给选股
     opinion_md = ""        # UP主蒸馏 markdown，追加到 report
     info_md = ""           # 信息差提炼结果
+    opinion_status = "无输入"   # 运行摘要用
+    info_status = "无输入"
 
     # 4a. 预处理：组装 UP主观点文本
     combined_text = ""
@@ -1887,6 +2228,7 @@ def main():
                 if opinion_md and "暂时不可用" not in opinion_md:
                     report += f"\n\n---\n\n{opinion_md_title}\n\n{opinion_md}"
                     opinion_context = f"## UP主市场观点（AI蒸馏）\n\n{opinion_md}"
+                    opinion_status = "正常"
                     print("  观点蒸馏完成")
                 else:
                     print(f"  观点分析失败: {opinion_md[:100] if opinion_md else '无返回'}")
@@ -1895,6 +2237,7 @@ def main():
                     if combined_text:
                         opinion_context = f"## UP主市场观点（原文）\n\n{combined_text}"
                         report += f"\n\n---\n\n{opinion_md_title}\n\n{combined_text}"
+                        opinion_status = "降级（展示原文）"
                         print("  已降级展示UP主观点原文")
 
             if info_future:
@@ -1902,20 +2245,22 @@ def main():
                 if info_md and "暂时不可用" not in info_md:
                     info_context = f"## 信息差提炼（AI 提取关键事实）\n\n{info_md}"
                     report += f"\n\n---\n\n## 信息差提炼\n\n{info_md}"
+                    info_status = "正常"
                     print("  信息差提炼完成")
                 else:
                     print(f"  信息差提炼失败: {info_md[:100] if info_md else '无返回'}")
                     info_context = f"## 信息差补充\n\n{info_raw}"
                     report += f"\n\n---\n\n## 信息差补充\n\n{info_raw}"
+                    info_status = "降级（展示原文）"
 
     # 5. AI 选股 — 融合新闻 + UP主观点 + 信息差
     print("\n▸ 执行 AI 产业链选股（融合新闻+观点+信息差）...")
     stock_picks = call_stock_picker(news_text,
                                     opinion_context=opinion_context,
                                     info_context=info_context)
+    picks_status = "降级（未发布草稿）" if stock_picks == PICKS_FALLBACK else "正常"
 
-    # 预先构造 GitHub Pages URL
-    today_str = beijing_now().strftime("%Y%m%d")
+    # 预先构造 GitHub Pages URL（today_str 已在开头按报告归属日期算好）
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     if repo:
         owner = repo.split("/")[0].lower()
@@ -1944,14 +2289,14 @@ def main():
     page_url = f"{page_base_url}report_{today_str}.html"
     html = generate_html_report(report, quotes, news_list, page_url, page_base_url,
                                 fund_flow, session_label=session_label, session_slug=session_slug,
-                                up_count=len(opinion_files))
+                                up_count=len(opinion_files), report_time=report_time)
     page_url = deploy_github_pages(html, session_slug=session_slug)
 
     # 7. PDF
     print("▸ 生成 PDF...")
     # 必须渲染真实内容页：无后缀主文件已改为跳转桩，直接打印只会得到空白/跳转页
     html_file = os.path.join(_BASE_DIR, "docs", f"report_{today_str}_{session_slug}.html")
-    generate_pdf(html_file)
+    pdf_path = generate_pdf(html_file)
 
     # 8. 保存 Markdown
     report_file = os.path.join(_BASE_DIR, f"report_{beijing_now().strftime('%Y%m%d_%H%M')}.md")
@@ -1966,6 +2311,43 @@ def main():
         with open(github_output, "a") as f:
             f.write(f"report_file={report_file}\n")
             f.write(f"page_url={page_url}\n")
+
+    # 10. 运行摘要（stdout + Actions 运行页），各节降级一眼可见
+    # 情绪指标摘要文案
+    sent_note = ""
+    if sentiment.get("breadth"):
+        _b = sentiment["breadth"]
+        sent_note = f"涨{_b['up']}/跌{_b['down']} · 成交{_b['turnover_yi']:.0f}亿"
+    if sentiment.get("limit"):
+        _l = sentiment["limit"]
+        _extra = []
+        if _l.get("zt") is not None:
+            _extra.append(f"涨停{_l['zt']}")
+        if _l.get("dt") is not None:
+            _extra.append(f"跌停{_l['dt']}")
+        if _extra:
+            sent_note = (sent_note + " · " if sent_note else "") + " · ".join(_extra)
+
+    # 样本不足提醒（<5 条的市场单独标出）
+    thin = [n for n, c in (("A股", len(a_news)), ("美股", len(us_news)), ("港股", len(hk_news))) if c < 5]
+
+    write_run_summary([
+        ("运行场次", f"{session_label} · {report_time.strftime('%Y-%m-%d')}",
+         delay_note.strip(" ⚠") if delay_note else f"实际 {actual_now.strftime('%m-%d %H:%M')}"),
+        ("指数行情", f"{sum(1 for q in quotes if q['price'] != '--')}/{len(quotes)} 条有效", ""),
+        ("新闻 A/美/港", f"{len(a_news)} / {len(us_news)} / {len(hk_news)} 条",
+         ("接口错误 %d 个；" % len(news_errors) if news_errors else "")
+         + (f"样本不足: {'/'.join(thin)}" if thin else "")),
+        ("情绪硬指标", "正常" if sentiment else "无数据（本节省略）", sent_note),
+        ("资金面（沪深300）", "正常" if fund_flow else "无数据（面板隐藏）",
+         fund_flow[-1]["date"] if fund_flow else ""),
+        ("盘面分析", "正常" if analyst_status == "ok" else "降级（未发布草稿）", ""),
+        ("UP主观点", opinion_status, f"匹配 {len(opinion_files)} 位" if opinion_files else "无文件"),
+        ("信息差", info_status, f"匹配 {len(info_files)} 条" if info_files else "无文件"),
+        ("AI选股", picks_status, ""),
+        ("PDF", "已生成" if pdf_path else "跳过（本地无 Chrome 或失败）", ""),
+        ("产出", f"report_{today_str}_{session_slug}.html + index.html", page_url),
+    ])
 
     print(f"\n[{beijing_now()}] 完成")
 

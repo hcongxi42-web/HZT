@@ -127,7 +127,7 @@ def _retry_fetch(fn, *args, max_retries=3, **kwargs):
 #  A 股新闻
 # ============================================================
 
-def fetch_em_kuaixun(type_id="102", market="A股", count=20):
+def fetch_em_kuaixun(type_id="102", market="A股", count=20, bucket=None):
     """从东方财富快讯 API 抓取新闻（**主力源**，含完整摘要）。
 
     type_id:
@@ -136,6 +136,9 @@ def fetch_em_kuaixun(type_id="102", market="A股", count=20):
       105 = 全球要闻
       110 = A股公司新闻
       111 = 美股快讯
+
+    bucket: 来源桶标识（如 "em102"）。stock_report 按桶设配额选稿，
+            否则同 type 的多个源在截断时无法区分优先级。
     """
     url = (
         f"https://newsapi.eastmoney.com/kuaixun/v1/"
@@ -166,6 +169,7 @@ def fetch_em_kuaixun(type_id="102", market="A股", count=20):
                 "source": "东方财富",
                 "market": market,
                 "type": "快讯",
+                "bucket": bucket or f"em{type_id}",
             })
         return articles
 
@@ -175,7 +179,7 @@ def fetch_em_kuaixun(type_id="102", market="A股", count=20):
         return [{"error": f"东方财富快讯({market})抓取失败: {e}", "source": "东方财富", "market": market}]
 
 
-def fetch_em_news_list(column="350", count=15):
+def fetch_em_news_list(column="350", count=15, bucket="em_news_list"):
     """从东方财富 np-listapi 抓取栏目新闻（辅助源）。"""
     url = (
         f"https://np-listapi.eastmoney.com/comm/web/getNewsByColumns"
@@ -200,6 +204,7 @@ def fetch_em_news_list(column="350", count=15):
                 "source": "东方财富",
                 "market": "A股",
                 "type": "要闻",
+                "bucket": bucket,
             })
         return articles
 
@@ -254,6 +259,7 @@ def fetch_sina_a_news(count=10):
                 "source": "新浪财经",
                 "market": "A股",
                 "type": "滚动",
+                "bucket": "sina_roll",
             })
         return articles
 
@@ -326,6 +332,7 @@ def fetch_sina_us_stock(count=15):
                 "source": "新浪财经",
                 "market": "美股",
                 "type": "滚动",
+                "bucket": "sina_roll",
             })
         return articles
 
@@ -381,6 +388,7 @@ def fetch_em_hk_news(count=15):
                 "source": "东方财富",
                 "market": "港股",
                 "type": "要闻",
+                "bucket": "hk_news",
             })
         return articles
 
