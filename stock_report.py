@@ -34,6 +34,48 @@ for _stream in (sys.stdout, sys.stderr):
 
 
 # ============================================================
+#  模型配置
+# ============================================================
+
+# 默认模型。可用环境变量 DEEPSEEK_MODEL 覆盖（GitHub 仓库变量 vars.DEEPSEEK_MODEL 亦可），
+# 这样换模型/回退旧模型不必改代码。
+DEFAULT_DEEPSEEK_MODEL = "deepseek-v4.1-flash"
+
+# 模型 id → 页面上展示的友好名称（换模型时只改 DEFAULT_DEEPSEEK_MODEL 即可）
+_MODEL_LABELS = {
+    "deepseek-v4.1-flash": "DeepSeek V4.1 Flash",
+    "deepseek-v4-flash": "DeepSeek V4 Flash",
+}
+
+
+def resolve_model(env_value, default=DEFAULT_DEEPSEEK_MODEL):
+    """把环境变量值解析为最终模型 id（空值/纯空白 → 回退默认）。"""
+    return (env_value or "").strip() or default
+
+
+def model_label(model_id):
+    """模型 id → 展示名称（未知 id 原样显示，便于发现拼写错误）。"""
+    return _MODEL_LABELS.get(model_id, model_id)
+
+
+DEEPSEEK_MODEL = resolve_model(os.environ.get("DEEPSEEK_MODEL"))
+DEEPSEEK_MODEL_LABEL = model_label(DEEPSEEK_MODEL)
+
+
+def build_chat_body(system_prompt, user_prompt, temperature, max_tokens, model=None):
+    """构造 Chat Completions 请求体（纯函数，便于回归测试）。"""
+    return {
+        "model": model or DEEPSEEK_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+
+
+# ============================================================
 #  工具函数
 # ============================================================
 
@@ -1016,7 +1058,8 @@ def _post_deepseek(payload, headers, url):
 def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096):
     """通用 DeepSeek API 调用，返回 (content, finish_reason)。
 
-    关键：deepseek-v4-flash 会把推理链写进 content（而非 reasoning_content），
+    使用的模型见 DEEPSEEK_MODEL（可用环境变量覆盖）。
+    关键：V4 系列会把推理链写进 content（而非 reasoning_content），
     思考会吃掉大量 token 导致正文被截断。这里显式传 thinking=disabled 请求关闭思考；
     若服务端不识别该参数（返回 400），自动去掉重试，保证兼容性。
     """
@@ -1025,15 +1068,7 @@ def _call_deepseek(system_prompt, user_prompt, temperature=0.5, max_tokens=4096)
         return ("错误：未设置 DEEPSEEK_API_KEY 环境变量", "error")
 
     url = "https://api.deepseek.com/v1/chat/completions"
-    base = {
-        "model": "deepseek-v4-flash",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-    }
+    base = build_chat_body(system_prompt, user_prompt, temperature, max_tokens)
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -1097,7 +1132,7 @@ def call_llm(news_text):
 
     返回 (正文, 状态)，状态 ∈ {"ok", "fallback"}，供运行摘要展示。
     """
-    # 注意：deepseek-v4-flash 会把推理链写进 content（而非 reasoning_content），
+    # 注意：V4 系列会把推理链写进 content（而非 reasoning_content），
     # 思考约耗 4000-5000 token。若额度只给正文，正文会被截断（9/7 线上停在"理由："）。
     # 故给足额度，让"思考+正文"都写得完，再由 _sanitize_analyst 裁掉思考部分。
     raw, truncated = _call_deepseek_safe(SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(news_text=news_text),
@@ -1713,7 +1748,7 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     <span class="mtag mtag-hk">HK · {hk_count}</span>
   </div>
   <div class="masthead-src">数据来源：东方财富 · 新浪财经{up_src}</div>
-  <div class="masthead-by">作者＆模型：HZT ＆ Deepseek V4 Flash</div>
+  <div class="masthead-by">作者＆模型：HZT ＆ {DEEPSEEK_MODEL_LABEL}</div>
 </div>
 
 {toc_html}
@@ -1742,7 +1777,7 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
   {f'<a class="online-link" href="{page_url}">VIEW ONLINE</a>' if page_url else ''}
   <div class="footer-info">
     DATA · East Money / Sina Finance<br>
-    AI · DeepSeek V4
+    AI · {DEEPSEEK_MODEL_LABEL}
   </div>
   <div class="footer-disclaimer">
     本报告由 AI 自动生成，仅供研究参考，不构成任何投资建议。<br>
@@ -2334,6 +2369,7 @@ def main():
     write_run_summary([
         ("运行场次", f"{session_label} · {report_time.strftime('%Y-%m-%d')}",
          delay_note.strip(" ⚠") if delay_note else f"实际 {actual_now.strftime('%m-%d %H:%M')}"),
+        ("AI 模型", DEEPSEEK_MODEL_LABEL, DEEPSEEK_MODEL),
         ("指数行情", f"{sum(1 for q in quotes if q['price'] != '--')}/{len(quotes)} 条有效", ""),
         ("新闻 A/美/港", f"{len(a_news)} / {len(us_news)} / {len(hk_news)} 条",
          ("接口错误 %d 个；" % len(news_errors) if news_errors else "")

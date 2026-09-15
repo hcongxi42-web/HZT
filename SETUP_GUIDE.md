@@ -49,8 +49,21 @@ GitHub Actions 部署到 GitHub Pages。
 | 变量 | 必填 | 说明 |
 |------|------|------|
 | `DEEPSEEK_API_KEY` | ✅ | DeepSeek 模型调用密钥 |
+| `DEEPSEEK_MODEL` | ⬜ | 覆盖默认模型（放在 **Variables**，不是 Secrets）。留空则用代码内默认值 |
 
 > 本项目**没有**推送功能：报告通过 GitHub Pages 发布，需要通知请自行订阅 Pages 或另加脚本。
+
+## 模型配置
+
+默认模型在 `stock_report.py` 顶部的 `DEFAULT_DEEPSEEK_MODEL`（当前 `deepseek-v4.1-flash`），
+展示名称由 `_MODEL_LABELS` 映射；换模型/回退旧模型有两种方式：
+
+1. **改代码**（会写进页面署名）：改 `DEFAULT_DEEPSEEK_MODEL`
+2. **不改代码**：设置环境变量 `DEEPSEEK_MODEL`（本地）；或在仓库
+   `Settings → Secrets and variables → Actions → Variables` 新建 `DEEPSEEK_MODEL`（CI）
+
+每次运行的"体检单"里会显示本次实际使用的模型 id，便于确认是否切换成功。
+若模型 id 写错，API 会返回 400，报告中对应板块会显示降级文案（不会中断流水线）。
 
 `GITHUB_REPOSITORY` 与 `GITHUB_EVENT_NAME` 由 Actions 自动注入，无需配置。
 
