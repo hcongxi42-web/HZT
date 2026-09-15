@@ -39,13 +39,19 @@ for _stream in (sys.stdout, sys.stderr):
 
 # 默认模型。可用环境变量 DEEPSEEK_MODEL 覆盖（GitHub 仓库变量 vars.DEEPSEEK_MODEL 亦可），
 # 这样换模型/回退旧模型不必改代码。
-DEFAULT_DEEPSEEK_MODEL = "deepseek-v4.1-flash"
+DEFAULT_DEEPSEEK_MODEL = "deepseek-flash"
 
 # 模型 id → 页面上展示的友好名称（换模型时只改 DEFAULT_DEEPSEEK_MODEL 即可）
 _MODEL_LABELS = {
-    "deepseek-v4.1-flash": "DeepSeek V4.1 Flash",
-    "deepseek-v4-flash": "DeepSeek V4 Flash",
+    "deepseek-flash": "DeepSeek V4.1 Flash",
+    # 以下 id 对应的模型已下线，但接口仍可调用：实际由 DeepSeek-V4.1-Flash 提供服务，
+    # 按 Flash 价格计费。故展示名同 V4.1 Flash，仅在运行摘要里提示改用新 id。
+    "deepseek-v4-flash": "DeepSeek V4.1 Flash",
+    "deepseek-v4-flash-vision-exp": "DeepSeek V4.1 Flash",
 }
+
+# 已下线的旧模型 id（仍可调用，但建议迁移）
+LEGACY_MODEL_IDS = ("deepseek-v4-flash", "deepseek-v4-flash-vision-exp")
 
 
 def resolve_model(env_value, default=DEFAULT_DEEPSEEK_MODEL):
@@ -56,6 +62,13 @@ def resolve_model(env_value, default=DEFAULT_DEEPSEEK_MODEL):
 def model_label(model_id):
     """模型 id → 展示名称（未知 id 原样显示，便于发现拼写错误）。"""
     return _MODEL_LABELS.get(model_id, model_id)
+
+
+def model_note(model_id):
+    """模型附注：旧 id 提示迁移，其余返回空串。"""
+    if model_id in LEGACY_MODEL_IDS:
+        return f"旧 id（模型已下线，实际由 V4.1 Flash 服务）；建议改用 {DEFAULT_DEEPSEEK_MODEL}"
+    return ""
 
 
 DEEPSEEK_MODEL = resolve_model(os.environ.get("DEEPSEEK_MODEL"))
@@ -2369,7 +2382,7 @@ def main():
     write_run_summary([
         ("运行场次", f"{session_label} · {report_time.strftime('%Y-%m-%d')}",
          delay_note.strip(" ⚠") if delay_note else f"实际 {actual_now.strftime('%m-%d %H:%M')}"),
-        ("AI 模型", DEEPSEEK_MODEL_LABEL, DEEPSEEK_MODEL),
+        ("AI 模型", DEEPSEEK_MODEL_LABEL, model_note(DEEPSEEK_MODEL) or DEEPSEEK_MODEL),
         ("指数行情", f"{sum(1 for q in quotes if q['price'] != '--')}/{len(quotes)} 条有效", ""),
         ("新闻 A/美/港", f"{len(a_news)} / {len(us_news)} / {len(hk_news)} 条",
          ("接口错误 %d 个；" % len(news_errors) if news_errors else "")

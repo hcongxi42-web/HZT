@@ -416,22 +416,28 @@ class TestRunSummary(unittest.TestCase):
 class TestModelConfig(unittest.TestCase):
     """模型配置回归：换模型不该靠改散落各处的字符串。"""
 
-    def test_default_model_is_v41_flash(self):
-        self.assertEqual(sr.DEFAULT_DEEPSEEK_MODEL, "deepseek-v4.1-flash")
-        self.assertEqual(sr.resolve_model(None), "deepseek-v4.1-flash")
+    def test_default_model_is_flash(self):
+        self.assertEqual(sr.DEFAULT_DEEPSEEK_MODEL, "deepseek-flash")
+        self.assertEqual(sr.resolve_model(None), "deepseek-flash")
 
     def test_empty_env_falls_back_to_default(self):
         self.assertEqual(sr.resolve_model(""), sr.DEFAULT_DEEPSEEK_MODEL)
         self.assertEqual(sr.resolve_model("   "), sr.DEFAULT_DEEPSEEK_MODEL)
 
     def test_env_value_wins(self):
-        self.assertEqual(sr.resolve_model(" deepseek-v4-flash "), "deepseek-v4-flash")
+        self.assertEqual(sr.resolve_model(" deepseek-flash "), "deepseek-flash")
 
     def test_label_mapping(self):
-        self.assertEqual(sr.model_label("deepseek-v4.1-flash"), "DeepSeek V4.1 Flash")
-        self.assertEqual(sr.model_label("deepseek-v4-flash"), "DeepSeek V4 Flash")
+        self.assertEqual(sr.model_label("deepseek-flash"), "DeepSeek V4.1 Flash")
         # 未知 id 原样返回，避免悄悄显示成"对的"名字
         self.assertEqual(sr.model_label("some-new-model"), "some-new-model")
+
+    def test_legacy_ids_show_same_label_with_migration_note(self):
+        """旧 id 仍可用（由 V4.1 Flash 服务）→ 展示名一致，但摘要提示迁移。"""
+        for legacy in ("deepseek-v4-flash", "deepseek-v4-flash-vision-exp"):
+            self.assertEqual(sr.model_label(legacy), "DeepSeek V4.1 Flash")
+            self.assertIn("建议改用 deepseek-flash", sr.model_note(legacy))
+        self.assertEqual(sr.model_note("deepseek-flash"), "")
 
     def test_chat_body_uses_configured_model(self):
         body = sr.build_chat_body("sys", "usr", 0.5, 4096)

@@ -55,12 +55,15 @@ GitHub Actions 部署到 GitHub Pages。
 
 ## 模型配置
 
-默认模型在 `stock_report.py` 顶部的 `DEFAULT_DEEPSEEK_MODEL`（当前 `deepseek-v4.1-flash`），
-展示名称由 `_MODEL_LABELS` 映射；换模型/回退旧模型有两种方式：
+默认模型在 `stock_report.py` 顶部的 `DEFAULT_DEEPSEEK_MODEL`（当前 `deepseek-flash`，
+由 DeepSeek-V4.1-Flash 提供服务），展示名称由 `_MODEL_LABELS` 映射；换模型有两种方式：
 
 1. **改代码**（会写进页面署名）：改 `DEFAULT_DEEPSEEK_MODEL`
 2. **不改代码**：设置环境变量 `DEEPSEEK_MODEL`（本地）；或在仓库
    `Settings → Secrets and variables → Actions → Variables` 新建 `DEEPSEEK_MODEL`（CI）
+
+> 旧 id `deepseek-v4-flash`、`deepseek-v4-flash-vision-exp` 仍可调用，但对应模型已下线，
+> 实际由 DeepSeek-V4.1-Flash 提供服务并按 Flash 价格计费；使用旧 id 时运行摘要会提示迁移。
 
 每次运行的"体检单"里会显示本次实际使用的模型 id，便于确认是否切换成功。
 若模型 id 写错，API 会返回 400，报告中对应板块会显示降级文案（不会中断流水线）。
