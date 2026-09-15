@@ -44,7 +44,7 @@ jobs:
       - name: Commit HTML to Repo
         if: steps.generate.outputs.skip != '1'
         run: |
-          # 只提交轻量的 HTML 报告（PDF 与历史 charts 均已被 gitignore 排除）
+          # 只提交轻量的 HTML 报告（PDF 导出逻辑已移除；charts 由 gitignore 保护）
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull origin main --rebase || true

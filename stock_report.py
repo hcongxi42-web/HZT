@@ -1843,18 +1843,17 @@ window.MB_CONFIG = {{
 
 
 # ============================================================
-#  PDF 生成
+#  旧文件清理
 # ============================================================
 
 def cleanup_old_files(days=7, max_per_run=50):
-    """清理旧的图表和 PDF 文件，避免 docs/ 目录膨胀导致 Pages 部署失败。
+    """清理旧的图表文件，避免 docs/ 目录膨胀导致 Pages 部署失败。
 
     通过文件名中的日期判断新旧（GitHub Actions checkout 不保留原始 mtime，
     所有签出文件的 mtime 都是 checkout 时间，用 mtime 判断不可靠）。
 
     保留逻辑：
       - charts/:       删除文件名中日期超过 `days` 天的 PNG 文件
-      - pdf/:          删除文件名中日期超过 `days` 天的 PDF（保留 latest.pdf）
       - 归档 HTML：     永不删除（用户要求保留全部历史简报与 UP 主内容）
       - max_per_run: 单次最多删除数量，防止首次运行产生超大 commit
     """
@@ -1872,8 +1871,6 @@ def cleanup_old_files(days=7, max_per_run=50):
     for subdir, pattern, date_re in [
         # charts:  000002_SZ_20260528.png → 2026-05-28
         ("charts", "*.png", r'_(\d{4})(\d{2})(\d{2})\.png$'),
-        # pdf:     股市简报_2026-06-25_0020.pdf → 2026-06-25
-        ("pdf", "股市简报_*.pdf", r'(\d{4}-\d{2}-\d{2})_\d{4}\.pdf$'),
     ]:
         dir_path = os.path.join(_BASE_DIR, "docs", subdir)
         if not os.path.isdir(dir_path):
@@ -1884,12 +1881,9 @@ def cleanup_old_files(days=7, max_per_run=50):
             if not m:
                 continue
             try:
-                if '-' in m.group(1):
-                    file_date = datetime.strptime(m.group(1), '%Y-%m-%d').date()
-                else:
-                    file_date = datetime.strptime(
-                        m.group(1) + m.group(2) + m.group(3), '%Y%m%d'
-                    ).date()
+                file_date = datetime.strptime(
+                    m.group(1) + m.group(2) + m.group(3), '%Y%m%d'
+                ).date()
             except (ValueError, IndexError):
                 continue
 
@@ -1912,53 +1906,6 @@ def cleanup_old_files(days=7, max_per_run=50):
               + (f", 剩余 {skipped} 个将在后续运行中逐步清理" if skipped else ""))
     else:
         print("[Cleanup] 无需清理")
-
-
-def generate_pdf(html_path):
-    """将 HTML 报告转为 PDF（Chrome Headless）。"""
-    import subprocess
-    import shutil
-
-    now = beijing_now()
-    pdf_filename = f"股市简报_{now.strftime('%Y-%m-%d_%H%M')}.pdf"
-    pdf_dir = os.path.join(_BASE_DIR, "docs", "pdf")
-    os.makedirs(pdf_dir, exist_ok=True)
-    pdf_path = os.path.join(pdf_dir, pdf_filename)
-
-    chrome_candidates = [
-        "google-chrome-stable", "google-chrome", "chromium-browser", "chromium",
-        "/usr/bin/google-chrome-stable", "/usr/bin/google-chrome",
-        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    ]
-    chrome = None
-    for c in chrome_candidates:
-        if shutil.which(c) or os.path.exists(c):
-            chrome = c
-            break
-
-    if not chrome:
-        print("未找到 Chrome，跳过 PDF 生成")
-        return None
-
-    abs_html = os.path.abspath(html_path)
-    try:
-        subprocess.run([
-            chrome, "--headless", "--disable-gpu", "--no-sandbox",
-            "--disable-software-rasterizer",
-            f"--print-to-pdf={pdf_path}",
-            "--no-pdf-header-footer",
-            f"file://{abs_html}"
-        ], capture_output=True, timeout=30)
-        if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0:
-            shutil.copy2(pdf_path, os.path.join(pdf_dir, "latest.pdf"))
-            print(f"PDF 已生成: {pdf_path}")
-            return pdf_path
-        else:
-            print("PDF 生成失败: 文件为空或不存在")
-            return None
-    except Exception as e:
-        print(f"PDF 生成失败: {e}")
-        return None
 
 
 # ============================================================
@@ -2340,27 +2287,21 @@ def main():
                                 up_count=len(opinion_files), report_time=report_time)
     page_url = deploy_github_pages(html, session_slug=session_slug)
 
-    # 7. PDF
-    print("▸ 生成 PDF...")
-    # 必须渲染真实内容页：无后缀主文件已改为跳转桩，直接打印只会得到空白/跳转页
-    html_file = os.path.join(_BASE_DIR, "docs", f"report_{today_str}_{session_slug}.html")
-    pdf_path = generate_pdf(html_file)
-
-    # 8. 保存 Markdown
+    # 7. 保存 Markdown
     report_file = os.path.join(_BASE_DIR, f"report_{beijing_now().strftime('%Y%m%d_%H%M')}.md")
     with open(report_file, "w", encoding="utf-8") as f:
         f.write(f"# 每日市场情报 - {beijing_now().strftime('%Y-%m-%d')} {session_label}\n\n")
         f.write(report)
     print(f"Markdown 报告: {report_file}")
 
-    # 9. GitHub Actions output
+    # 8. GitHub Actions output
     github_output = os.environ.get("GITHUB_OUTPUT", "")
     if github_output:
         with open(github_output, "a") as f:
             f.write(f"report_file={report_file}\n")
             f.write(f"page_url={page_url}\n")
 
-    # 10. 运行摘要（stdout + Actions 运行页），各节降级一眼可见
+    # 9. 运行摘要（stdout + Actions 运行页），各节降级一眼可见
     # 情绪指标摘要文案
     sent_note = ""
     if sentiment.get("breadth"):
@@ -2394,7 +2335,6 @@ def main():
         ("UP主观点", opinion_status, f"匹配 {len(opinion_files)} 位" if opinion_files else "无文件"),
         ("信息差", info_status, f"匹配 {len(info_files)} 条" if info_files else "无文件"),
         ("AI选股", picks_status, ""),
-        ("PDF", "已生成" if pdf_path else "跳过（本地无 Chrome 或失败）", ""),
         ("产出", f"report_{today_str}_{session_slug}.html + index.html", page_url),
     ])
 

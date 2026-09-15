@@ -40,7 +40,7 @@ GitHub Actions 部署到 GitHub Pages。
 
 - Python 3.11（CI 使用 `ubuntu-latest` + Python 3.11）
 - 一个 DeepSeek API Key
-- 仅在**本地**想导出 PDF 时需要 Chrome / Chromium（CI 不安装，自动跳过）
+- 无需 Chrome / 任何外部依赖（PDF 导出功能已移除，需要离线版请直接用浏览器打印报告页）
 
 ## 环境变量 / 仓库 Secrets
 
@@ -127,7 +127,8 @@ up主的每日观点/up小A/7月6号_观点.87654321.ai-zh.txt
 ## 运行摘要
 
 每次运行结束会在两处输出"体检单"：① 日志末尾；② GitHub Actions 运行页的 **Summary**。
-逐项列出：指数行情、各市场新闻条数、资金面、盘面分析、UP主观点、信息差、AI选股、PDF、产出链接。
+逐项列出：运行场次、AI 模型、指数行情、各市场新闻条数、情绪硬指标、资金面、盘面分析、
+UP主观点、信息差、AI选股、产出链接。
 某节降级（如选股未发布草稿、观点降级展示原文、资金面无数据）在此一眼可见，不必翻日志。
 被跳过的运行（周末 / 节假日 / 本场次报告已存在 / 未抓到新闻）同样会留痕并写明原因。
 
@@ -144,16 +145,9 @@ python -m unittest discover -s tests -v
 | 产物 | 位置 | 备注 |
 |------|------|------|
 | 最新报告 | `docs/index.html` | Pages 入口 |
-| 当日主报告 | `docs/report_YYYYMMDD.html` | 归档页链接 |
-| 早 / 晚报 | `docs/report_YYYYMMDD_am.html` / `_pm.html` | 不互相覆盖 |
+| 当日跳转页 | `docs/report_YYYYMMDD.html` | <1KB 跳转桩，指向当天场次文件（老链接兼容） |
+| 早 / 晚报 | `docs/report_YYYYMMDD_am.html` / `_pm.html` | 不互相覆盖，唯一真实内容副本 |
 | Markdown | `report_YYYYMMDD_HHMM.md`（根目录） | 本地存档，`gitignore` |
-| PDF | 仅本地有 Chrome 时生成 `docs/pdf/` | CI 不生成，已 `gitignore` |
-
-## 关于 PDF
-
-CI 运行环境未安装 Chrome，`generate_pdf()` 会打印「未找到 Chrome，跳过 PDF 生成」并
-返回。如需在本地获得 PDF，安装 Chrome / Chromium 后直接运行 `python stock_report.py`
-即可，生成的 PDF 保存在 `docs/pdf/`（已被 git 忽略，不会进入仓库与 Pages）。
 
 ## 已移除的旧组件（历史记录，避免混淆）
 
@@ -163,5 +157,8 @@ CI 运行环境未安装 Chrome，`generate_pdf()` 会打印「未找到 Chrome�
 - `Dockerfile`、`docker-compose.yml` —— 仅用于把 news_fetcher 起 HTTP 服务喂 Dify
 - `sync_reports.py` —— 旧仓库 PDF 同步脚本（指向错误仓库，已失效）
 - `news_fetcher.py` 中的 HTTP 服务模式（`NewsHandler` / 8766 端口）—— 仅 Dify 使用
+
+另：**PDF 导出功能已移除**（原 `generate_pdf()` 依赖 Chrome Headless，无任何页面对它建链，
+且 CI 生成的 PDF 可能缺中文字体）。需要离线版时，用浏览器对报告页「打印 → 另存为 PDF」即可。
 
 若你确实仍在本机用 Dify 做备选生成，请另行保留上述文件的独立副本，不要合并回本仓库。

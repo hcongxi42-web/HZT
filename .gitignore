@@ -4,4 +4,5 @@ report_*.md
 cron.log
 /tmp/
 .env
+# PDF 生成逻辑已移除；此条仅用于保护历史上已存在的本地 PDF（避免被 git add . 误提交）
 docs/pdf/
