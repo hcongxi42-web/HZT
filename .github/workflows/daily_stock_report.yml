@@ -18,6 +18,15 @@ permissions:
   pages: write
   id-token: write
 
+# 同一时刻只允许一个运行排队执行。
+# 2026-10-15 事故：两个运行并发各自生成同名的 report_20261015_am.html，
+# 后到的那个在 git pull --rebase 时撞上 add/add 冲突 → 「Commit HTML to Repo」
+# 失败 → 其后三步部署全部跳过，报告生成成功却没上线。
+# cancel-in-progress 保持 false：宁可排队，也不要打断正在推送的运行。
+concurrency:
+  group: daily-stock-report
+  cancel-in-progress: false
+
 jobs:
   generate-report:
     runs-on: ubuntu-latest
