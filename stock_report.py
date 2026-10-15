@@ -226,9 +226,20 @@ def get_session_label(now=None, schedule=None):
     """判断本次报告场次，返回 (中文标签, 文件名后缀)。
 
     优先级：
+      0) REPORT_SESSION=am|pm → 显式指定（手动补发某一场次用；workflow_dispatch 传入）；
       1) 定时触发 → 按触发用的 cron 精确映射（不受调度延迟影响）；
       2) 手动触发 / 未知 cron / 本地运行 → 退回按小时判断（原行为）。
+
+    为什么需要 0)：workflow_dispatch 不带 cron，只能按小时判断，于是下午手动
+    触发永远是"晚报"，早报无法手动补发；反过来 15:09 的手动触发会写出一份
+    当日 _pm，把当晚 22:17 的定时晚报按"本场次报告已存在"顶掉。
     """
+    forced = (os.environ.get("REPORT_SESSION") or "").strip().lower()
+    if forced == "am":
+        return ("早报", "am")
+    if forced == "pm":
+        return ("晚报", "pm")
+
     if schedule is None:
         schedule = os.environ.get("GITHUB_EVENT_SCHEDULE", "")
     key = " ".join(str(schedule).split())

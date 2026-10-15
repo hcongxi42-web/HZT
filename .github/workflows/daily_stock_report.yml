@@ -6,6 +6,12 @@ on:
     - cron: '17 23 * * *'   # 北京时间 7:17
     - cron: '17 14 * * *'   # 北京时间 22:17
   workflow_dispatch:  # 手动触发
+    inputs:
+      session:
+        description: '补发场次：留空=按执行时间自动判断；填 am 出早报，填 pm 出晚报'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: write
@@ -39,6 +45,8 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           # 触发本次运行的 cron 表达式：用于精确判定早报/晚报（调度延迟跨午夜也不会误判）
           GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
+          # 手动补发指定场次（workflow_dispatch 的 session 输入）；定时触发下为空，走上面的 cron 判定
+          REPORT_SESSION: ${{ github.event.inputs.session }}
         run: python stock_report.py
 
       - name: Commit HTML to Repo

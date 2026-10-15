@@ -273,6 +273,38 @@ class TestSessionFromSchedule(unittest.TestCase):
             else:
                 os.environ["GITHUB_EVENT_SCHEDULE"] = old
 
+    def test_explicit_session_forces_am_in_the_afternoon(self):
+        """手动补发：15 点触发也能强制出早报。
+
+        线上现象：workflow_dispatch 无 cron，只能按小时判断，下午手动触发一律
+        判成晚报 —— 09:45 的降级早报因此无法手动补发，反而多出一份 15:09 晚报。
+        """
+        self._with_env("REPORT_SESSION", "am", lambda: self.assertEqual(
+            sr.get_session_label(datetime(2026, 10, 15, 15, 9), ""), ("早报", "am")))
+
+    def test_explicit_session_beats_cron_and_hour(self):
+        """显式场次优先级最高：连 cron 映射也要让位。"""
+        self._with_env("REPORT_SESSION", "pm", lambda: self.assertEqual(
+            sr.get_session_label(datetime(2026, 10, 15, 7, 17), self.AM_CRON), ("晚报", "pm")))
+
+    def test_explicit_session_ignores_unknown_value(self):
+        """非 am/pm 的取值（含 schedule 事件下可能出现的空/异常值）一律忽略。"""
+        self._with_env("REPORT_SESSION", "weird", lambda: self.assertEqual(
+            sr.get_session_label(datetime(2026, 10, 15, 15, 9), self.PM_CRON), ("晚报", "pm")))
+
+    @staticmethod
+    def _with_env(key, value, fn):
+        """临时设置环境变量执行断言，结束后恢复（保持与本文件其他用例一致的写法）。"""
+        old = os.environ.get(key)
+        os.environ[key] = value
+        try:
+            fn()
+        finally:
+            if old is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = old
+
 
 class TestReportTime(unittest.TestCase):
     """报告归属时间回归：延迟的晚报必须落在当天 _pm，而不是次日 _am。"""
