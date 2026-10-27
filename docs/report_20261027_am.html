@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARKET BRIEF · 2026-10-27 早报</title>
+<style>
+/* ============================================================
+   Academic Journal — Data-First Light Theme
+   MARKET//BRIEF Daily Stock Report
+   设计原则：去装饰化 · 数据优先 · 极度克制
+   字体：衬线体（Times New Roman / 思源宋体）
+   背景：纯白 #FFFFFF
+   配色：低饱和学术色（藏青 / 砖红 / 灰绿 / 灰蓝）
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap');
+
+:root {
+  /* 画布：纯白，无任何灰/渐变/纹理 */
+  --bg: #ffffff;
+  --bg-card: #ffffff;
+
+  /* 文本：近黑而非纯黑，避免刺眼 */
+  --ink: #1a1a1a;        /* 正文主色 */
+  --ink-2: #4a4a4a;      /* 次级文本 */
+  --ink-3: #8a8a8a;      /* 弱文本 / 说明 */
+
+  /* 发丝边框 */
+  --rule: #d8d8d8;
+  --rule-soft: #e6e6e6;
+
+  /* 学术主题色（低饱和、高灰度） */
+  --navy: #1f3a5f;       /* 藏青 */
+  --brick: #9c3b3b;      /* 砖红（涨 / 利好） */
+  --green: #3f6b4f;      /* 灰绿（跌 / 利空） */
+  --gray-blue: #5b7a99;  /* 灰蓝 */
+  --grid: #e0e0e0;       /* 隐形网格线 */
+
+  --serif: 'Times New Roman', 'Source Serif 4', 'Noto Serif SC',
+           'Songti SC', 'STSong', 'SimSun', serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html { -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
+
+/* 锚点跳转时为 sticky 顶栏留出偏移 */
+.sec, .sec-hdr { scroll-margin-top: 72px; }
+
+body {
+  font-family: var(--serif);
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.75;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ===== TOP BAR ===== */
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid var(--rule);
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-inner {
+  max-width: 960px; margin:0 auto; padding: 12px 24px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.logo {
+  font-family: var(--serif);
+  font-weight: 700; font-size: 15px; letter-spacing: 1px;
+  color: var(--ink);
+}
+.logo em { font-style:normal; color: var(--brick); }
+.topbar-meta {
+  font-size: 12px; color: var(--ink-3); text-align: right;
+  line-height: 1.5; font-family: var(--serif);
+}
+
+/* ===== TICKER STRIP ===== */
+.ticker-strip {
+  background: #fff;
+  border-bottom: 1px solid var(--rule-soft);
+  overflow-x: auto; white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+.ticker-strip::-webkit-scrollbar { height: 0; }
+.ticker-inner {
+  max-width: 960px; margin:0 auto;
+  display:flex; gap:0; padding:0;
+}
+.tkr {
+  flex:1 1 0; min-width:130px; padding:14px 20px;
+  text-align:center; border-right:1px solid var(--rule-soft);
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+.tkr:last-child { border-right:none; }
+.tkr-n {
+  font-size:11px; color:var(--ink-3);
+  letter-spacing:0.5px; white-space:nowrap;
+}
+.tkr-p {
+  font-family: var(--serif); font-size:19px; font-weight:700;
+  color:var(--ink); letter-spacing:-0.3px;
+}
+.tkr-c {
+  font-family: var(--serif); font-size:12px; font-weight:600;
+  padding:1px 0; white-space:nowrap;
+}
+/* 涨跌配色：涨=砖红 / 跌=灰绿（遵循 A 股习惯，低饱和学术化） */
+.tkr.up  .tkr-p, .tkr.up  .tkr-c { color:var(--brick); }
+.tkr.dn  .tkr-p, .tkr.dn  .tkr-c { color:var(--green); }
+.tkr:not(.up):not(.dn) .tkr-p, .tkr:not(.up):not(.dn) .tkr-c { color:var(--ink-3); }
+
+/* ===== HISTORY NAV ===== */
+.hnav {
+  max-width:960px; margin:0 auto; padding:10px 24px;
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  font-family: var(--serif); font-size:12px;
+}
+.hnav-label {
+  color:var(--ink-3); font-weight:600; letter-spacing:1px;
+  margin-right:4px;
+}
+.hnav a, .hnav span.hist-link {
+  color:var(--ink-2); text-decoration:none;
+  padding:3px 8px; transition:color .15s;
+}
+.hnav a:hover { color:var(--navy); }
+.hnav .hist-date-picker {
+  border:1px solid var(--rule); background:#fff; color:var(--ink);
+  padding:3px 6px; font-family: var(--serif); font-size:12px; width:132px;
+}
+.hnav .hist-go-btn {
+  background:#fff; color:var(--ink); border:1px solid var(--rule);
+  padding:4px 12px; font-family: var(--serif); font-size:12px; cursor:pointer;
+  transition:all .15s;
+}
+.hnav .hist-go-btn:hover { border-color:var(--navy); color:var(--navy); }
+.session-toggle { display:inline-flex; margin-left:6px; }
+.session-toggle button {
+  border:1px solid var(--rule); background:#fff; color:var(--ink-2);
+  padding:4px 12px; font-family: var(--serif); font-size:12px; cursor:pointer;
+  transition:all .15s;
+}
+.session-toggle button:first-child { border-radius:0; }
+.session-toggle button:last-child { border-radius:0; margin-left:-1px; }
+.session-toggle button.active {
+  background:var(--navy); color:#fff; border-color:var(--navy);
+}
+
+/* ===== MASTHEAD ===== */
+.masthead {
+  max-width:960px; margin:36px auto 0; padding:36px 24px 28px;
+  text-align:center;
+}
+.masthead-date {
+  font-family: var(--serif); font-size:12px;
+  color:var(--ink-3); letter-spacing:3px; text-transform:uppercase;
+  margin-bottom:14px;
+}
+.masthead h1 {
+  font-family: var(--serif);
+  font-size:30px; font-weight:700; letter-spacing:1px;
+  color:var(--ink); margin-bottom:10px; line-height:1.3;
+}
+.masthead-sub {
+  font-family: var(--serif); font-size:13px;
+  color:var(--ink-3); letter-spacing:2px; margin-bottom:16px;
+}
+.masthead-update {
+  font-size:13px; color:var(--ink-3); margin-bottom:18px;
+}
+.masthead-tags { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+.masthead-src, .masthead-by {
+  font-family: var(--serif); font-size:12px;
+  color:var(--ink-3); margin-bottom:4px;
+}
+.mtag {
+  font-family: var(--serif); font-size:12px;
+  padding:3px 12px; border:1px solid var(--rule); color:var(--ink-2);
+  letter-spacing:0.5px;
+}
+.mtag-a { border-color:var(--brick); color:var(--brick); }
+.mtag-us { border-color:var(--navy); color:var(--navy); }
+.mtag-hk { border-color:var(--gray-blue); color:var(--gray-blue); }
+
+/* ===== CONTENT ===== */
+.content { max-width:960px; margin:0 auto; padding:8px 24px 48px; }
+
+/* ===== SECTION HEADER：主标题 + 副标题 双行 ===== */
+.sec-hdr {
+  display:flex; flex-direction:column; gap:3px;
+  border-bottom:1px solid var(--ink);
+  padding-bottom:8px; margin:42px 0 20px;
+}
+.sec-hdr .sec-main {
+  font-family: var(--serif); font-size:18px; font-weight:700;
+  color:var(--ink); letter-spacing:0.5px; line-height:1.3;
+}
+.sec-hdr .sec-sub {
+  font-family: var(--serif); font-size:11px; font-weight:400;
+  color:var(--ink-3); letter-spacing:1.5px; text-transform:uppercase;
+}
+
+/* ===== FUND FLOW PANEL（扁平单色条形图） ===== */
+.fp {
+  background:var(--bg-card); border:1px solid var(--rule);
+  overflow:hidden;
+}
+.fp-h {
+  font-family: var(--serif); font-size:13px;
+  font-weight:600; letter-spacing:0.5px; color:var(--ink);
+  padding:14px 20px 10px;
+  border-bottom:1px solid var(--ink);
+  display:flex; justify-content:space-between; align-items:baseline;
+}
+.fp-total { font-size:13px; font-weight:700; }
+.fp-bars { padding:12px 20px 18px; display:flex; flex-direction:column; gap:8px; }
+.fp-bar-row {
+  display:flex; align-items:center; gap:12px;
+  font-family: var(--serif);
+}
+.fp-date {
+  min-width:48px; font-size:12px; color:var(--ink-2); text-align:right;
+}
+.fp-bar-bg {
+  flex:1; height:18px; background:#f4f4f4; overflow:hidden; position:relative;
+}
+.fp-bar-fill {
+  position:absolute; left:0; top:0; height:100%;
+  transition: width .4s ease;
+}
+.fp-val {
+  min-width:70px; font-size:13px; font-weight:700; text-align:right;
+}
+
+/* ===== INTRADAY CHARTS ===== */
+.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:8px; }
+.ch-cell { display:flex; flex-direction:column; gap:6px; }
+.ch-label {
+  font-family: var(--serif); font-size:12px; color:var(--ink-2);
+  letter-spacing:0.5px; padding-left:2px;
+}
+.charts-row img {
+  width:100%; border:1px solid var(--rule); background:#fff; display:block;
+}
+
+/* ===== ANALYSIS SECTIONS ===== */
+.sec {
+  background:var(--bg-card);
+  border:none; border-top:1px solid var(--rule);
+  padding:20px 0 4px; margin-bottom:8px;
+}
+.sec-h {
+  font-family: var(--serif); font-size:17px; font-weight:700;
+  margin-bottom:14px; color:var(--ink);
+  display:flex; align-items:center; gap:8px;
+}
+.fav-btn {
+  background:none; border:none; font-size:17px; cursor:pointer;
+  color:var(--ink-3); padding:0 4px; line-height:1; transition:color .15s;
+  flex-shrink:0;
+}
+.fav-btn:hover, .fav-btn.on { color:var(--brick); }
+.para { font-size:15px; line-height:1.9; margin-bottom:14px; color:var(--ink-2); }
+.ni {
+  border-left:2px solid var(--brick);
+  padding:8px 18px; margin-bottom:10px; background:#fbf7f7;
+}
+.ni .ni-num {
+  font-family: var(--serif); font-size:12px;
+  color:var(--brick); font-weight:700; margin-right:8px;
+}
+.ni .ni-text { color:var(--ink); display:inline; }
+.bi {
+  padding:4px 18px; margin-bottom:6px;
+  border-left:2px solid var(--gray-blue);
+}
+.bi::before { content:'•'; color:var(--gray-blue); font-weight:700; margin-right:10px; }
+.chart-img { text-align:center; margin:18px 0; }
+.chart-img img { max-width:620px; width:100%; height:auto; border:1px solid var(--rule); }
+.tbl-wrap { overflow-x:auto; margin:14px 0 22px; }
+.tbl {
+  width:100%; border-collapse:collapse; font-size:14px;
+  font-family: var(--serif);
+}
+.tbl thead th {
+  background:#fff; padding:9px 12px;
+  text-align:left; font-weight:700; font-size:13px;
+  color:var(--ink); border-bottom:1.5px solid var(--ink);
+}
+.tbl tbody td {
+  padding:9px 12px; border-bottom:1px solid var(--rule-soft);
+  color:var(--ink);
+}
+.tbl tbody tr:hover { background:#fafafa; }
+
+/* ===== INLINE COLOR HIGHLIGHTS（低饱和标注） ===== */
+mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; background:transparent; }
+.mk-bullish { color:var(--brick); border-bottom:1px solid var(--brick); }
+.mk-bearish { color:var(--green); border-bottom:1px solid var(--green); }
+.mk-neutral { color:var(--ink-2); border-bottom:1px solid var(--rule); }
+.mk-hot { color:var(--brick); }
+.mk-warm { color:var(--gray-blue); }
+.mk-cool { color:var(--navy); }
+.mk-ice { color:var(--ink-3); }
+
+/* ===== SITE FOOTER ===== */
+.site-footer {
+  max-width:960px; margin:24px auto 0; padding:32px 24px 56px;
+  text-align:center; border-top:1px solid var(--rule);
+}
+.footer-logo {
+  font-family: var(--serif); font-size:12px;
+  font-weight:700; letter-spacing:2px; color:var(--ink-3); margin-bottom:12px;
+}
+.footer-info { font-size:12px; color:var(--ink-3); line-height:1.9; }
+.footer-disclaimer {
+  font-size:11px; color:var(--ink-3); margin-top:16px; line-height:1.8;
+}
+.online-link {
+  display:inline-block; font-family: var(--serif);
+  font-size:12px; color:var(--navy); text-decoration:none; margin-bottom:12px;
+}
+.online-link:hover { text-decoration:underline; }
+
+/* ===== FAVORITES PANEL ===== */
+.fav-panel {
+  position:fixed; bottom:0; left:0; right:0; z-index:200;
+  background:#fff; border-top:2px solid var(--ink);
+  max-height:45vh; overflow-y:auto; display:none;
+}
+.fav-panel-inner { max-width:960px; margin:0 auto; padding:0 24px 24px; }
+.fav-panel-hdr {
+  position:sticky; top:0; background:#fff;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 0; border-bottom:1px solid var(--rule);
+  font-family: var(--serif); font-size:13px; z-index:5;
+}
+.fav-panel-hdr .fav-hdr-left { display:flex; align-items:center; gap:10px; }
+.fav-panel-hdr .fav-count { color:var(--brick); font-weight:700; }
+.fav-panel-hdr .fav-summary { color:var(--ink-3); font-size:12px; }
+.fav-panel-hdr .fav-size { color:var(--ink-3); font-size:11px; }
+.fav-panel-hdr button {
+  background:#fff; border:1px solid var(--rule);
+  padding:3px 12px; cursor:pointer;
+  font-family: var(--serif); font-size:12px; color:var(--ink-2); transition:all .15s;
+}
+.fav-panel-hdr button:hover { border-color:var(--navy); color:var(--navy); }
+.fav-toggle-btn { font-size:15px; padding:3px 8px; }
+.fav-list { padding:6px 0; }
+.fav-item {
+  display:flex; align-items:center; gap:10px; padding:8px 0;
+  border-bottom:1px solid var(--rule-soft); font-size:13px;
+}
+.fav-item-date {
+  font-family: var(--serif); font-size:12px;
+  color:var(--ink-3); min-width:56px; flex-shrink:0;
+}
+.fav-item-title {
+  flex:1; cursor:pointer; color:var(--ink);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.fav-item-title:hover { color:var(--navy); }
+.fav-item-del {
+  background:none; border:none; color:var(--ink-3);
+  cursor:pointer; font-size:15px; padding:2px 6px; flex-shrink:0;
+}
+.fav-item-del:hover { color:var(--brick); }
+.fav-empty { text-align:center; padding:24px; color:var(--ink-3); font-size:13px; }
+
+/* ===== TOAST ===== */
+.fav-toast {
+  position:fixed; bottom:60px; left:50%; transform:translateX(-50%);
+  background:var(--ink); color:#fff; padding:9px 24px;
+  font-size:13px; z-index:300; opacity:0; pointer-events:none; transition:opacity .25s;
+}
+.fav-toast.show { opacity:1; }
+
+/* ===== OPINIONS SECTION ===== */
+.opinions-body .sec { border-left: 2px solid var(--navy); padding-left: 18px; }
+.opinions-body .sec-h { color: var(--navy); }
+
+/* ===== TOC 目录锚点导航 ===== */
+.toc {
+  max-width: 960px; margin: 18px auto 0; padding: 10px 24px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  font-family: var(--serif);
+}
+.toc-label {
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--ink-3); margin-right: 4px;
+}
+.toc-link {
+  font-size: 13px; color: var(--ink-2); text-decoration: none;
+  padding: 3px 10px; border: 1px solid var(--rule);
+  transition: color .15s, border-color .15s;
+}
+.toc-link:hover { color: var(--navy); border-color: var(--navy); }
+
+/* ===== 今日要点置顶摘要框 ===== */
+.lead-box {
+  background: #fff; border: 1px solid var(--rule);
+  border-left: 3px solid var(--brick);
+  padding: 18px 22px 14px; margin-bottom: 8px;
+}
+.lead-h {
+  font-family: var(--serif); font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--brick); font-weight: 700;
+  margin-bottom: 12px;
+}
+.lead-body { display: flex; flex-direction: column; gap: 8px; }
+.lead-row { display: flex; gap: 14px; align-items: baseline; }
+.lead-k {
+  flex: 0 0 84px; font-family: var(--serif); font-size: 13px;
+  font-weight: 700; color: var(--ink); letter-spacing: 0.5px;
+}
+.lead-v { flex: 1; font-size: 15px; color: var(--ink-2); line-height: 1.7; }
+
+/* ===== UP主标签条 / 一句话操作 ===== */
+.op-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+.op-chip {
+  font-family: var(--serif); font-size: 12px; padding: 2px 12px;
+  border: 1px solid var(--rule); color: var(--ink-2); letter-spacing: 0.5px;
+}
+.op-bull { color: var(--brick); border-color: var(--brick); }
+.op-bear { color: var(--green); border-color: var(--green); }
+.op-neu  { color: var(--ink-2); border-color: var(--rule); }
+.op-style { color: var(--navy); border-color: var(--navy); }
+.op-action {
+  background: #fbf7f7; border-left: 2px solid var(--brick);
+  padding: 8px 16px; margin: 2px 0 12px; font-size: 14px; color: var(--ink);
+}
+.op-action-k {
+  font-family: var(--serif); font-size: 11px; font-weight: 700;
+  letter-spacing: 1px; color: var(--brick); margin-right: 10px;
+}
+
+/* ===== 引用（免责声明 / 说明） ===== */
+.note {
+  font-size: 13px; color: var(--ink-3); line-height: 1.8;
+  border-left: 2px solid var(--rule); padding: 6px 16px; margin: 0 0 14px;
+  font-family: var(--serif);
+}
+
+/* ===== 回到顶部 ===== */
+.to-top {
+  position: fixed; right: 20px; bottom: 24px; z-index: 150;
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--ink); color: #fff; border: none;
+  font-size: 20px; line-height: 1; cursor: pointer;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+}
+.to-top.show { opacity: .82; pointer-events: auto; }
+.to-top:hover { opacity: 1; }
+
+/* ===== 关键数字放大（资金面累计） ===== */
+.fp-total { font-size: 16px; }
+
+/* ===== MOBILE ===== */
+@media (max-width: 680px) {
+  body { font-size:15px; }
+  .masthead h1 { font-size:22px; }
+  .masthead { padding:22px 16px 16px; }
+  .topbar-inner { flex-direction:column; gap:4px; padding:10px 16px; }
+  .topbar-meta { text-align:center; font-size:11px; }
+  .tkr { min-width:96px; padding:10px 12px; }
+  .tkr-p { font-size:16px; }
+  .charts-row { grid-template-columns:1fr; }
+  .content { padding:8px 14px 32px; }
+  .sec-hdr { margin:32px 0 16px; }
+  .sec-hdr .sec-main { font-size:16px; }
+  .hnav { padding:8px 14px; gap:4px; }
+  .fav-panel { max-height:55vh; display:none !important; }
+  .fav-panel-inner { padding:0 14px 18px; }
+  .tbl { font-size:13px; }
+}
+@media (max-width: 640px) {
+  .fav-item { padding:10px 12px; gap:6px; }
+  .fav-item-date { min-width:40px; font-size:11px; }
+  .fav-item-title { font-size:12px; }
+  .fav-panel-hdr { padding:10px 14px; }
+  .fav-panel { padding:0 14px 24px; }
+}
+
+/* ===== 移动端增强（目录横滑 / 要点行堆叠 / 表格卡片化） ===== */
+@media (max-width: 680px) {
+  .toc { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 10px 14px; }
+  .toc::-webkit-scrollbar { height: 0; }
+  .toc-label { flex: 0 0 auto; }
+  .toc-link { flex: 0 0 auto; }
+  .lead-row { flex-direction: column; gap: 2px; }
+  .lead-k { flex: none; }
+  .to-top { width: 38px; height: 38px; right: 14px; bottom: 18px; font-size: 18px; }
+  .op-action { padding: 7px 12px; }
+  .masthead-src, .masthead-by { font-size: 11px; padding: 0 16px; }
+}
+@media (max-width: 520px) {
+  /* 共识与分歧等表格转为卡片，避免横向滚动 */
+  .tbl-wrap { margin: 12px -14px 18px; }
+  .tbl, .tbl tbody, .tbl tr, .tbl td { display: block; width: 100%; }
+  .tbl thead { display: none; }
+  .tbl tr { border: 1px solid var(--rule); margin: 0 14px 10px; padding: 4px 0; }
+  .tbl td {
+    border: none; border-bottom: 1px solid var(--rule-soft);
+    padding: 7px 14px; position: relative;
+  }
+  .tbl td:last-child { border-bottom: none; }
+  .tbl td::before {
+    content: attr(data-th); display: block;
+    font-size: 11px; color: var(--ink-3); letter-spacing: 0.5px; margin-bottom: 2px;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">MARKET<em>//</em>BRIEF</div>
+    <div class="topbar-meta">Tuesday<br>09:04 CST（北京时间）</div>
+  </div>
+</div>
+
+<!-- TICKER STRIP -->
+<div class="ticker-strip">
+  <div class="ticker-inner"><div class="tkr dn"><span class="tkr-n">上证指数</span><span class="tkr-p">3697.25</span><span class="tkr-c">▼ -0.01%</span></div><div class="tkr dn"><span class="tkr-n">深证成指</span><span class="tkr-p">0.00</span><span class="tkr-c">▼ -100.00%</span></div><div class="tkr dn"><span class="tkr-n">创业板指</span><span class="tkr-p">0.00</span><span class="tkr-c">▼ -100.00%</span></div><div class="tkr up"><span class="tkr-n">恒生指数</span><span class="tkr-p">23211.81</span><span class="tkr-c">▲ +0.00%</span></div><div class="tkr up"><span class="tkr-n">纳斯达克</span><span class="tkr-p">22484.07</span><span class="tkr-c">▲ +0.44%</span></div></div>
+</div>
+
+<!-- HISTORY NAV -->
+<div class="hnav">
+  <span class="hnav-label">HISTORY</span>
+  <a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20261026.html">10月26日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20261023.html">10月23日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20261022.html">10月22日</a><span class="hnav-spacer"></span><input type="date" id="historyPicker" class="hl-date" value="2026-10-27" max="2026-10-27" min="2025-01-01" title="选择日期查看历史简报"><button class="hl-go" onclick="goToDate()">GO</button><span class="session-toggle"><button class="st-btn active" id="stAm" onclick="switchSession('am')">早报</button><button class="st-btn" id="stPm" onclick="switchSession('pm')">晚报</button></span>
+</div>
+
+<!-- MASTHEAD -->
+<div class="masthead">
+  <div class="masthead-date">2026-10-27 · 星期二 · 早报</div>
+  <h1>每日市场情报</h1>
+  <div class="masthead-sub">INSTITUTIONAL · MARKET · INTELLIGENCE</div>
+  <div class="masthead-update">更新时间：2026-10-27 09:05（北京时间 CST）</div>
+  <div class="masthead-tags">
+    <span class="mtag mtag-a">A-SHARE · 45</span>
+    <span class="mtag mtag-us">US · 25</span>
+    <span class="mtag mtag-hk">HK · 14</span>
+  </div>
+  <div class="masthead-src">数据来源：东方财富 · 新浪财经 · 综合 6 位 UP 主观点</div>
+  <div class="masthead-by">作者＆模型：HZT ＆ DeepSeek V4.1 Flash</div>
+</div>
+
+<nav class="toc"><span class="toc-label">快速跳转</span><a class="toc-link" href="#sec-analysis">盘面分析与研判</a><a class="toc-link" href="#sec-fund">主力资金流向</a><a class="toc-link" href="#sec-intraday">分时走势</a><a class="toc-link" href="#31e6f1e382">资金面</a><a class="toc-link" href="#b979c7d655">主线扫描</a><a class="toc-link" href="#c296089927">跨市场</a><a class="toc-link" href="#d398c73a57">要闻速览</a><a class="toc-link" href="#b133a5921f">市场体温</a><a class="toc-link" href="#0d28f43b0a">明天怎么看</a><a class="toc-link" href="#abb3b166dd">昨日收盘UP主观点</a><a class="toc-link" href="#9568c10b4a">AI选股</a></nav>
+
+<div class="content">
+
+  <div class="lead-box"><div class="lead-h">今日要点 · DAILY BRIEF</div><div class="lead-body"><div class="lead-row"><span class="lead-k">市场体温</span><span class="lead-v"><mark class="mk-warm">偏暖</mark>。A50期货开盘涨0.32%，费半涨3%、日经涨2%、韩存储双雄大涨，外围把风险偏好顶起来了。</span></div><div class="lead-row"><span class="lead-k">最大共识</span><span class="lead-v">AI算力链（存储、光通信、半导体）——Anthropic招股书点燃全球AI行情，韩国存储股给A股映射。</span></div><div class="lead-row"><span class="lead-k">最大分歧</span><span class="lead-v">主力资金连续5日4天净流出、融资余额减55.63亿，与外围火热形成背离，内资是否接力是今天最大问号。</span></div><div class="lead-row"><span class="lead-k">最大风险</span><span class="lead-v">巴西股债汇三杀+法国10年期国债收益率破5%，新兴市场和欧债的尾部风险随时扰动外资情绪。</span></div><div class="lead-row"><span class="lead-k">一句话策略</span><span class="lead-v">跟外围做AI算力映射，但只做低吸不追高开，仓位不加上去。</span></div></div></div>
+
+  <!-- FUND FLOW PANEL -->
+  <div class="sec-hdr" id="sec-fund"><span class="sec-main">主力资金流向</span><span class="sec-sub">CAPITAL FLOWS · 沪深300口径 · 近5交易日 · 东方财富</span></div>
+  <div class="fp-grid"><div class="fp"><div class="fp-h">主力资金流向（近5日 · 亿元）<span class="fp-total" style="color:#3f6b4f">累计流出 -596.0 亿</span></div><div class="fp-bars"><div class="fp-bar-row"><span class="fp-date">10-20</span><span class="fp-bar-bg"><span class="fp-bar-fill out" style="width:52.82264513033744%;background:#3f6b4f"></span></span><span class="fp-val" style="color:#3f6b4f">-132.1</span></div><div class="fp-bar-row"><span class="fp-date">10-21</span><span class="fp-bar-bg"><span class="fp-bar-fill out" style="width:41.328162482008636%;background:#3f6b4f"></span></span><span class="fp-val" style="color:#3f6b4f">-103.4</span></div><div class="fp-bar-row"><span class="fp-date">10-22</span><span class="fp-bar-bg"><span class="fp-bar-fill out" style="width:100.0%;background:#3f6b4f"></span></span><span class="fp-val" style="color:#3f6b4f">-250.1</span></div><div class="fp-bar-row"><span class="fp-date">10-23</span><span class="fp-bar-bg"><span class="fp-bar-fill in" style="width:4.349912042219735%;background:#9c3b3b"></span></span><span class="fp-val" style="color:#9c3b3b">+10.9</span></div><div class="fp-bar-row"><span class="fp-date">10-26</span><span class="fp-bar-bg"><span class="fp-bar-fill out" style="width:48.488725411802335%;background:#3f6b4f"></span></span><span class="fp-val" style="color:#3f6b4f">-121.3</span></div></div></div></div>
+
+  <!-- INTRADAY CHARTS -->
+  <div class="sec-hdr" id="sec-intraday"><span class="sec-main">分时走势</span><span class="sec-sub">INTRADAY · 上证指数 / 深证成指 · 新浪财经</span></div>
+  <div class="charts-row"><div class="ch-cell"><div class="ch-label">上证指数</div><img src="https://image.sinajs.cn/newchart/min/n/sh000001.gif" alt="上证指数" loading="lazy" onerror="this.parentElement.style.display='none'"></div><div class="ch-cell"><div class="ch-label">深证成指</div><img src="https://image.sinajs.cn/newchart/min/n/sz399001.gif" alt="深证成指" loading="lazy" onerror="this.parentElement.style.display='none'"></div></div>
+
+  <!-- AI ANALYSIS -->
+  <div class="sec-hdr" id="sec-analysis"><span class="sec-main">盘面分析与研判</span><span class="sec-sub">ANALYSIS · 由 AI 生成 · 仅供研究参考</span></div>
+  <div class="report-body"><div class="sec" id="31e6f1e382" data-section-id="31e6f1e382">
+<h3 class="sec-h"><button class="fav-btn" data-sid="31e6f1e382" title="收藏此条分析" onclick="toggleFav(this)">☆</button>资金面</h3>
+<p class="para">主力<mark class="mk-bearish">防守</mark>姿态没变，近5日4天净流出、合计约596亿，唯一净流入的10月23日也只有10.88亿；两市融资余额单日减55.63亿，杠杆资金在撤。央行新设债市非银大额赎回互换便利是稳情绪的底，但不是给股市的增量弹药，今天量能能否放大是唯一验证点。</p>
+</div>
+<div class="sec" id="b979c7d655" data-section-id="b979c7d655">
+<h3 class="sec-h"><button class="fav-btn" data-sid="b979c7d655" title="收藏此条分析" onclick="toggleFav(this)">☆</button>主线扫描</h3>
+<div class="bi"><strong>AI算力/存储</strong>：Anthropic提交IPO、上半年营收增13倍，SK海力士拟10月28日宣布50-60万亿韩元股东回报，三星涨近5%、海力士涨7.3%，费半涨3%。逻辑最硬、外围直接映射，持续性看今天A股存储和光模块能否放量跟涨，这是今天唯一有全球共振的方向。</div>
+<div class="bi"><strong>半导体设备/材料</strong>：韩国三季度GDP环比增1.0%超预期，AI芯片出口是核心引擎；蚂蚁入股「芯曜跃动」新增集成电路设计制造业务，产业资本在往硬科技里砸钱。属于算力链的二线扩散，弹性大于确定性。</div>
+<div class="bi"><strong>AI应用/信创</strong>：广电“十五五”规划明确AI渗透率不低于95%、超高清终端占比不低于95%、新型终端不少于1.5亿端，政策给了五年期的量化指标，是少数有文件背书的题材，但落地慢、短线只值一个脉冲。</div>
+<div class="bi"><strong>汽车零部件/智能驾驶</strong>：五家国有行AIC抱团入股吉利旗下「吉润梅山」，大众中国拿到合肥L3测试牌照、目标2027年技术就绪。产业资本+牌照双催化，偏中线，今天大概率不是主攻方向。</div>
+<div class="bi"><strong>高股息防御</strong>：格力三季报雅戈尔大手笔增持成第六大股东、董明珠也增持，中国宏桥3.8亿港元回购。资金没<mark class="mk-bullish">进攻</mark>意愿时的避风港，是<mark class="mk-bearish">防守</mark>仓位的底仓选择。</div>
+</div>
+<div class="sec" id="c296089927" data-section-id="c296089927">
+<h3 class="sec-h"><button class="fav-btn" data-sid="c296089927" title="收藏此条分析" onclick="toggleFav(this)">☆</button>跨市场</h3>
+<p class="para">美股三大指数收涨，纳指涨1.33%、费半涨3%，英伟达涨3.13%、特斯拉涨6.11%市值一夜增超5100亿元，存储和光通信集体沸腾，对A股算力链是直接的正向传导。日经涨2%、韩国存储股大涨，亚太风险偏好同步抬升。反向扰动有两个：巴西股指盘中跌超17%触发六年多来首次熔断、股债汇三杀；法国10年期国债收益率一度破5.14%创2002年新高，法德利差扩至2011年以来最高。这两个是外资risk-off的引信，今天A股若高开低走，大概率从这里找原因。</p>
+</div>
+<div class="sec" id="d398c73a57" data-section-id="d398c73a57">
+<h3 class="sec-h"><button class="fav-btn" data-sid="d398c73a57" title="收藏此条分析" onclick="toggleFav(this)">☆</button>要闻速览</h3>
+<div class="bi">央行设立债市非银大额赎回互换便利，强调不为“坏孩子”兜底——<mark class="mk-bullish">利好</mark>（稳流动性，非直接<mark class="mk-bullish">利好</mark>股市）</div>
+<div class="bi">Anthropic正式提交IPO文件，上半年营收增13倍、净亏损超800亿美元——<mark class="mk-bullish">利好</mark>AI情绪/<mark class="mk-neutral">中性</mark>偏空（亏损规模刺眼）</div>
+<div class="bi">SK海力士拟10月28日宣布50-60万亿韩元股东回报，三星涨4.9%、海力士涨7.3%——<mark class="mk-bullish">利好</mark>存储链</div>
+<div class="bi">费城半导体指数涨3%，英伟达涨3.13%、特斯拉涨6.11%——<mark class="mk-bullish">利好</mark>算力链</div>
+<div class="bi">巴西主要股指盘中跌超17%触发熔断，股债汇三杀——<mark class="mk-bearish">利空</mark>（新兴市场风险）</div>
+<div class="bi">法国10年期国债收益率一度破5.14%创2002年新高——<mark class="mk-bearish">利空</mark>（欧债尾部风险）</div>
+<div class="bi">两市融资余额减少55.63亿元至23892.59亿元——<mark class="mk-bearish">利空</mark>（杠杆资金撤离）</div>
+<div class="bi">广电“十五五”规划：AI渗透率不低于95%、新型终端不少于1.5亿端——<mark class="mk-bullish">利好</mark>AI应用/超高清</div>
+<div class="bi">五家国有行AIC抱团入股吉利旗下零部件企业，大众中国获合肥L3测试牌照——<mark class="mk-bullish">利好</mark>汽车智能化</div>
+<div class="bi">格力电器三季报：雅戈尔成第六大股东、董明珠增持——<mark class="mk-bullish">利好</mark>（高股息信心）</div>
+<div class="bi">主动权益“年内翻倍基”清零，最高收益降至99.21%——<mark class="mk-neutral">中性</mark>偏空（赚钱效应退坡）</div>
+<div class="bi">富时中国A50指数期货开盘涨0.32%——<mark class="mk-bullish">利好</mark>（情绪面）</div>
+</div>
+<div class="sec" id="b133a5921f" data-section-id="b133a5921f">
+<h3 class="sec-h"><button class="fav-btn" data-sid="b133a5921f" title="收藏此条分析" onclick="toggleFav(this)">☆</button>市场体温</h3>
+<p class="para">定调<mark class="mk-warm">偏暖</mark>，但暖在情绪不在资金。支撑项：A50期货涨0.32%、美股科技全线回暖、费半涨3%、日经涨2%、韩国存储双雄大涨，外围给了一个高开的环境。拖累项：主力连续5日4天净流出近600亿、融资余额单日减55.63亿、主动权益翻倍基清零说明内资赚钱效应在退坡。结论是“外围点火、内资<mark class="mk-neutral">观望</mark>”，温度计读数<mark class="mk-warm">偏暖</mark>，但没有烧到<mark class="mk-hot">偏热</mark>的资格，今天的关键不是开多高，而是高开之后有没有量接。</p>
+</div>
+<div class="sec" id="0d28f43b0a" data-section-id="0d28f43b0a">
+<h3 class="sec-h"><button class="fav-btn" data-sid="0d28f43b0a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>明天怎么看</h3>
+<div class="bi">情景一（45%）：高开震荡、结构分化。AI算力链承接外围情绪领涨，但主力资金延续净流出、量能放不出来，指数收小阳或十字星，赚指数不赚钱。应对是只做算力链低吸，不碰高位补涨。</div>
+<div class="bi">情景二（30%）：高开低走、冲高回落。巴西熔断和法债收益率破5%的尾部风险发酵，外资盘中转卖，融资盘继续撤，指数回补早盘缺口。应对是开盘不追，等回踩确认再动手。</div>
+<div class="bi">情景三（25%）：放量突破、情绪扩散。主力资金转为净流入、成交额明显放大，算力链带动半导体设备和AI应用全面扩散，指数收中阳。应对是确认放量后加仓算力链二线，但仍不满仓。</div>
+</div>
+<div class="sec" id="abb3b166dd" data-section-id="abb3b166dd">
+<h3 class="sec-h"><button class="fav-btn" data-sid="abb3b166dd" title="收藏此条分析" onclick="toggleFav(this)">☆</button>昨日收盘UP主观点</h3>
+</div>
+<div class="sec" id="8c2174fd38" data-section-id="8c2174fd38">
+<h3 class="sec-h"><button class="fav-btn" data-sid="8c2174fd38" title="收藏此条分析" onclick="toggleFav(this)">☆</button>李大霄（10月26日盘后）</h3>
+<div class="op-tags"><span class="op-chip op-neu">中性</span><span class="op-chip op-style">宏观对冲</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>不追涨杀跌，守住好股，等韩国、费半先行指标确认企稳再谈<mark class="mk-bullish">进攻</mark></div>
+<div class="bi"><strong>核心观点</strong>：全球熊市先行指标「韩国三星海力士」连横七天出现止跌迹象，若稳住则输入性风险可控，A股「26年10月是顶」的判断不变，坚持「做好人买好股得好报」</div>
+<div class="bi"><strong>看多方向</strong>：黄金（站上4000）、好股票（长期）</div>
+<div class="bi"><strong>看空 / 谨慎方向</strong>：韩国市场、费城半导体、美股AI高估值融资（OpenAI万亿估值、太空探索技术公司千亿融资）</div>
+<div class="bi"><strong>关键论据</strong>：「三星海力士已经横七天了……只要把韩国稳住，就有可能给一个往下拉的输入性风险把他稳住」</div>
+</div>
+<div class="sec" id="8c442eb6a7" data-section-id="8c442eb6a7">
+<h3 class="sec-h"><button class="fav-btn" data-sid="8c442eb6a7" title="收藏此条分析" onclick="toggleFav(this)">☆</button>魔法师（10月26日盘后）</h3>
+<div class="op-tags"><span class="op-chip op-neu">中性</span><span class="op-chip op-style">技术面+宏观日历</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>只做日内不隔夜，科技反弹不追，等周三回踩5日线不破再谈箱体，12月前留一手</div>
+<div class="bi"><strong>核心观点</strong>：周二科技弱反弹不追高，摸10日线即冲高回落，11月箱体盘整复制8-9月，12月加息预期下还有最后一跌，中证1000看至1万点</div>
+<div class="bi"><strong>看多方向</strong>：机器人、物理AI（仅分歧低吸）、消费保险（跷跷板轮动）</div>
+<div class="bi"><strong>看空 / 谨慎方向</strong>：科技（CPU、PCB、半导体，下行趋势未改）、12月指数（还有下跌空间）</div>
+<div class="bi"><strong>关键论据</strong>：「今天周二整体是一个科技的弱反，但是不要去追高……还在下行趋势里」</div>
+</div>
+<div class="sec" id="88c0db1a8a" data-section-id="88c0db1a8a">
+<h3 class="sec-h"><button class="fav-btn" data-sid="88c0db1a8a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>擒龙先生（10月26日盘后）</h3>
+<div class="op-tags"><span class="op-chip op-bear">利空</span><span class="op-chip op-style">情绪周期</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>空仓等待，别去接一两天的反弹，物理AI看龙头、大业九阳再负反馈就规避</div>
+<div class="bi"><strong>核心观点</strong>：今天这波超大负反馈证明只是下跌中继、短期没见底，队长在做T没救你，等待是当下最有性价比的事</div>
+<div class="bi"><strong>看多方向</strong>：物理AI（仅龙头九阳、大业）、机器人（穿越龙头）</div>
+<div class="bi"><strong>看空 / 谨慎方向</strong>：科技（下行趋势未改）、传媒（龙二跌停，需新华稳住才可再看）、消费（无大故事，做不成主线）</div>
+<div class="bi"><strong>关键论据</strong>：「今天市场再一次给大家证明了，这波只是下跌中继……踏空起码不会亏」</div>
+</div>
+<div class="sec" id="4c04bcf4fe" data-section-id="4c04bcf4fe">
+<h3 class="sec-h"><button class="fav-btn" data-sid="4c04bcf4fe" title="收藏此条分析" onclick="toggleFav(this)">☆</button>阿杰（10月26日盘后）</h3>
+<div class="op-tags"><span class="op-chip op-neu">中性</span><span class="op-chip op-style">短线博弈</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>不追高，等机器人明天分歧后联动指数回流产生的手板再重点看，扬字辈只做最严重分歧</div>
+<div class="bi"><strong>核心观点</strong>：周五阳线再创新低，市场底要画问号，资金被科技伤透心倒逼抱团，「最肥美的那一段已经过去了」，机器人和扬字辈是仅存的聚焦方向</div>
+<div class="bi"><strong>看多方向</strong>：机器人（去弱留强、叠加扬字辈加分）、扬字辈（纯短线分歧节点）</div>
+<div class="bi"><strong>看空 / 谨慎方向</strong>：科技（拉升不可信、无人跟风）、传媒（最弱，新华仅作锚定）、机器人高位追高（不具性价比）</div>
+<div class="bi"><strong>关键论据</strong>：「每一根大阳线都只能看作是熊市多长阳的那一根阳线……追高不具备性价比」</div>
+</div>
+<div class="sec" id="464fa1e6c5" data-section-id="464fa1e6c5">
+<h3 class="sec-h"><button class="fav-btn" data-sid="464fa1e6c5" title="收藏此条分析" onclick="toggleFav(this)">☆</button>从股道金（10月26日盘后）</h3>
+<div class="op-tags"><span class="op-chip op-bull">利好</span><span class="op-chip op-style">题材+资金面</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>稳住心态不恐慌，指数分歧机会可低吸，物理AI等明天低开后再看修复力度</div>
+<div class="bi"><strong>核心观点</strong>：今天是大涨后分化，科技下杀是基民赎回引发的机构砍仓分时，指数已在底部区域、机会大于风险，物理AI午后回流过强透支明日预期</div>
+<div class="bi"><strong>看多方向</strong>：物理AI（聚焦二板核心，正裕工业）、白酒消费、游戏、医药（修复）</div>
+<div class="bi"><strong>看空 / 谨慎方向</strong>：硬科技（赎回砍仓压力）、物理AI午后追高（日内卖点/做T点）</div>
+<div class="bi"><strong>关键论据</strong>：「目前的指数就是在一个底部的区域了……国家队在周五把这个底托住之后，等待市场中的资金慢慢把这个底自发的给买出来」</div>
+</div>
+<div class="sec" id="a998fdcdf7" data-section-id="a998fdcdf7">
+<h3 class="sec-h"><button class="fav-btn" data-sid="a998fdcdf7" title="收藏此条分析" onclick="toggleFav(this)">☆</button>缠论猎黑马（10月26日盘后）</h3>
+<div class="op-tags"><span class="op-chip op-neu">中性</span><span class="op-chip op-style">情绪周期+缠论</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>科技多看少动，硬要做就盯人形机器人，等大业和语速给正反馈再出手，负反馈宁可错过</div>
+<div class="bi"><strong>核心观点</strong>：科技所有反弹都当超跌反弹、逢高减仓不恋战，量能没放出来前一律震荡市，资金明确倾向非科技，重点盯人形机器人和AI视频情绪核心</div>
+<div class="bi"><strong>看多方向</strong>：人形机器人（大业、语速为核心，凡拓、赵薇后排）、AI视频（仅新华传媒）</div>
+<div class="bi"><strong>看空 / 谨慎方向</strong>：科技（PCB、MLCC、半导体，套牢盘重）、房地产（无涨停带情绪）、医药（药明破位，反弹即减仓）、AI视频追高（分歧加大）</div>
+<div class="bi"><strong>关键论据</strong>：「科技当前要想大幅度上涨……挑战性非常大，因为量能放不出来，上方套牢盘非常多，所有反弹都不要恋战，逢高减仓」</div>
+</div>
+<div class="sec" id="364938bad4" data-section-id="364938bad4">
+<h3 class="sec-h"><button class="fav-btn" data-sid="364938bad4" title="收藏此条分析" onclick="toggleFav(this)">☆</button>共识与分歧</h3>
+<div class="bi"><strong>横向量化</strong>：机器人被5位UP主同时看好（魔法师、擒龙先生、阿杰、从股道金、缠论猎黑马），是今日最高共识方向；科技被5位UP主一致看空或提示谨慎（魔法师、擒龙先生、阿杰、从股道金、缠论猎黑马），仅李大霄未直接表态A股科技。物理AI存在分歧：擒龙先生、从股道金看好但均提示追高风险，阿杰、缠论猎黑马则未将其列为核心。传媒/消费方向分歧明显：擒龙先生、阿杰看空传媒，缠论猎黑马仅保留新华传媒跟踪，从股道金则看好消费修复。</div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">板块/方向</th><th style="text-align:left">看多UP数</th><th style="text-align:left">看空UP数</th><th style="text-align:left">代表UP主</th><th style="text-align:left">逻辑</th></tr></thead><tbody><tr><td style="text-align:left">机器人/人形机器人</td><td style="text-align:left">5</td><td style="text-align:left">0</td><td style="text-align:left">魔法师、擒龙先生、阿杰、从股道金、缠论猎黑马</td><td style="text-align:left">科技资金外溢的唯一有持续性题材，大业、语速为核心；但多位提示高位追高不具性价比，等分歧低吸</td></tr><tr><td style="text-align:left">科技（半导体/PCB/CPU）</td><td style="text-align:left">0</td><td style="text-align:left">5</td><td style="text-align:left">魔法师、擒龙先生、阿杰、从股道金、缠论猎黑马</td><td style="text-align:left">量能不足、套牢盘重、基民赎回砍仓，所有反弹定性为超跌反弹，逢高减仓不恋战</td></tr><tr><td style="text-align:left">物理AI</td><td style="text-align:left">2</td><td style="text-align:left">2</td><td style="text-align:left">擒龙先生、从股道金（多）；阿杰、缠论猎黑马（谨慎）</td><td style="text-align:left">周五共振最主动方向，但午后回流过强透支预期，明日低开看修复；追高即卖点</td></tr><tr><td style="text-align:left">传媒/AI视频</td><td style="text-align:left">1</td><td style="text-align:left">2</td><td style="text-align:left">缠论猎黑马（仅新华）；擒龙先生、阿杰（空）</td><td style="text-align:left">龙二跌停、板块最弱，新华仅作情绪锚定，需回流稳住才有再做意义</td></tr><tr><td style="text-align:left">消费/白酒/医药</td><td style="text-align:left">2</td><td style="text-align:left">1</td><td style="text-align:left">从股道金、魔法师（多）；缠论猎黑马（医药空）</td><td style="text-align:left">科技跷跷板吸血修复，但无大故事难成主线；医药药明破位反弹即减仓</td></tr><tr><td style="text-align:left">黄金</td><td style="text-align:left">1</td><td style="text-align:left">0</td><td style="text-align:left">李大霄</td><td style="text-align:left">站上4000，全球避险逻辑</td></tr></tbody></table></div>
+<p class="para">今日共识度集中在「机器人是唯一有资金聚焦的方向、科技反弹一律减仓」，分歧度集中在物理AI的持续性（追高还是等分歧）以及传媒消费能否走出修复行情。整体情绪偏<mark class="mk-bearish">防守</mark>，多数UP主建议等量能或等回踩确认，不追反弹。</p>
+<p class="note">以下分析由 AI 基于当日新闻资讯、UP主观点共识与产业链逻辑推导生成，仅供研究参考，不构成投资建议。</p>
+</div>
+<div class="sec" id="9568c10b4a" data-section-id="9568c10b4a">
+<h3 class="sec-h"><button class="fav-btn" data-sid="9568c10b4a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>AI选股</h3>
+</div>
+<div class="sec" id="5d09d8e6fb" data-section-id="5d09d8e6fb">
+<h3 class="sec-h"><button class="fav-btn" data-sid="5d09d8e6fb" title="收藏此条分析" onclick="toggleFav(this)">☆</button>机器人：UP主最高共识方向，资金从科技外溢的唯一聚焦题材</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">大业股份(603278)</td><td style="text-align:left">五位UP主（魔法师、擒龙先生、阿杰、从股道金、缠论猎黑马）共同点名的人形机器人情绪核心，缠论猎黑马明确「等大业和语速给正反馈再出手」，是板块强弱的风向标</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">九阳股份(002242)</td><td style="text-align:left">擒龙先生点名物理AI龙头之一，与机器人题材共振，属资金聚焦的核心辨识度标的</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">正裕工业(603089)</td><td style="text-align:left">从股道金点名物理AI二板核心，机器人方向资金回流的直接承接标的</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">三一重工(06031.HK)</td><td style="text-align:left">UBS Group AG于10月20日增持134.32万股、每股16.5883港元，外资真金白银加仓，与机器人/装备主线形成交叉验证</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr><tr><td style="text-align:left">凡拓数创(301313)</td><td style="text-align:left">缠论猎黑马列为机器人后排跟随标的，逻辑成立但非核心，传导稍远</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
+<div class="bi">语速（未上市/名称待核实）：缠论猎黑马点名的机器人核心之一，无确认A股代码，仅作情绪观察锚，不纳入表格。</div>
+<div class="bi">机器人方向多位UP主同时提示高位追高不具性价比，阿杰明确「等明天分歧后联动指数回流产生的手板再重点看」，介入节奏以分歧低吸为主。</div>
+</div>
+<div class="sec" id="d366f72fdb" data-section-id="d366f72fdb">
+<h3 class="sec-h"><button class="fav-btn" data-sid="d366f72fdb" title="收藏此条分析" onclick="toggleFav(this)">☆</button>物理AI：周五共振最主动方向，但午后回流透支预期</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">正裕工业(603089)</td><td style="text-align:left">从股道金明确「聚焦二板核心，正裕工业」，物理AI资金最集中的辨识度标的，逻辑直接、短期可验证</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">大业股份(603278)</td><td style="text-align:left">擒龙先生、缠论猎黑马双重点名，物理AI与机器人双题材叠加的核心载体</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">九阳股份(002242)</td><td style="text-align:left">擒龙先生点名物理AI龙头，与机器人方向形成共振，资金聚焦度高</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr></tbody></table></div>
+<div class="bi">物理AI存在明确分歧：擒龙先生、从股道金看好但均提示「午后回流过强透支明日预期」「追高即卖点」，阿杰、缠论猎黑马未列为核心，操作上等低开看修复力度，不追日内高点。</div>
+</div>
+<div class="sec" id="743139ae09" data-section-id="743139ae09">
+<h3 class="sec-h"><button class="fav-btn" data-sid="743139ae09" title="收藏此条分析" onclick="toggleFav(this)">☆</button>存储芯片：韩国存储股大涨+费半涨3%，外围景气传导</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">兆易创新(603986)</td><td style="text-align:left">韩国三星涨4.9%、SK海力士涨7.3%，SK海力士拟10月28日宣布50万亿至60万亿韩元股东回报计划，存储景气与资本开支预期直接传导A股存储设计龙头</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">江波龙(301308)</td><td style="text-align:left">存储模组直接受益于存储芯片涨价与资本开支上行周期，产业链传导路径清晰</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr><tr><td style="text-align:left">北京君正(300223)</td><td style="text-align:left">存储与车规芯片双线布局，受益韩国存储股走强带动的板块情绪修复</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
+<div class="bi">李大霄明确提示「韩国三星海力士连横七天出现止跌迹象，若稳住则输入性风险可控」，同时看空费城半导体与美股AI高估值融资，存储方向属外围企稳传导而非A股内生驱动，仓位不宜过重。</div>
+</div>
+<div class="sec" id="c3b7f89541" data-section-id="c3b7f89541">
+<h3 class="sec-h"><button class="fav-btn" data-sid="c3b7f89541" title="收藏此条分析" onclick="toggleFav(this)">☆</button>半导体设备与材料：韩股AI芯片出口成核心引擎，景气外溢</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">北方华创(002371)</td><td style="text-align:left">韩国三季度GDP环比增1.0%超预期、AI芯片出口成核心引擎，费城半导体指数涨3%报11109.63点，设备国产替代龙头受益全球资本开支预期</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">中微公司(688012)</td><td style="text-align:left">刻蚀设备份额提升，费半走强与韩国芯片出口数据形成景气交叉验证，逻辑直接</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">拓荆科技(688072)</td><td style="text-align:left">薄膜沉积设备国产化率提升，受益存储与逻辑晶圆厂扩产预期传导</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
+<div class="bi">该方向与五位UP主「科技反弹一律逢高减仓」的判断直接冲突，属外围数据驱动的情绪修复而非趋势反转，仅作反弹博弈，不追高。</div>
+</div>
+<div class="sec" id="fb8e382068" data-section-id="fb8e382068">
+<h3 class="sec-h"><button class="fav-btn" data-sid="fb8e382068" title="收藏此条分析" onclick="toggleFav(this)">☆</button>光通信与PCB：Anthropic招股书点燃AI行情，光通信板块走强</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">景旺电子(603228)</td><td style="text-align:left">三季报营业收入66.21亿元同比增66.06%、归母净利润10.14亿元同比增239.67%，业绩爆发与美股光通信、半导体集体沸腾形成共振，逻辑直接可验证</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">中际旭创(300308)</td><td style="text-align:left">美股光通信板块走强、Anthropic提交IPO文件点燃AI算力行情，光模块龙头直接受益海外算力资本开支</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">新易盛(300502)</td><td style="text-align:left">光模块高景气延续，海外AI算力投资增长传导至国内光通信供应链</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
+<div class="bi">高盛研判美国企业AI举债投资增长Q4见顶，光通信与PCB属海外AI资本开支链条，需警惕Q4见顶后的订单预期回落；魔法师、阿杰明确将PCB列为「下行趋势未改」的减仓方向。</div>
+</div>
+<div class="sec" id="64eac437e9" data-section-id="64eac437e9">
+<h3 class="sec-h"><button class="fav-btn" data-sid="64eac437e9" title="收藏此条分析" onclick="toggleFav(this)">☆</button>星闪生态：联盟推动联发科、意法半导体、恩智浦参与，华为生态外扩</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">创耀科技(688259)</td><td style="text-align:left">星闪技术芯片与模组核心供应商，国际星闪联盟秘书长明确「多家国内外手机厂商正在探索星闪适配方案」，生态外扩直接打开增量空间</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">泰凌微(688591)</td><td style="text-align:left">无线音频与设备互联芯片布局，星闪在无线音频领域应用拓展的直接受益者</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr><tr><td style="text-align:left">乐鑫科技(688018)</td><td style="text-align:left">无线连接芯片平台型公司，星闪生态从华为体系向联发科等第三方芯片企业开放带来配套需求</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
+<div class="bi">星闪当前仍处「突破阶段」，商业化放量节奏存在不确定性，属主题催化而非当期业绩驱动。</div>
+</div>
+<div class="sec" id="95ebdbfcdb" data-section-id="95ebdbfcdb">
+<h3 class="sec-h"><button class="fav-btn" data-sid="95ebdbfcdb" title="收藏此条分析" onclick="toggleFav(this)">☆</button>广电视听“十五五”规划：AI渗透率不低于95%，超高清终端1.5亿端</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">当虹科技(688039)</td><td style="text-align:left">广电AI视频与超高清编转码核心供应商，规划明确AI渗透率不低于95%、超高清终端综合占比不低于95%，政策指标直接对应公司产品线</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">数码视讯(300079)</td><td style="text-align:left">有线电视与IPTV超高清终端设备供应商，1.5亿端新型终端应用数量目标带来直接订单预期</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">捷成股份(300182)</td><td style="text-align:left">广电内容与版权运营，AI渗透率硬指标推动内容生产端智能化改造需求</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
+<div class="bi">缠论猎黑马提示传媒板块「龙二跌停、板块最弱，新华仅作情绪锚定」，广电政策<mark class="mk-bullish">利好</mark>与传媒板块短期弱势形成对冲，需等板块情绪企稳。</div>
+</div>
+<div class="sec" id="73a921ee58" data-section-id="73a921ee58">
+<h3 class="sec-h"><button class="fav-btn" data-sid="73a921ee58" title="收藏此条分析" onclick="toggleFav(this)">☆</button>退役电池回收：政策健全废弃物循环利用体系，锂钴镍战略金属再生</h3>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">格林美(002340)</td><td style="text-align:left">退役动力电池回收龙头，《关于发展新质生产力的意见》明确健全废弃物循环利用体系、循环再生锂钴镍，政策与主业高度对应</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">天奇股份(002009)</td><td style="text-align:left">电池回收与梯次利用布局，政策推动规模化回收直接受益</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr><tr><td style="text-align:left">光华科技(002741)</td><td style="text-align:left">磷酸铁锂回收与湿法冶金技术储备，受益退役电池高值化回收政策导向</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
+<div class="bi">该方向为政策中长期导向，短期缺乏订单与价格催化，传导链条较长。</div>
+</div>
+<div class="sec" id="bb0b02c95c" data-section-id="bb0b02c95c">
+<h3 class="sec-h"><button class="fav-btn" data-sid="bb0b02c95c" title="收藏此条分析" onclick="toggleFav(this)">☆</button>个股风险提示</h3>
+<div class="bi">科技板块（半导体、PCB、CPU）：魔法师、擒龙先生、阿杰、从股道金、缠论猎黑马五位UP主一致定性为「下行趋势未改、量能不足、套牢盘重、基民赎回砍仓」，所有反弹按超跌反弹处理，逢高减仓不恋战。</div>
+<div class="bi">传媒/AI视频：擒龙先生、阿杰明确看空，龙二跌停、板块最弱，缠论猎黑马仅保留新华传媒作情绪锚定，需回流稳住才有再做意义。</div>
+<div class="bi">医药：缠论猎黑马提示药明破位，反弹即减仓，医药修复逻辑不成立。</div>
+<div class="bi">房地产：缠论猎黑马提示无涨停带情绪，缺乏主线资格。</div>
+<div class="bi">尝·高美集团(8371.HK)：香港证监会审裁处就涉嫌操纵股价以配合转主板上市，对三名高层及五名关联人展开研讯程序，监管处罚风险明确。</div>
+<div class="bi">IFBH：if椰子水母公司发布盈利警告，预计前三季度净利润同比减少约60%至75%，原材料供应短缺与成本上涨，业绩暴雷风险。</div>
+<div class="bi">巴西市场传导：巴西主要股指盘中跌幅一度超17%、触发2020年3月以来首次熔断，股债汇三杀，关注新兴市场风险偏好外溢对A股外资流向的扰动。</div>
+<div class="bi">美股AI高估值融资：李大霄明确看空OpenAI万亿估值、太空探索技术公司千亿融资，高盛研判美国企业AI举债投资增长Q4见顶，警惕AI算力链订单预期回落。</div>
+</div></div>
+
+  
+</div>
+
+<div class="site-footer">
+  <div class="footer-logo">MARKET//BRIEF</div>
+  <a class="online-link" href="https://hcongxi42-web.github.io/HZT/report_20261027.html">VIEW ONLINE</a>
+  <div class="footer-info">
+    DATA · East Money / Sina Finance<br>
+    AI · DeepSeek V4.1 Flash
+  </div>
+  <div class="footer-disclaimer">
+    本报告由 AI 自动生成，仅供研究参考，不构成任何投资建议。<br>
+    市场有风险，投资需谨慎。PAST PERFORMANCE IS NOT INDICATIVE OF FUTURE RESULTS.
+  </div>
+</div>
+
+<!-- ══════════════ 回到顶部 ══════════════ -->
+<button class="to-top" id="toTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部">↑</button>
+
+<!-- ══════════════ 自选新闻面板 ══════════════ -->
+<div class="fav-panel" id="favPanel">
+  <div class="fav-panel-inner">
+    <div class="fav-panel-hdr">
+      <span> 自选新闻 · <em id="favCount">0</em></span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="fav-count" id="favSize" title="localStorage 占用"></span>
+        <button class="fav-act-btn" onclick="exportFavs()" title="导出收藏为 JSON 文件">↗导出</button>
+        <button class="fav-act-btn" onclick="importFavs()" title="从 JSON 文件导入收藏（合并去重）">↘导入</button>
+        <button class="fav-act-btn fav-act-del" onclick="clearAllFavs()" title="清空全部收藏">清空</button>
+        <button class="fav-toggle" id="favToggle" title="收起面板" onclick="toggleFavPanel()">▾</button>
+      </div>
+    </div>
+    <div id="favActions" style="padding:6px 20px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);">
+      收藏仅保存索引（不存HTML）· 上限 200 条 · 跨报告跳转需联网 · 可导出备份
+    </div>
+    <div class="fav-list" id="favList">
+      <div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 收藏提示浮层 ══════════════ -->
+<div class="fav-toast" id="favToast"></div>
+
+<script>
+window.MB_CONFIG = {
+  fav_date_key: '2026-10-27_am',
+  today: '2026-10-27',
+  session_label: '早报',
+  session_slug: 'am',
+  page_base_url: 'https://hcongxi42-web.github.io/HZT/'
+};
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  自选新闻 · localStorage 持久化（轻量版）
+//  只存元数据索引，不存 HTML 副本 — 跨报告跳转时从源文件加载。
+//  MARKET//BRIEF Daily Stock Report
+// ═══════════════════════════════════════════════════════════════
+
+var STORAGE_KEY = 'market_brief_favs_v2';  // v2: 不再存储 html 字段
+var MAX_FAVS = 200;
+var FAV_DATE_KEY, FAV_DATE, FAV_SESSION, PAGE_BASE_URL, CURRENT_SESSION;
+
+function initMBConfig() {
+  var cfg = window.MB_CONFIG || {};
+  FAV_DATE_KEY = cfg.fav_date_key || '';
+  FAV_DATE = cfg.today || '';
+  FAV_SESSION = cfg.session_label || '';
+  PAGE_BASE_URL = cfg.page_base_url || '';
+  CURRENT_SESSION = cfg.session_slug || '';
+}
+
+// ── 早报 / 晚报 切换 ──
+function switchSession(session) {
+  if (session === CURRENT_SESSION) return;
+  CURRENT_SESSION = session;
+  var amBtn = document.getElementById('stAm');
+  var pmBtn = document.getElementById('stPm');
+  if (amBtn) amBtn.classList.toggle('active', session === 'am');
+  if (pmBtn) pmBtn.classList.toggle('active', session === 'pm');
+  var picker = document.getElementById('historyPicker');
+  if (picker && picker.value) {
+    var p = picker.value.split('-');
+    window.location.href = PAGE_BASE_URL + 'report_' + p[0] + p[1] + p[2] + '_' + session + '.html';
+  }
+}
+
+function goToDate() {
+  var d = document.getElementById('historyPicker').value;
+  if (d) {
+    var p = d.split('-');
+    window.location.href = PAGE_BASE_URL + 'report_' + p[0] + p[1] + p[2] + '_' + CURRENT_SESSION + '.html';
+  }
+}
+
+// ── 读写 localStorage（带错误处理 + 旧格式迁移）──
+function getFavs() {
+  try {
+    var raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!Array.isArray(raw)) return [];
+    // 迁移 v1 → v2: 丢弃 html 字段，只保留元数据
+    var migrated = false;
+    raw = raw.map(function(f) {
+      if (f.html !== undefined) { migrated = true; }
+      return {
+        id: f.id || '',
+        sid: f.sid || '',
+        date: f.date || '',
+        session: f.session || '',
+        title: f.title || '',
+        saved_at: f.saved_at || ''
+      };
+    });
+    if (migrated) {
+      saveFavsRaw(raw);
+      console.log('[Favs] 已从 v1 迁移到 v2 (丢弃HTML副本)');
+    }
+    return raw;
+  } catch(e) { return []; }
+}
+
+function saveFavsRaw(favs) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(favs));
+    renderFavPanel();
+    updateAllStarBtns();
+  } catch(e) {
+    // localStorage 满了 → 裁剪最旧的 25%
+    if (e.name === 'QuotaExceededError') {
+      var drop = Math.ceil(favs.length * 0.25);
+      var trimmed = favs.slice(drop);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+      showToast('存储已满，已自动清理' + drop + '条旧收藏');
+      renderFavPanel();
+      updateAllStarBtns();
+    }
+  }
+}
+
+function saveFavs(favs) {
+  saveFavsRaw(favs);
+}
+
+// ── 估算存储占用 ──
+function estimateStorage() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? new Blob([raw]).size : 0;
+  } catch(e) { return 0; }
+}
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+// ── 从 sec-h 提取纯文本标题 ──
+function getTitleFromSec(sid) {
+  var sec = document.querySelector('[data-section-id="' + sid + '"]');
+  if (!sec) return '';
+  var hEl = sec.querySelector('.sec-h');
+  if (!hEl) return '';
+  var btn = hEl.querySelector('.fav-btn');
+  var btnText = btn ? btn.textContent : '';
+  return (hEl.textContent || '').replace(btnText, '').trim();
+}
+
+function makeFavId(sid) {
+  return FAV_DATE_KEY + '_' + sid;
+}
+
+// ── 收藏 / 取消收藏 ──
+function toggleFav(btn) {
+  var sid = btn.getAttribute('data-sid');
+  var favId = makeFavId(sid);
+  var title = getTitleFromSec(sid);
+  if (!title) return;
+
+  var favs = getFavs();
+  var idx = favs.findIndex(function(f) { return f.id === favId; });
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+    saveFavs(favs);
+    showToast('已取消收藏');
+  } else {
+    if (favs.length >= MAX_FAVS) {
+      showToast('收藏已达上限 (' + MAX_FAVS + '条)，请先清理旧收藏');
+      return;
+    }
+    favs.push({
+      id: favId,
+      sid: sid,
+      date: FAV_DATE,
+      session: FAV_SESSION,
+      title: title,
+      saved_at: new Date().toISOString()
+    });
+    saveFavs(favs);
+    showToast('已加入自选 ');
+  }
+}
+
+// ── 删除收藏项 ──
+function delFav(favId) {
+  var favs = getFavs();
+  favs = favs.filter(function(f) { return f.id !== favId; });
+  saveFavs(favs);
+  showToast('已删除');
+}
+
+// ── 跳转到收藏项所在报告 ──
+function gotoFav(favId) {
+  var favs = getFavs();
+  var f = favs.find(function(x) { return x.id === favId; });
+  if (!f) return;
+  var sid = f.sid || '';
+  var dateDigits = f.date.replace(/-/g, '');
+
+  // 当前页面已有该 section → 直接滚动
+  var local = document.querySelector('[data-section-id="' + sid + '"]');
+  if (local) {
+    local.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    local.style.boxShadow = '0 0 0 3px var(--amber)';
+    setTimeout(function() { local.style.boxShadow = ''; }, 2000);
+    return;
+  }
+
+  // 跨报告跳转：构建目标 URL
+  var sessionSuffix = (f.session === '晚报') ? '_pm' : '_am';
+  var targetUrl = PAGE_BASE_URL + 'report_' + dateDigits + sessionSuffix + '.html';
+  window.location.href = targetUrl + '#' + sid;
+}
+
+// ── 渲染底部自选面板 ──
+function renderFavPanel() {
+  var favs = getFavs();
+  var countEl = document.getElementById('favCount');
+  var listEl = document.getElementById('favList');
+  var summaryEl = document.getElementById('favSummary');
+  var panel = document.getElementById('favPanel');
+  var sizeEl = document.getElementById('favSize');
+
+  var storageSize = estimateStorage();
+  if (countEl) countEl.textContent = favs.length + '条';
+  if (sizeEl) sizeEl.textContent = fmtSize(storageSize);
+  if (summaryEl) summaryEl.textContent = favs.length
+    ? favs.map(function(f) { return f.date.slice(5) + (f.session === '晚报' ? '晚' : '早'); }).slice(-10).join(' · ')
+    : '';
+  if (panel && favs.length > 0) panel.style.display = 'block';
+  else if (panel && favs.length === 0) panel.style.display = 'none';
+
+  if (!listEl) return;
+  if (favs.length === 0) {
+    listEl.innerHTML = '<div class="fav-empty">暂无收藏 · 点击报告中任意分析板块旁的 ☆ 即可收藏</div>';
+    return;
+  }
+
+  // 最新在前，最多展示最近 100 条
+  var sorted = [].concat(favs).reverse().slice(0, 100);
+  listEl.innerHTML = sorted.map(function(f) {
+    return '<div class="fav-item">' +
+      '<span class="fav-item-date">' + f.date.slice(5) + (f.session === '晚报' ? '晚' : '早') + '</span>' +
+      '<span class="fav-item-title" onclick="gotoFav(\'' + f.id + '\')" title="点击跳转到 ' + f.date + ' ' + f.session + ' · ' + f.title + '">' + f.title + '</span>' +
+      '<button class="fav-item-del" onclick="delFav(\'' + f.id + '\')" title="删除">✕</button>' +
+      '</div>';
+  }).join('');
+
+  // 如果超过 100 条，显示提示
+  if (favs.length > 100) {
+    listEl.innerHTML += '<div class="fav-item" style="color:var(--text-muted);font-size:11px;justify-content:center;">… 还有 ' + (favs.length - 100) + ' 条更早的收藏（已折叠）</div>';
+  }
+}
+
+// ── 批量清空 ──
+function clearAllFavs() {
+  if (confirm('确定要清空全部收藏吗？此操作不可恢复。')) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderFavPanel();
+    updateAllStarBtns();
+    showToast('已清空全部收藏');
+  }
+}
+
+// ── 导出收藏为 JSON 文件 ──
+function exportFavs() {
+  var favs = getFavs();
+  if (favs.length === 0) { showToast('没有收藏可导出'); return; }
+  var blob = new Blob([JSON.stringify(favs, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'market_brief_favs_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('已导出 ' + favs.length + ' 条收藏');
+}
+
+// ── 导入收藏（合并去重）──
+function importFavs() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function() {
+    var file = this.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var incoming = JSON.parse(e.target.result);
+        if (!Array.isArray(incoming)) throw new Error('格式错误');
+        var existing = getFavs();
+        var existingIds = new Set(existing.map(function(f) { return f.id; }));
+        var added = 0;
+        for (var i = 0; i < incoming.length; i++) {
+          var f = incoming[i];
+          if (!f.id || !f.title) continue;
+          if (existingIds.has(f.id)) continue;
+          // 丢弃 html 字段（兼容旧格式）
+          existing.push({
+            id: f.id, sid: f.sid || '', date: f.date || '',
+            session: f.session || '', title: f.title,
+            saved_at: f.saved_at || new Date().toISOString()
+          });
+          existingIds.add(f.id);
+          added++;
+        }
+        if (existing.length > MAX_FAVS) {
+          existing = existing.slice(existing.length - MAX_FAVS);
+        }
+        saveFavs(existing);
+        showToast('导入了 ' + added + ' 条，合并后共 ' + existing.length + ' 条');
+      } catch(err) {
+        showToast('导入失败：文件格式不正确');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ── 更新所有 ☆ 按钮状态 ──
+function updateAllStarBtns() {
+  var favs = getFavs();
+  var favIdSet = new Set(favs.map(function(f) { return f.id; }));
+  document.querySelectorAll('.fav-btn').forEach(function(btn) {
+    var sid = btn.getAttribute('data-sid');
+    var favId = makeFavId(sid);
+    if (favIdSet.has(favId)) {
+      btn.textContent = '★';
+      btn.classList.add('on');
+    } else {
+      btn.textContent = '☆';
+      btn.classList.remove('on');
+    }
+  });
+}
+
+// ── 收起/展开面板 ──
+function toggleFavPanel() {
+  var list = document.getElementById('favList');
+  var toggle = document.getElementById('favToggle');
+  var actions = document.getElementById('favActions');
+  if (list.style.display === 'none') {
+    list.style.display = '';
+    if (actions) actions.style.display = '';
+    toggle.textContent = '▾';
+  } else {
+    list.style.display = 'none';
+    if (actions) actions.style.display = 'none';
+    toggle.textContent = '▸';
+  }
+}
+
+// ── Toast 提示 ──
+function showToast(msg) {
+  var toast = document.getElementById('favToast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._tid);
+  toast._tid = setTimeout(function() { toast.classList.remove('show'); }, 1500);
+}
+
+// ── 初始化 ──
+(function initFavs() {
+  initMBConfig();
+  renderFavPanel();
+  updateAllStarBtns();
+  // 处理跨页面锚点跳转
+  var hash = window.location.hash;
+  if (hash) {
+    var target = document.querySelector('[data-section-id="' + hash.slice(1) + '"]');
+    if (target) {
+      setTimeout(function() {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.style.boxShadow = '0 0 0 3px var(--amber)';
+        setTimeout(function() { target.style.boxShadow = ''; }, 2500);
+      }, 300);
+    }
+  }
+})();
+
+// ── 表格单元格注入 data-th（移动端卡片化标签）──
+(function initTableTh() {
+  document.querySelectorAll('.tbl').forEach(function(tbl) {
+    var ths = tbl.querySelectorAll('thead th');
+    tbl.querySelectorAll('tbody tr').forEach(function(tr) {
+      var tds = tr.querySelectorAll('td');
+      tds.forEach(function(td, i) {
+        if (ths[i]) td.setAttribute('data-th', ths[i].textContent.trim());
+      });
+    });
+  });
+})();
+
+// ── 回到顶部按钮 ──
+(function initToTop() {
+  var btn = document.getElementById('toTop');
+  if (!btn) return;
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > 600) btn.classList.add('show');
+    else btn.classList.remove('show');
+  }, { passive: true });
+})();
+
+</script>
+
+</body>
+</html>
