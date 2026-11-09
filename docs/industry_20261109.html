@@ -506,17 +506,20 @@ function aposDraw(box){
   var s = ['<svg viewBox="0 0 ' + W + ' ' + H + '">'];
   // 五档参考线＋左轴档名：中枢 50 实线，其余虚线。数字在前、档名在后，
   // 这样 0/100 两个端点与 10/25/50/75/90 五个阈值共用同一列刻度，读图不必再对图例。
+  // 2026-11-09 二次改版（用户要求）：五档横线加粗加深，档名另起 tspan 加粗，读图先看到档位再看折线
   APB.forEach(function(g){
     var y = Y(g[0]), nm = g[1], isBand = g[2], main = (g[0] === 50);
     if(isBand){
       s.push('<line x1="' + L + '" y1="' + y.toFixed(1) + '" x2="' + (W - R) +
-             '" y2="' + y.toFixed(1) + '" stroke="' + (main ? '#E3E3DD' : '#E8E8E1') +
-             '" stroke-width="1"' + (main ? '' : ' stroke-dasharray="3 3"') + '/>');
+             '" y2="' + y.toFixed(1) + '" stroke="' + (main ? '#8C8C7C' : '#B2B2A2') +
+             '" stroke-width="' + (main ? '1.4' : '1.2') + '"' +
+             (main ? '' : ' stroke-dasharray="5 3"') + '/>');
     }
     s.push('<text x="' + (L - 6) + '" y="' + (y + 3.4).toFixed(1) +
            '" text-anchor="end" class="apost" fill="' +
-           (main ? '#8E8E8E' : (isBand ? '#A8A8A8' : '#C9C9C9')) + '">' +
-           g[0] + (isBand ? ' ' + nm : '') + '</text>');
+           (main ? '#4A4A41' : (isBand ? '#5C5C50' : '#A5A599')) + '">' +
+           g[0] + (isBand ? '<tspan dx="2" font-weight="700" fill="' +
+           (main ? '#2E2E27' : '#3F3F35') + '">' + nm + '</tspan>' : '') + '</text>');
   });
   var lines = [];
   D.lines.forEach(function(k, i){
