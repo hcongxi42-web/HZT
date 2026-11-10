@@ -212,29 +212,30 @@ tr.exp td{padding:0;border-bottom:.5px solid #EDEDED}
  letter-spacing:.06em}
 /* 均占读法卡（2026-11-10 增，2026-11-10 下午改为可折叠并上移到「一、跳升候选」之前）：
    默认收起，只占一行；展开后是四条读法。用 details 而非 JS，刷新/打印都不丢状态 */
-.apg{margin:10px 0 16px;background:#FBF8EF;border-left:3px solid #A8894A;
- border-radius:0 3px 3px 0}
+.apg{margin:10px 0 16px;background:#FAFAFA;border-left:3px solid #141414;
+ border-top:1px solid #D8D8D8;border-bottom:1px solid #D8D8D8}
 .apg>summary{list-style:none;cursor:pointer;padding:9px 16px;display:flex;
  flex-wrap:wrap;align-items:baseline;gap:3px 9px;font-size:13px;font-weight:600;
- color:#2E2A22;letter-spacing:.02em;user-select:none}
+ color:#141414;letter-spacing:.02em;user-select:none}
 .apg>summary::-webkit-details-marker{display:none}
-.apg>summary:hover{background:#F7F2E3}
-.apg>summary em{font-style:normal;font-size:10.5px;font-weight:400;color:#93866B;
+.apg>summary:hover{background:#F2F2F2}
+.apg>summary:hover .tg{color:#1E3A5F}
+.apg>summary em{font-style:normal;font-size:10.5px;font-weight:400;color:#6B6B6B;
  letter-spacing:.04em}
-.apg .tg{font-size:10.5px;font-weight:400;color:#A8894A;letter-spacing:.06em;
+.apg .tg{font-size:10.5px;font-weight:400;color:#3D3D3D;letter-spacing:.06em;
  margin-left:auto;order:98;flex:0 0 auto}
 .apg .tg-off{display:none}
 .apg[open] .tg-on{display:none}
 .apg[open] .tg-off{display:inline}
 .apg .arw{order:99;flex:0 0 auto;width:5px;height:5px;margin:0 2px 0 5px;
- border-right:1.3px solid #A8894A;border-bottom:1.3px solid #A8894A;
+ border-right:1.3px solid #3D3D3D;border-bottom:1.3px solid #3D3D3D;
  transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s}
 .apg[open] .arw{transform:rotate(225deg) translate(-1px,-1px)}
 .apg ol{margin:0;padding:1px 16px 12px 35px}
-.apg li{font-size:12px;line-height:1.72;color:#3F3A31;margin:0 0 4px}
+.apg li{font-size:12px;line-height:1.72;color:#3D3D3D;margin:0 0 4px}
 .apg li:last-child{margin-bottom:0}
-.apg li b{color:#1F1B14;font-weight:600}
-.apg li i{font-style:normal;padding:0 2px;color:#8A6A2E;font-weight:600;
+.apg li b{color:#141414;font-weight:600}
+.apg li i{font-style:normal;padding:0 2px;color:#141414;font-weight:600;
  font-variant-numeric:tabular-nums}
 .aposf{font-size:10.5px;color:#A5A5A5;letter-spacing:.01em;margin-top:2px}
 /* 均占 SVG 里的文字：不带 fill，让每个元素自己的 fill 属性生效（类选择器会压掉属性） */
