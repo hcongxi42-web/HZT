@@ -1,0 +1,36 @@
+name: 仅部署 Pages
+
+# 用途：把仓库里当前的 docs/ 原样发布到 GitHub Pages，**不重新生成报告**。
+# 场景：手工修过的报告页、批量清理历史文件后需要立即上线时使用。
+# 日常出报走 daily_stock_report.yml，本工作流不参与。
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 与出报工作流共用同一个并发组：避免和正在推送的运行抢 Pages 部署
+concurrency:
+  group: daily-stock-report
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v5

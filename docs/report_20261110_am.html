@@ -517,6 +517,144 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
   }
 }
 
+
+/* ── 行业强度（新增板块，ind- 前缀避免污染原样式） ── */
+.ind-kicker{font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:var(--ink-3);letter-spacing:.4px;margin:0 0 10px}
+.ind-link{font-size:13px;color:var(--brick);margin:0 0 14px;font-weight:600}
+.ind-link a{color:var(--brick);text-decoration:underline;text-underline-offset:2px;font-weight:600}
+.ind-link a:hover{color:#7a2f2f}
+.ind-verdict{border-left:3px solid var(--brick);background:#fdf8f7;padding:10px 14px;margin:0 0 16px;font-size:14px;line-height:1.7;color:var(--ink)}
+.ind-verdict b{color:var(--brick)}
+.ind-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule-soft);border:1px solid var(--rule-soft);margin:0 0 20px}
+.ind-kpi>div{background:#fff;padding:9px 12px}
+.ind-kpi .k{font-family:'JetBrains Mono',Consolas,monospace;font-size:10.5px;color:var(--ink-3);letter-spacing:.5px}
+.ind-kpi .v{font-family:'JetBrains Mono',Consolas,monospace;font-size:16px;margin-top:2px;color:var(--ink)}
+.ind-kpi .n{font-size:11px;color:var(--ink-3);margin-top:1px}
+.ind-h{font-size:13px;font-weight:600;margin:20px 0 6px;color:var(--ink)}
+.ind-n{font-family:'JetBrains Mono',Consolas,monospace;text-align:right;font-variant-numeric:tabular-nums}
+.ind-name{font-weight:600}
+.ind-mut{color:var(--ink-3)}
+.ind-pos{color:var(--brick)}
+.ind-neg{color:var(--green)}
+.ind-sep{padding:4px 0;border-bottom:1px solid var(--rule)}
+.ind-tag{display:inline-block;font-size:10.5px;padding:0 5px;border:1px solid var(--rule);border-radius:2px;color:var(--ink-2);line-height:1.5}
+.ind-tag.hot{border-color:#d9b3b3;color:var(--brick);background:#fdf3f3}
+.ind-tag.ok{border-color:var(--rule-soft);color:var(--ink-3)}
+.ind-cap{font-family:'JetBrains Mono',Consolas,monospace;font-size:10.5px;color:var(--ink-3);margin:4px 0 0;line-height:1.65}
+.ind-theme{font-weight:600;width:24%}
+.ind-sub{display:block;font-weight:400;font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.55}
+.ind-dir{font-family:'JetBrains Mono',Consolas,monospace;font-size:12px;color:var(--navy);line-height:1.7;width:26%}
+.ind-v{font-weight:600;margin-right:4px}
+.ind-v.yes{color:var(--brick)} .ind-v.part{color:#8a6a1f} .ind-v.no{color:var(--green)}
+@media (max-width:720px){.ind-kpi{grid-template-columns:repeat(2,1fr)}}
+
+
+/* ══════ 版式层：决策仪表盘 v2（覆盖原样式，不改内容） ══════ */
+:root{--wash:#fafaf8;--slate:#5b7a99}
+html{-webkit-text-size-adjust:100%}
+body{font-size:15.5px;line-height:1.72}
+.mono,.num{font-variant-numeric:tabular-nums}
+
+/* 报头与行情条 */
+.masthead{padding-bottom:12px}
+.masthead h1{letter-spacing:.5px}
+.tkr{padding:7px 16px 7px 0}
+.tkr+.tkr{padding-left:16px}
+.tkr-n{font-size:12px}
+.tkr-p{font-size:13.5px}
+
+/* 目录：药丸 → 平条（提高选择器权重压住原 .toc-link 的边框） */
+.toc{max-width:1040px;margin:12px auto 0;padding:0;gap:0;flex-wrap:wrap;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.toc .toc-label{display:none}
+.toc .toc-link{flex:1 1 auto;border:0;border-right:1px solid var(--rule-soft);border-radius:0;padding:8px 12px;font-size:11.5px;color:var(--ink-3);letter-spacing:.4px;text-decoration:none;transition:color .12s,background .12s}
+.toc .toc-link:last-child{border-right:0}
+.toc .toc-link:hover{color:var(--ink);background:var(--wash)}
+.toc-link .toc-n{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--slate);margin-right:6px}
+
+/* 决策带 */
+.verdict{display:grid;grid-template-columns:176px 1fr;border:1px solid var(--ink);margin:20px 0 0}
+.vside{border-right:1px solid var(--ink);padding:20px 18px;background:var(--wash);display:flex;flex-direction:column;justify-content:center}
+.vlab{font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--ink-3)}
+.vtemp{font-size:42px;font-weight:700;line-height:1;margin:9px 0 7px;letter-spacing:2px;color:var(--navy)}
+.vnote{font-family:var(--mono);font-size:11px;color:var(--ink-3);line-height:1.6}
+.vmain{padding:20px 22px 18px}
+.vk{font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--brick);font-weight:600;margin-bottom:9px}
+.vact{font-size:21px;font-weight:700;line-height:1.45;margin-bottom:12px}
+.vwhy{font-size:13.5px;color:var(--ink-2);line-height:1.75}
+
+/* 信号格 */
+.signals{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--rule);border-top:0;background:var(--rule-soft);gap:1px}
+.sig{background:#fff;padding:12px 15px}
+.sig-k{font-family:var(--mono);font-size:9.5px;letter-spacing:1.4px;color:var(--ink-3);margin-bottom:5px}
+.sig-v{font-size:13.5px;font-weight:500;line-height:1.6;color:var(--ink)}
+.sig-t{display:inline-block;font-family:var(--mono);font-size:9.5px;padding:1px 6px;border:1px solid currentColor;margin-top:6px}
+.t-bull{color:var(--brick)}.t-bear{color:var(--green)}.t-neu{color:var(--slate)}
+
+/* 章节：去掉原「藏青左竖线 + 上边框」，改为「编号 + 下划线」 */
+.sec{border-left:0;padding-left:0;border-top:0;padding-top:0;margin-bottom:6px}
+.sec .sec-h{display:flex;align-items:baseline;gap:11px;color:var(--ink);font-size:18px;font-weight:700;letter-spacing:.3px;padding:16px 0 8px;border-bottom:1px solid var(--ink);margin:30px 0 14px}
+.sec .sec-h .sec-n{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--slate);letter-spacing:1px;flex:0 0 auto}
+.sec .sec-h.sub{font-size:14.5px;font-weight:600;padding:13px 0 6px;border-bottom:1px solid var(--rule);margin:22px 0 10px;color:var(--ink)}
+.sec .sec-h .fav-btn{order:-1;flex:0 0 auto;align-self:center}
+
+/* 正文段落：去掉原「灰蓝左竖线」，回归纯段落 */
+.bi{border-left:0;padding:0;margin:0 0 9px;font-size:14px;line-height:1.78;color:var(--ink-2)}
+.bi strong,.bi b{color:var(--ink)}
+mark{background:none;border-bottom:2px solid #e3c9c9;color:inherit;padding-bottom:1px}
+mark.mk-bullish{border-bottom-color:var(--brick)}
+mark.mk-bearish{border-bottom-color:var(--green)}
+
+/* 表格：去外框、收紧 */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:0;margin:8px 0}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl thead th{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--ink-3);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--ink);background:none;white-space:nowrap}
+.tbl tbody td{padding:7px 10px;border-bottom:1px solid var(--rule-soft);vertical-align:top;font-size:13px}
+.tbl tbody tr:last-child td{border-bottom:1px solid var(--rule)}
+.tbl tbody tr:hover{background:var(--wash)}
+
+/* 面板小标题（资金流向/分时/盘面研判）—— 原规则权重更高，需同级覆盖 */
+.sec-hdr{align-items:baseline;gap:10px;margin:32px 0 14px}
+.sec-hdr .sec-main{font-size:15px;font-weight:700;letter-spacing:.2px}
+.sec-hdr .sec-sub{font-family:var(--mono);font-size:9.5px;letter-spacing:1.5px;color:var(--ink-3)}
+
+/* UP 主卡片：只调密度与字号 */
+.op-chip{font-family:var(--mono);font-size:10px}
+.op-action-k{font-family:var(--mono);font-size:9.5px;letter-spacing:1.2px;color:var(--ink-3)}
+
+/* 行业强度（沿用 ind- 规则，统一到新字号） */
+.ind-kicker{font-size:10.5px}
+.ind-verdict{font-size:13.5px}
+.ind-h{font-size:13px;margin:18px 0 5px}
+.ind-cap{font-size:10.5px}
+.ind-theme{width:22%}
+.ind-dir{font-size:11.5px}
+
+/* 页脚 */
+.site-footer{margin-top:40px}
+
+@media (max-width:880px){
+  .verdict{grid-template-columns:1fr}
+  .vside{border-right:0;border-bottom:1px solid var(--ink);flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap}
+  .vtemp{font-size:32px;margin:0}
+  .signals{grid-template-columns:repeat(2,1fr)}
+  .toc a{flex:1 1 46%}
+  .sec-h{font-size:16px}
+}
+@media (max-width:560px){
+  body{font-size:15px}
+  .signals{grid-template-columns:1fr}
+  .tbl{font-size:12px}
+  .vact{font-size:18px}
+}
+@media print{
+  body{font-size:10.5pt;line-height:1.55}
+  .toc,.fav-btn,.fav-*{display:none!important}
+  .verdict,.tbl,.signals{break-inside:avoid}
+  .sec-h{break-after:avoid}
+  thead{display:table-header-group}
+  @page{margin:14mm 12mm}
+}
+
 </style>
 </head>
 <body>
@@ -537,7 +675,7 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <!-- HISTORY NAV -->
 <div class="hnav">
   <span class="hnav-label">HISTORY</span>
-  <a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20261109.html">11月09日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20261106.html">11月06日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20261105.html">11月05日</a><span class="hnav-spacer"></span><input type="date" id="historyPicker" class="hl-date" value="2026-11-10" max="2026-11-10" min="2025-01-01" title="选择日期查看历史简报"><button class="hl-go" onclick="goToDate()">GO</button><span class="session-toggle"><button class="st-btn active" id="stAm" onclick="switchSession('am')">早报</button><button class="st-btn" id="stPm" onclick="switchSession('pm')">晚报</button></span>
+  <a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20261109.html">11月09日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20261106.html">11月06日</a><a class="hl" href="https://hcongxi42-web.github.io/HZT/report_20261105.html">11月05日</a><span class="hnav-spacer"></span><input type="date" id="historyPicker" class="hl-date" value="2026-11-10" max="2026-11-10" min="2025-01-01" title="选择日期查看历史简报"><button class="hl-go" onclick="goToDate()">GO</button>
 </div>
 
 <!-- MASTHEAD -->
@@ -555,11 +693,11 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
   <div class="masthead-by">作者＆模型：HZT ＆ DeepSeek V4.1 Flash</div>
 </div>
 
-<nav class="toc"><span class="toc-label">快速跳转</span><a class="toc-link" href="#sec-analysis">盘面分析与研判</a><a class="toc-link" href="#sec-fund">主力资金流向</a><a class="toc-link" href="#sec-intraday">分时走势</a><a class="toc-link" href="#31e6f1e382">资金面</a><a class="toc-link" href="#b979c7d655">主线扫描</a><a class="toc-link" href="#c296089927">跨市场</a><a class="toc-link" href="#d398c73a57">要闻速览</a><a class="toc-link" href="#b133a5921f">市场体温</a><a class="toc-link" href="#0d28f43b0a">明天怎么看</a><a class="toc-link" href="#abb3b166dd">昨日收盘UP主观点</a><a class="toc-link" href="#9568c10b4a">AI选股</a></nav>
+<nav class="toc"><span class="toc-label">快速跳转</span><a class="toc-link" href="#sec-analysis">盘面分析与研判</a><a class="toc-link" href="#sec-fund">主力资金流向</a><a class="toc-link" href="#sec-intraday">分时走势</a><a class="toc-link" href="#31e6f1e382"><b class="toc-n">01</b>资金面</a><a class="toc-link" href="#b979c7d655"><b class="toc-n">02</b>主线扫描</a><a class="toc-link" href="#c296089927"><b class="toc-n">03</b>跨市场</a><a class="toc-link" href="#d398c73a57"><b class="toc-n">04</b>要闻速览</a><a class="toc-link" href="#b133a5921f"><b class="toc-n">05</b>市场体温</a><a class="toc-link" href="#0d28f43b0a"><b class="toc-n">06</b>今日的可能情况</a><a class="toc-link" href="#indstrength"><b class="toc-n">07</b>行业强度</a><a class="toc-link" href="#abb3b166dd"><b class="toc-n">08</b>昨日收盘UP主观点</a><a class="toc-link" href="#9568c10b4a"><b class="toc-n">09</b>可能的机会</a></nav>
 
 <div class="content">
 
-  <div class="lead-box"><div class="lead-h">今日要点 · DAILY BRIEF</div><div class="lead-body"><div class="lead-row"><span class="lead-k">市场体温</span><span class="lead-v"><mark class="mk-warm">偏暖</mark>。涨3923家对跌1152家、涨停54家零跌停，指数温和上行但成交仅8126亿，是情绪修复不是增量<mark class="mk-bullish">进攻</mark>。</span></div><div class="lead-row"><span class="lead-k">最大共识</span><span class="lead-v">AI硬件链全面回暖——算力芯片、光模块、存储、机器人同向发力，隔夜费半涨近7%、韩股涨到熔断给了外部背书。</span></div><div class="lead-row"><span class="lead-k">最大分歧</span><span class="lead-v">传媒影视单日暴涨9%是情绪脉冲还是新主线，资金分歧极大，涨得最猛但最没有基本面锚。</span></div><div class="lead-row"><span class="lead-k">最大风险</span><span class="lead-v">今晚21:30美国10月CPI，叠加黄仁勋风波与AI基建万亿债务再融资，外围一有反复高位AI股回撤最快。</span></div><div class="lead-row"><span class="lead-k">一句话策略</span><span class="lead-v">仓位<mark class="mk-neutral">中性</mark>偏<mark class="mk-bullish">进攻</mark>但不追高，AI硬件拿住底仓，传媒脉冲只做日内不做隔夜。</span></div></div></div>
+  <div class="lead-box"><div class="verdict"><div class="vside"><div class="vlab">MARKET TEMP</div><div class="vtemp">偏暖</div><div class="vnote">涨3923家对跌1152家、涨停54家零跌停，指数温和上行但成交仅8126亿，是情绪修复不是增量</div></div><div class="vmain"><div class="vk">一句话策略 · VERDICT</div><div class="vact">仓位<mark class="mk-neutral">中性</mark>偏<mark class="mk-bullish">进攻</mark>但不追高，AI硬件拿住底仓，传媒脉冲只做日内不做隔夜。</div></div></div><div class="signals"><div class="sig"><div class="sig-k">最大共识</div><div class="sig-v">AI硬件链全面回暖——算力芯片、光模块、存储、机器人同向发力，隔夜费半涨近7%、韩股涨到熔断给了外部背书。</div></div><div class="sig"><div class="sig-k">最大分歧</div><div class="sig-v">传媒影视单日暴涨9%是情绪脉冲还是新主线，资金分歧极大，涨得最猛但最没有基本面锚。</div></div><div class="sig"><div class="sig-k">最大风险</div><div class="sig-v">今晚21:30美国10月CPI，叠加黄仁勋风波与AI基建万亿债务再融资，外围一有反复高位AI股回撤最快。</div></div></div></div>
 
   <!-- FUND FLOW PANEL -->
   <div class="sec-hdr" id="sec-fund"><span class="sec-main">主力资金流向</span><span class="sec-sub">CAPITAL FLOWS · 沪深300口径 · 近5交易日 · 东方财富</span></div>
@@ -572,11 +710,11 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
   <!-- AI ANALYSIS -->
   <div class="sec-hdr" id="sec-analysis"><span class="sec-main">盘面分析与研判</span><span class="sec-sub">ANALYSIS · 由 AI 生成 · 仅供研究参考</span></div>
   <div class="report-body"><div class="sec" id="31e6f1e382" data-section-id="31e6f1e382">
-<h3 class="sec-h"><button class="fav-btn" data-sid="31e6f1e382" title="收藏此条分析" onclick="toggleFav(this)">☆</button>资金面</h3>
+<h3 class="sec-h"><button class="fav-btn" data-sid="31e6f1e382" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">01</span>资金面</h3>
 <p class="para">主力态度是<mark class="mk-bearish">防守</mark>中的试探性回补：近5日三流出两流入，11月9日才净流入41.4亿，量级远小于此前175亿的单日脉冲，说明大资金没真金白银压上，指数上行靠的是抛压衰竭和散户情绪修复，不是主力<mark class="mk-bullish">进攻</mark>。</p>
 </div>
 <div class="sec" id="b979c7d655" data-section-id="b979c7d655">
-<h3 class="sec-h"><button class="fav-btn" data-sid="b979c7d655" title="收藏此条分析" onclick="toggleFav(this)">☆</button>主线扫描</h3>
+<h3 class="sec-h"><button class="fav-btn" data-sid="b979c7d655" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">02</span>主线扫描</h3>
 <div class="bi"><strong>AI硬件（算力芯片+光模块+存储）</strong>：燧原科技涨近10%、市值重返2000亿，新易盛中际旭创涨超5%，存储涨价逻辑传导到回收内存条，外部有费半+韩股熔断背书。持续性最强，是今天唯一有基本面+外部共振的方向。</div>
 <div class="bi"><strong>人形机器人</strong>：特斯拉「擎天柱」12月或开启预订，宇树科技涨超11%股价重回800元、市值破3200亿跃居A股第三高价，机器人ETF标的指数涨近3%。催化明确但估值已透支，属于强主题弱业绩。</div>
 <div class="bi"><strong>传媒影视</strong>：文字媒体+9.01%、影视动漫+8.14%、院线+7.49%包揽涨幅前五，纯情绪驱动，无实质催化落地，一日游概率高。</div>
@@ -584,11 +722,11 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <div class="bi"><strong>外贸链</strong>：前10个月进出口44.81万亿同比增20%，出口增17.6%，数据强但市场几乎没给反应，属于被忽视的慢变量。</div>
 </div>
 <div class="sec" id="c296089927" data-section-id="c296089927">
-<h3 class="sec-h"><button class="fav-btn" data-sid="c296089927" title="收藏此条分析" onclick="toggleFav(this)">☆</button>跨市场</h3>
+<h3 class="sec-h"><button class="fav-btn" data-sid="c296089927" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">03</span>跨市场</h3>
 <p class="para">美股三大指数均涨超2%、道指涨逾千点、费半涨近7%，存储股西部数据希捷涨超9%，韩股涨至熔断，亚洲科技股强势反弹——这条传导链对A股AI硬件是最直接的正向催化。但南向资金净卖出20亿港元，港股这边内资在撤，说明对高位科技资产仍有戒心。今晚CPI是变量，数据出来前外围的暖意随时可能反转。</p>
 </div>
 <div class="sec" id="d398c73a57" data-section-id="d398c73a57">
-<h3 class="sec-h"><button class="fav-btn" data-sid="d398c73a57" title="收藏此条分析" onclick="toggleFav(this)">☆</button>要闻速览</h3>
+<h3 class="sec-h"><button class="fav-btn" data-sid="d398c73a57" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">04</span>要闻速览</h3>
 <div class="bi">美股三大指数均涨超2%，费城半导体指数涨近7%，道指四天三现千点行情：<mark class="mk-bullish">利好</mark>AI硬件链</div>
 <div class="bi">韩股暴涨触发熔断，SK海力士三星电子大涨，投行齐呼AI股跌过头：<mark class="mk-bullish">利好</mark>存储与半导体情绪</div>
 <div class="bi">特斯拉「擎天柱」或12月开启预订，机器人ETF标的指数涨超3%：<mark class="mk-bullish">利好</mark>机器人产业链</div>
@@ -603,20 +741,50 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <div class="bi">洛阳钼业拟斥资10亿至20亿元回购A股股份：<mark class="mk-bullish">利好</mark>有色与回购主题</div>
 </div>
 <div class="sec" id="b133a5921f" data-section-id="b133a5921f">
-<h3 class="sec-h"><button class="fav-btn" data-sid="b133a5921f" title="收藏此条分析" onclick="toggleFav(this)">☆</button>市场体温</h3>
+<h3 class="sec-h"><button class="fav-btn" data-sid="b133a5921f" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">05</span>市场体温</h3>
 <p class="para"><mark class="mk-warm">偏暖</mark>，但暖得有限。支撑来自三处：一是涨跌家数3923对1152的极端悬殊，赚钱效应实打实；二是涨停54家、跌停0家，无恐慌盘；三是外围费半+韩股熔断的强共振。压制来自两处：成交额仅8126亿，属于存量博弈而非增量入场；主力资金近5日仍是净流出为主，11月9日41亿的回流杯水车薪。结论是情绪修复级别的<mark class="mk-warm">偏暖</mark>，不是趋势反转级别的<mark class="mk-hot">偏热</mark>，传媒那种9%的单日暴涨恰恰是情绪过热的局部信号，不是全面升温的证据。</p>
 </div>
 <div class="sec" id="0d28f43b0a" data-section-id="0d28f43b0a">
-<h3 class="sec-h"><button class="fav-btn" data-sid="0d28f43b0a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>明天怎么看</h3>
+<h3 class="sec-h"><button class="fav-btn" data-sid="0d28f43b0a" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">06</span>今日的可能情况</h3>
 <div class="bi">情景一（45%）：CPI符合放缓预期，外围暖意延续，AI硬件链高开震荡消化获利盘，指数小幅上行，传媒影视高位分化回落。主线仍在AI硬件，机器人跟随。</div>
 <div class="bi">情景二（35%）：CPI超预期强化12月加息，美债收益率反弹压制全球风险偏好，A股AI高位股低开回撤，指数冲高回落收平或小跌，资金回流低估值防御。这是最需要防的路径。</div>
 <div class="bi">情景三（20%）：CPI放缓且黄仁勋风波平息，外围再冲一波，A股放量突破，成交额重回万亿上方，AI硬件与机器人双主线共振，传媒让位。属于乐观情形，需要成交量配合才成立。</div>
 </div>
+<div class="sec" id="indstrength" data-section-id="indstrength">
+<h3 class="sec-h"><button class="fav-btn" data-sid="indstrength" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">07</span>行业强度</h3>
+<div class="ind-kicker">昨日收盘 · 92 个方向 · 4,607 只成分 · 窗口 11-03 → 11-09（5 个交易日）· 源 industry_20261109</div>
+<div class="ind-link">具体强度表格可直接跳转：<a href="https://hcongxi42-web.github.io/HZT/industry_20261109.html" target="_blank" rel="noopener">方向强度表 2026-11-09 →</a></div>
+<div class="ind-verdict"><b>普涨修复，不是结构进攻。</b>92 个方向里 84 个 5 日绝对为正、基准 +2.46%，但拥挤极热已达 10 个、偏热 18 个——钱在往少数方向挤。传媒内容组 7 条方向里 6 条拥挤在 1.3 以上，进攻端已经很挤。</div>
+<div class="ind-kpi">
+<div><div class="k">基准 5 日</div><div class="v ind-pos">+2.46%</div><div class="n">涨 3 / 跌 2 日</div></div>
+<div><div class="k">绝对为正</div><div class="v">84<span class="ind-mut">/92</span></div><div class="n">余 8 条为负</div></div>
+<div><div class="k">真α / 弹性</div><div class="v">11<span class="ind-mut">/40</span></div><div class="n">攻守同号者居多</div></div>
+<div><div class="k">拥挤 极热 / 偏热</div><div class="v ind-pos">10<span class="ind-mut">/18</span></div><div class="n">≥1.27 / 1.06–1.27</div></div>
+</div>
+<div class="ind-h">强度前列 · 含末尾 5 条对照</div>
+<div class="tbl-wrap"><table class="tbl">
+<thead><tr><th style="text-align:left">#</th><th style="text-align:left">方向</th><th style="text-align:left">聚合组</th><th style="text-align:right">z5</th><th style="text-align:right">超额%</th><th style="text-align:right">拥挤</th><th style="text-align:right">Δ3</th><th style="text-align:left">标签</th><th style="text-align:right">成分</th></tr></thead>
+<tbody><tr><td class="ind-n ind-mut">1</td><td class="ind-name">黄金</td><td class="ind-mut">资源金属</td><td class="ind-n ind-pos">+5.03</td><td class="ind-n ind-pos">+11.05</td><td class="ind-n">1.02 <span class="ind-tag ok">正常</span></td><td class="ind-n ind-pos">+11</td><td><span class="ind-tag">弹性</span></td><td class="ind-n ind-mut">14</td></tr><tr><td class="ind-n ind-mut">2</td><td class="ind-name">影视传媒</td><td class="ind-mut">传媒内容</td><td class="ind-n ind-pos">+2.51</td><td class="ind-n ind-pos">+5.51</td><td class="ind-n">1.80 <span class="ind-tag hot">极热</span></td><td class="ind-n ind-neg">0</td><td><span class="ind-tag">真α</span></td><td class="ind-n ind-mut">20</td></tr><tr><td class="ind-n ind-mut">3</td><td class="ind-name">AI短剧</td><td class="ind-mut">传媒内容</td><td class="ind-n ind-pos">+1.75</td><td class="ind-n ind-pos">+3.84</td><td class="ind-n">1.53 <span class="ind-tag hot">极热</span></td><td class="ind-n ind-pos">+3</td><td><span class="ind-tag">真α</span></td><td class="ind-n ind-mut">51</td></tr><tr><td class="ind-n ind-mut">4</td><td class="ind-name">AI影视</td><td class="ind-mut">传媒内容</td><td class="ind-n ind-pos">+1.65</td><td class="ind-n ind-pos">+3.62</td><td class="ind-n">1.77 <span class="ind-tag hot">极热</span></td><td class="ind-n ind-pos">+1</td><td><span class="ind-tag">真α</span></td><td class="ind-n ind-mut">64</td></tr><tr><td class="ind-n ind-mut">5</td><td class="ind-name">氦气</td><td class="ind-mut">算力硬件</td><td class="ind-n ind-pos">+1.43</td><td class="ind-n ind-pos">+3.14</td><td class="ind-n">0.82 <span class="ind-tag ok">正常</span></td><td class="ind-n ind-pos">+12</td><td><span class="ind-tag">弹性</span></td><td class="ind-n ind-mut">19</td></tr><tr><td class="ind-n ind-mut">6</td><td class="ind-name">AI视频</td><td class="ind-mut">传媒内容</td><td class="ind-n ind-pos">+1.42</td><td class="ind-n ind-pos">+3.12</td><td class="ind-n">1.33 <span class="ind-tag hot">极热</span></td><td class="ind-n ind-pos">+17</td><td><span class="ind-tag">弹性</span></td><td class="ind-n ind-mut">60</td></tr><tr><td class="ind-n ind-mut">7</td><td class="ind-name">短剧</td><td class="ind-mut">传媒内容</td><td class="ind-n ind-pos">+1.38</td><td class="ind-n ind-pos">+3.03</td><td class="ind-n">1.47 <span class="ind-tag hot">极热</span></td><td class="ind-n ind-pos">+1</td><td><span class="ind-tag">真α</span></td><td class="ind-n ind-mut">92</td></tr><tr><td class="ind-n ind-mut">8</td><td class="ind-name">芯片半导体</td><td class="ind-mut">算力硬件</td><td class="ind-n ind-pos">+1.29</td><td class="ind-n ind-pos">+2.84</td><td class="ind-n">1.07 <span class="ind-tag hot">偏热</span></td><td class="ind-n ind-pos">+53</td><td><span class="ind-tag">弹性</span></td><td class="ind-n ind-mut">183</td></tr><tr><td class="ind-n ind-mut">9</td><td class="ind-name">电力设备</td><td class="ind-mut">新能源电力</td><td class="ind-n ind-pos">+1.19</td><td class="ind-n ind-pos">+2.61</td><td class="ind-n">1.18 <span class="ind-tag hot">偏热</span></td><td class="ind-n ind-pos">+19</td><td><span class="ind-tag">抗跌</span></td><td class="ind-n ind-mut">379</td></tr><tr><td class="ind-n ind-mut">10</td><td class="ind-name">养殖饲料</td><td class="ind-mut">消费</td><td class="ind-n ind-pos">+1.00</td><td class="ind-n ind-pos">+2.20</td><td class="ind-n">1.03 <span class="ind-tag ok">正常</span></td><td class="ind-n ind-pos">+5</td><td><span class="ind-tag">抗跌</span></td><td class="ind-n ind-mut">39</td></tr><tr><td colspan="9" class="ind-sep"></td></tr><tr><td class="ind-n ind-mut">88</td><td class="ind-name">F5G</td><td class="ind-mut">算力硬件</td><td class="ind-n ind-neg">−1.23</td><td class="ind-n ind-neg">−2.69</td><td class="ind-n">0.86 <span class="ind-tag ok">正常</span></td><td class="ind-n ind-pos">+3</td><td><span class="ind-tag">弹性</span></td><td class="ind-n ind-mut">35</td></tr><tr><td class="ind-n ind-mut">89</td><td class="ind-name">医药商业</td><td class="ind-mut">医药</td><td class="ind-n ind-neg">−1.65</td><td class="ind-n ind-neg">−3.62</td><td class="ind-n">1.07 <span class="ind-tag hot">偏热</span></td><td class="ind-n ind-neg">−67</td><td><span class="ind-tag">抗跌</span></td><td class="ind-n ind-mut">32</td></tr><tr><td class="ind-n ind-mut">90</td><td class="ind-name">元件</td><td class="ind-mut">消费电子</td><td class="ind-n ind-neg">−1.82</td><td class="ind-n ind-neg">−3.99</td><td class="ind-n">0.89 <span class="ind-tag ok">正常</span></td><td class="ind-n ind-neg">−2</td><td><span class="ind-tag">弹性</span></td><td class="ind-n ind-mut">58</td></tr><tr><td class="ind-n ind-mut">91</td><td class="ind-name">航运</td><td class="ind-mut">能源航运</td><td class="ind-n ind-neg">−1.98</td><td class="ind-n ind-neg">−4.34</td><td class="ind-n">0.89 <span class="ind-tag ok">正常</span></td><td class="ind-n ind-neg">−80</td><td><span class="ind-tag">抗跌</span></td><td class="ind-n ind-mut">35</td></tr><tr><td class="ind-n ind-mut">92</td><td class="ind-name">油气</td><td class="ind-mut">能源航运</td><td class="ind-n ind-neg">−3.14</td><td class="ind-n ind-neg">−6.89</td><td class="ind-n">0.97 <span class="ind-tag ok">正常</span></td><td class="ind-n ind-neg">−12</td><td><span class="ind-tag">抗跌</span></td><td class="ind-n ind-mut">18</td></tr></tbody></table></div>
+<div class="ind-cap">Δ3＝3 日前名次减今日名次，正数＝名次在往前挤。拥挤 ≥1.27 极热、1.06–1.27 偏热。成分 &lt;25 只时单票即占 4pt，读数本身不稳。</div>
+
+<div class="ind-h">跳升候选（Δ3 前 5）</div>
+<div class="tbl-wrap"><table class="tbl">
+<thead><tr><th style="text-align:left">方向</th><th style="text-align:right">Δ3</th><th style="text-align:right">5 日%</th><th style="text-align:right">z5</th><th style="text-align:right">全表名次</th><th style="text-align:right">拥挤</th><th style="text-align:right">成分</th></tr></thead>
+<tbody><tr><td class="ind-name">物理AI</td><td class="ind-n ind-pos">+58</td><td class="ind-n ind-pos">+4.13</td><td class="ind-n ind-pos">+0.76</td><td class="ind-n">17</td><td class="ind-n">1.27 <span class="ind-tag hot">偏热</span></td><td class="ind-n ind-mut">15</td></tr><tr><td class="ind-name">光刻机</td><td class="ind-n ind-pos">+57</td><td class="ind-n ind-pos">+3.57</td><td class="ind-n ind-pos">+0.50</td><td class="ind-n">25</td><td class="ind-n">0.84 <span class="ind-tag ok">正常</span></td><td class="ind-n ind-mut">47</td></tr><tr><td class="ind-name">苹果折叠屏</td><td class="ind-n ind-pos">+55</td><td class="ind-n ind-pos">+3.97</td><td class="ind-n ind-pos">+0.69</td><td class="ind-n">19</td><td class="ind-n">0.83 <span class="ind-tag ok">正常</span></td><td class="ind-n ind-mut">102</td></tr><tr><td class="ind-name">芯片半导体</td><td class="ind-n ind-pos">+53</td><td class="ind-n ind-pos">+5.31</td><td class="ind-n ind-pos">+1.29</td><td class="ind-n">8</td><td class="ind-n">1.07 <span class="ind-tag hot">偏热</span></td><td class="ind-n ind-mut">183</td></tr><tr><td class="ind-name">人形机器人</td><td class="ind-n ind-pos">+52</td><td class="ind-n ind-pos">+3.30</td><td class="ind-n ind-pos">+0.38</td><td class="ind-n">27</td><td class="ind-n">1.08 <span class="ind-tag hot">偏热</span></td><td class="ind-n ind-mut">447</td></tr></tbody></table></div>
+<div class="ind-cap">Δ3 只看名次变化，不叠 z5、不看拥挤——它回答的是「谁在往上挤」，不是「谁最强」。</div>
+
+<div class="ind-h">聚合组（前 6）</div>
+<div class="tbl-wrap"><table class="tbl">
+<thead><tr><th style="text-align:left">聚合组</th><th style="text-align:right">5 日%</th><th style="text-align:right">z5</th><th style="text-align:right">超额%</th><th style="text-align:left">最强 / 最弱</th><th style="text-align:right">组内极差</th><th style="text-align:right">拥挤</th></tr></thead>
+<tbody><tr><td class="ind-name">资源金属 <span class="ind-mut">3 条</span></td><td class="ind-n ind-pos">+7.12</td><td class="ind-n ind-pos">+2.28</td><td class="ind-n ind-pos">+4.65</td><td>黄金 / 出口管制</td><td class="ind-n">9.9</td><td class="ind-n">0.95</td></tr><tr><td class="ind-name">传媒内容 <span class="ind-mut">7 条</span></td><td class="ind-n ind-pos">+5.33</td><td class="ind-n ind-pos">+1.39</td><td class="ind-n ind-pos">+2.87</td><td>影视传媒 / 游戏</td><td class="ind-n">5.9</td><td class="ind-n">1.49</td></tr><tr><td class="ind-name">新能源电力 <span class="ind-mut">7 条</span></td><td class="ind-n ind-pos">+3.89</td><td class="ind-n ind-pos">+0.67</td><td class="ind-n ind-pos">+1.42</td><td>电力设备 / 氢能源</td><td class="ind-n">2.6</td><td class="ind-n">0.97</td></tr><tr><td class="ind-name">军工航天 <span class="ind-mut">4 条</span></td><td class="ind-n ind-pos">+2.79</td><td class="ind-n ind-pos">+0.13</td><td class="ind-n ind-pos">+0.32</td><td>军工装备 / 军工</td><td class="ind-n">0.7</td><td class="ind-n">0.92</td></tr><tr><td class="ind-name">机器人·具身 <span class="ind-mut">9 条</span></td><td class="ind-n ind-pos">+2.69</td><td class="ind-n ind-pos">+0.08</td><td class="ind-n ind-pos">+0.23</td><td>物理AI / 车联网</td><td class="ind-n">2.5</td><td class="ind-n">1.05</td></tr><tr><td class="ind-name">算力硬件 <span class="ind-mut">15 条</span></td><td class="ind-n ind-pos">+2.49</td><td class="ind-n ind-neg">−0.02</td><td class="ind-n ind-pos">+0.03</td><td>氦气 / F5G</td><td class="ind-n">5.8</td><td class="ind-n">0.84</td></tr></tbody></table></div>
+<div class="ind-cap">组内极差大（资源金属 9.9、算力硬件 5.8）＝这个组不能当一条线买，里面在剧烈分化。</div>
+<div class="ind-cap">口径：均占＝成分里收盘站上 MA5/13/50/120 的只数占比，是占比不是涨跌幅，不能与 z5 换算；四条线同向抬升才算趋势，120 日均占 &lt;30 一律只算短线修复（黄金 z5 全表第 1，120 日均占仅 12）。</div>
+</div>
 <div class="sec" id="abb3b166dd" data-section-id="abb3b166dd">
-<h3 class="sec-h"><button class="fav-btn" data-sid="abb3b166dd" title="收藏此条分析" onclick="toggleFav(this)">☆</button>昨日收盘UP主观点</h3>
+<h3 class="sec-h"><button class="fav-btn" data-sid="abb3b166dd" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">08</span>昨日收盘UP主观点</h3>
 </div>
 <div class="sec" id="73059bc4cf" data-section-id="73059bc4cf">
-<h3 class="sec-h"><button class="fav-btn" data-sid="73059bc4cf" title="收藏此条分析" onclick="toggleFav(this)">☆</button>股痴心养心（11月9日盘后）</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="73059bc4cf" title="收藏此条分析" onclick="toggleFav(this)">☆</button>股痴心养心（11月9日盘后）</h3>
 <div class="op-tags"><span class="op-chip op-neu">中性</span><span class="op-chip op-style">量能博弈</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>缩量背景不宜频繁乱动，等美盘杀出长下影线再谈科技反弹，次新股只当彩票打野</div>
 <div class="bi"><strong>核心观点</strong>：极致缩量下空方卖不动、多方不想买，市场自发形成新平衡，指数已进入颇具性价比的中期底部区间，但缩量位置绝不追脉冲拉升</div>
 <div class="bi"><strong>看多方向</strong>：端侧（机器人等应用端，待外围企稳后确定性更强）、黄金（实物资产配置）、次新股（仅打野仓）</div>
@@ -624,7 +792,7 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <div class="bi"><strong>关键论据</strong>：「空方也卖不动，多方也不想买，就是一种非常窄幅度的震荡盘的走势」</div>
 </div>
 <div class="sec" id="b59043c466" data-section-id="b59043c466">
-<h3 class="sec-h"><button class="fav-btn" data-sid="b59043c466" title="收藏此条分析" onclick="toggleFav(this)">☆</button>缠论猎黑马（11月9日盘后）</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="b59043c466" title="收藏此条分析" onclick="toggleFav(this)">☆</button>缠论猎黑马（11月9日盘后）</h3>
 <div class="op-tags"><span class="op-chip op-bull">利好</span><span class="op-chip op-style">技术面</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>等5/10日线回踩后二次收实体阳线且放量再低吸，眼下只做短差博弈</div>
 <div class="bi"><strong>核心观点</strong>：行情有了质的变化，五大信号（站上5/10日线、量能突破2万亿、外围大跌A股抗跌、题材有溢价持续性、ETF真金白银护盘6000亿）说明底部有希望，但确认未完成前不许无脑抄底</div>
 <div class="bi"><strong>看多方向</strong>：商业航天、AI视频、人形机器人（试错练手方向）</div>
@@ -632,7 +800,7 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <div class="bi"><strong>关键论据</strong>：「股票型ETF净流入6000亿，护盘资金不是打嘴炮，是真金白银砸进去了」</div>
 </div>
 <div class="sec" id="7fd953fa59" data-section-id="7fd953fa59">
-<h3 class="sec-h"><button class="fav-btn" data-sid="7fd953fa59" title="收藏此条分析" onclick="toggleFav(this)">☆</button>阿杰（11月9日盘后）</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="7fd953fa59" title="收藏此条分析" onclick="toggleFav(this)">☆</button>阿杰（11月9日盘后）</h3>
 <div class="op-tags"><span class="op-chip op-neu">中性</span><span class="op-chip op-style">短线博弈</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>不追扬字辈修复，传媒只拿先手不恋战，走一步看一步跟随盘面调预期</div>
 <div class="bi"><strong>核心观点</strong>：扬字辈尾盘跳水是危险信号、审美疲劳已现，传媒只是扬字辈退潮后的过渡题材而非主流，真正可能的接力方向反而是大家都嫌恶心的冰雪经济</div>
 <div class="bi"><strong>看多方向</strong>：传媒（仅过渡性先手博弈）、冰雪经济（小概率跨年妖预期）</div>
@@ -640,7 +808,7 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <div class="bi"><strong>关键论据</strong>：「扬字辈走到现在这个阶段，场外资金再去博弈的性价比已经不是很高了」</div>
 </div>
 <div class="sec" id="c9b5ba19bc" data-section-id="c9b5ba19bc">
-<h3 class="sec-h"><button class="fav-btn" data-sid="c9b5ba19bc" title="收藏此条分析" onclick="toggleFav(this)">☆</button>魔法师（11月9日盘后）</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="c9b5ba19bc" title="收藏此条分析" onclick="toggleFav(this)">☆</button>魔法师（11月9日盘后）</h3>
 <div class="op-tags"><span class="op-chip op-bear">利空</span><span class="op-chip op-style">情绪周期</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>上午修复已止盈，周二吃跷跷板防御的肉，别信ETF会在这边微起来</div>
 <div class="bi"><strong>核心观点</strong>：缩量修复不可持续，ETF都在做T剔除，周一下午和周二整体回落，上午顺指数多头已止盈、下午切回跷跷板防御</div>
 <div class="bi"><strong>看多方向</strong>：白马蓝筹（跷跷板防御方向）</div>
@@ -648,7 +816,7 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <div class="bi"><strong>关键论据</strong>：「10点20分的时候ETF资金流向开始转了，开始剔除，缩量修复不可以持续」</div>
 </div>
 <div class="sec" id="51198edc11" data-section-id="51198edc11">
-<h3 class="sec-h"><button class="fav-btn" data-sid="51198edc11" title="收藏此条分析" onclick="toggleFav(this)">☆</button>从股道金（11月9日盘后）</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="51198edc11" title="收藏此条分析" onclick="toggleFav(this)">☆</button>从股道金（11月9日盘后）</h3>
 <div class="op-tags"><span class="op-chip op-neu">中性</span><span class="op-chip op-style">题材轮动</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>不追高，守在自己板块里做T收集筹码降成本</div>
 <div class="bi"><strong>核心观点</strong>：缩量震荡下题材看似轮动多、无先手极难参与，反弹大方向不用质疑但盘中必须盯量，策略是不追高、守自己板块做T</div>
 <div class="bi"><strong>看多方向</strong>：机器人（语数、凡拓为封标）、商业航天（仅超跌反弹定性）、光伏（看闽发表态定分歧）</div>
@@ -656,7 +824,7 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <div class="bi"><strong>关键论据</strong>：「一旦后续市场开始走反弹或者诞生主线，整个玄学方向都是要规避的」</div>
 </div>
 <div class="sec" id="6b14703c00" data-section-id="6b14703c00">
-<h3 class="sec-h"><button class="fav-btn" data-sid="6b14703c00" title="收藏此条分析" onclick="toggleFav(this)">☆</button>李大霄（11月9日盘后）</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="6b14703c00" title="收藏此条分析" onclick="toggleFav(this)">☆</button>李大霄（11月9日盘后）</h3>
 <div class="op-tags"><span class="op-chip op-neu">中性</span><span class="op-chip op-style">价值</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>先读书学习再谈投资，别轻易放弃，坐电梯下来</div>
 <div class="bi"><strong>核心观点</strong>：天无绝人之路、总有办法，别上天台赶紧坐电梯下来，不懂就交学费去学习，做好人买好股得好报</div>
 <div class="bi"><strong>看多方向</strong>：好股（好人好股好报，无具体板块）</div>
@@ -664,7 +832,7 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <div class="bi"><strong>关键论据</strong>：「咱们的对手是清北复交的毕业生，还有哈耶普斯麻回来的，不懂被人家那个不是很正常嘛」</div>
 </div>
 <div class="sec" id="074538b72a" data-section-id="074538b72a">
-<h3 class="sec-h"><button class="fav-btn" data-sid="074538b72a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>擒龙先生（11月9日盘后）</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="074538b72a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>擒龙先生（11月9日盘后）</h3>
 <div class="op-tags"><span class="op-chip op-bear">利空</span><span class="op-chip op-style">情绪周期</span></div><div class="op-action"><span class="op-action-k">一句话操作</span>做题材要信就早信或等龙头二波，中线布局省省，不会做就休息控仓位</div>
 <div class="bi"><strong>核心观点</strong>：当下没有主线、只有量化借语料疯狂轮动的题材，黄仁勋被调查是没爆的雷，全球主流指数都在技术熊边缘，仓位必须控制</div>
 <div class="bi"><strong>看多方向</strong>：传媒（持续性最强但已走加速，警惕加速即结束）、龙头二波（充分回调后）</div>
@@ -672,7 +840,7 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <div class="bi"><strong>关键论据</strong>：「主流指数都在熊市边缘徘徊，难道你真的看不到这个风险吗」</div>
 </div>
 <div class="sec" id="364938bad4" data-section-id="364938bad4">
-<h3 class="sec-h"><button class="fav-btn" data-sid="364938bad4" title="收藏此条分析" onclick="toggleFav(this)">☆</button>共识与分歧</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="364938bad4" title="收藏此条分析" onclick="toggleFav(this)">☆</button>共识与分歧</h3>
 <div class="bi">缩量是全场共识：7位UP主全部提到量能萎缩，且多数认为缩量下不可追高、修复不可持续。</div>
 <div class="bi">科技/端侧方向分歧明显：股痴心养心、缠论猎黑马认为外围杀完即迎反弹、端侧是下一阶段热点；擒龙先生、魔法师则明确看弱科技回踩与指数回落。</div>
 <div class="bi">光伏被集体定性为短线题材：股痴心养心、擒龙先生、从股道金均否认基本面反转，只认反弹。</div>
@@ -682,38 +850,44 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 <p class="note">以下分析由 AI 基于当日新闻资讯、UP主观点共识与产业链逻辑推导生成，仅供研究参考，不构成投资建议。</p>
 </div>
 <div class="sec" id="9568c10b4a" data-section-id="9568c10b4a">
-<h3 class="sec-h"><button class="fav-btn" data-sid="9568c10b4a" title="收藏此条分析" onclick="toggleFav(this)">☆</button>AI选股</h3>
+<h3 class="sec-h"><button class="fav-btn" data-sid="9568c10b4a" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">09</span>可能的机会</h3>
 </div>
 <div class="sec" id="2075fe95e4" data-section-id="2075fe95e4">
-<h3 class="sec-h"><button class="fav-btn" data-sid="2075fe95e4" title="收藏此条分析" onclick="toggleFav(this)">☆</button>人形机器人：特斯拉擎天柱预订催化，产业卡位环节优先</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="2075fe95e4" title="收藏此条分析" onclick="toggleFav(this)">☆</button>人形机器人：特斯拉擎天柱预订催化，产业卡位环节优先</h3>
 <div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">宇树科技(688660)</td><td style="text-align:left">当日新闻直接点名，涨幅超11%、市值突破3200亿跃居A股第三高价股，人形机器人整机龙头情绪标杆，资金正在买入</td><td style="text-align:left">利好</td><td style="text-align:left">S级</td></tr><tr><td style="text-align:left">伟创电气(688698)</td><td style="text-align:left">机器人ETF跟踪指数成分股，当日早盘上涨15.42%，处于机器人驱动与运动控制环节，逻辑直接、短期可验证</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">瑞松科技(688090)</td><td style="text-align:left">机器人指数成分股，当日上涨10.20%，系统集成环节直接受益于整机放量预期</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">亿嘉和(603666)</td><td style="text-align:left">机器人指数成分股，当日上涨9.99%，特种机器人应用端跟涨，产业链传导成立</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr><tr><td style="text-align:left">步科股份(688160)</td><td style="text-align:left">机器人指数成分股跟涨，伺服与运动控制部件供应商，受益逻辑成立但传导稍远</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
 </div>
 <div class="sec" id="ff366db41b" data-section-id="ff366db41b">
-<h3 class="sec-h"><button class="fav-btn" data-sid="ff366db41b" title="收藏此条分析" onclick="toggleFav(this)">☆</button>算力芯片与光模块：海外芯片股反弹传导，AI硬件链修复</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="ff366db41b" title="收藏此条分析" onclick="toggleFav(this)">☆</button>算力芯片与光模块：海外芯片股反弹传导，AI硬件链修复</h3>
 <div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">燧原科技(688256)</td><td style="text-align:left">当日新闻直接点名，算力芯片概念延续反弹涨近10%、市值重返2000亿上方，国产算力核心卡位环节</td><td style="text-align:left">利好</td><td style="text-align:left">S级</td></tr><tr><td style="text-align:left">芯原股份(688521)</td><td style="text-align:left">算力芯片概念跟涨股，IP与芯片设计服务商，处于算力芯片设计上游，逻辑直接</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">新易盛(300502)</td><td style="text-align:left">当日新闻直接点名，光模块龙头止跌反弹涨超5%，海外费城半导体指数涨近7%直接传导</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">中际旭创(300308)</td><td style="text-align:left">当日新闻直接点名，光模块龙头涨超5%，AI算力扩张的核心光互联环节，短期可验证</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">东芯股份(688110)</td><td style="text-align:left">算力芯片概念跟涨股，存储芯片设计商，受益于存储涨价与算力需求双逻辑</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
 </div>
 <div class="sec" id="b7dc3b6d8b" data-section-id="b7dc3b6d8b">
-<h3 class="sec-h"><button class="fav-btn" data-sid="b7dc3b6d8b" title="收藏此条分析" onclick="toggleFav(this)">☆</button>存储涨价与回收内存：供给紧张向消费电子链传导</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="b7dc3b6d8b" title="收藏此条分析" onclick="toggleFav(this)">☆</button>存储涨价与回收内存：供给紧张向消费电子链传导</h3>
 <div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">东芯股份(688110)</td><td style="text-align:left">存储价格持续上涨、手机厂商转向回收内存条，利基存储设计商直接受益涨价逻辑，短期可验证</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">兆易创新(603986)</td><td style="text-align:left">以下为板块机会（非当日新闻点名）：存储涨价周期中NOR Flash与DRAM布局厂商，产业链传导受益</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr><tr><td style="text-align:left">江波龙(301308)</td><td style="text-align:left">以下为板块机会（非当日新闻点名）：存储模组厂商，内存涨价直接改善模组端盈利弹性</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
 <div class="bi">佰维存储(688525)：存储模组跟涨方向，逻辑链条依赖涨价持续性，归为C级观察。</div>
 </div>
 <div class="sec" id="cf28ece295" data-section-id="cf28ece295">
-<h3 class="sec-h"><button class="fav-btn" data-sid="cf28ece295" title="收藏此条分析" onclick="toggleFav(this)">☆</button>传媒与影视院线：板块涨幅居首，但定性为过渡题材</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="cf28ece295" title="收藏此条分析" onclick="toggleFav(this)">☆</button>传媒与影视院线：板块涨幅居首，但定性为过渡题材</h3>
 <div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">龙版传媒(605577)</td><td style="text-align:left">当日新闻直接点名，教辅图书主业持续做大做强，板块涨幅居首（文字媒体+9.01%）中的基本面标的</td><td style="text-align:left">利好</td><td style="text-align:left">A级</td></tr><tr><td style="text-align:left">致远互联(688369)</td><td style="text-align:left">当日新闻直接点名，成立协同科技公司含多项AI业务，AI应用端落地逻辑直接</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr><tr><td style="text-align:left">芒果超媒(300413)</td><td style="text-align:left">以下为板块机会（非当日新闻点名）：影视动漫制作板块涨8.14%居前，内容平台受益板块资金流入</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
 <div class="bi">影视院线纯情绪跟涨标的：阿杰、擒龙先生均定性传媒为扬字辈退潮后的过渡题材、加速即警惕结束，不追高，归为C级。</div>
 </div>
 <div class="sec" id="47e6539bad" data-section-id="47e6539bad">
-<h3 class="sec-h"><button class="fav-btn" data-sid="47e6539bad" title="收藏此条分析" onclick="toggleFav(this)">☆</button>商业航天与太空算力：事件密集但只算超跌反弹</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="47e6539bad" title="收藏此条分析" onclick="toggleFav(this)">☆</button>商业航天与太空算力：事件密集但只算超跌反弹</h3>
 <div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">航天电子(600879)</td><td style="text-align:left">以下为板块机会（非当日新闻点名）：星云星座计划亮相、穿越者启动30次商业载人发射招标，配套电子环节受益</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr><tr><td style="text-align:left">中国卫星(600118)</td><td style="text-align:left">以下为板块机会（非当日新闻点名）：太空云产业化从技术验证走向布局，卫星制造核心平台受益</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
 <div class="bi">商业航天纯题材跟风股：缠论猎黑马看多但阿杰、擒龙先生明确只持续半天、量化兑现，归为C级，只做短差不恋战。</div>
 </div>
 <div class="sec" id="733d3aa8ac" data-section-id="733d3aa8ac">
-<h3 class="sec-h"><button class="fav-btn" data-sid="733d3aa8ac" title="收藏此条分析" onclick="toggleFav(this)">☆</button>养老托育与教育扩容：财政投资落地，内需政策线</h3>
+<h3 class="sec-h sub"><button class="fav-btn" data-sid="733d3aa8ac" title="收藏此条分析" onclick="toggleFav(this)">☆</button>养老托育与教育扩容：财政投资落地，内需政策线</h3>
 <div class="tbl-wrap"><table class="tbl"><thead><tr><th style="text-align:left">股票及代码</th><th style="text-align:left">选股逻辑</th><th style="text-align:left">方向</th><th style="text-align:left">评级</th></tr></thead><tbody><tr><td style="text-align:left">华电国际(600027)</td><td style="text-align:left">当日新闻直接点名，集团常规能源资产最终整合平台、推动资产注入，事件驱动逻辑直接</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr><tr><td style="text-align:left">贵航股份(600523)</td><td style="text-align:left">当日新闻直接点名，航空产品业务占比约20%并持续加大投入，热管理已向新能源车企批量供货</td><td style="text-align:left">利好</td><td style="text-align:left">B级</td></tr></tbody></table></div>
 <div class="bi">养老托育设施与教育学位扩容受益标的：140亿中央预算内投资投向养老托育、支持普高与本科扩容，但具体受益公司未被当日新闻点名，产业链传导较远，归为C级观察。</div>
 </div>
+<div class="ind-h" style="margin-top:26px">机会 × 强度 交汇</div>
+<div class="ind-cap" style="margin:0 0 8px">把上面这些机会逐条对回昨日强度表——区分「有资金支撑的逻辑」和「只有新闻的逻辑」。</div>
+<div class="tbl-wrap"><table class="tbl">
+<thead><tr><th style="text-align:left">今日机会</th><th style="text-align:left">对应方向（名次 / z5）</th><th style="text-align:left">拥挤</th><th style="text-align:left">判定</th></tr></thead>
+<tbody><tr><td class="ind-theme">人形机器人<span class="ind-sub">特斯拉擎天柱预订催化</span></td><td class="ind-dir">人形机器人 27 名 / +0.38<br>物理AI 17 名 / +0.76（成分仅 15 只）</td><td class="ind-mut">1.08 偏热 / 1.27 偏热</td><td><span class="ind-v part">中性偏弱</span><span class="ind-sub">名次在中游，靠的是新闻催化而非资金延续性</span></td></tr><tr><td class="ind-theme">算力芯片与光模块<span class="ind-sub">海外芯片股反弹传导</span></td><td class="ind-dir">芯片半导体 8 名 / +1.29<br>光模块·CPO <b>78 名 / −0.71</b></td><td class="ind-mut">1.07 偏热 / 0.85 正常</td><td><span class="ind-v part">内部分化</span><span class="ind-sub">「芯片」有支撑，「光模块」在全表倒数第 15——不能合成一条线写</span></td></tr><tr><td class="ind-theme">存储涨价与回收内存<span class="ind-sub">供给紧张向消费电子传导</span></td><td class="ind-dir">存储芯片 15 名 / +0.78<br>先进封装 18 名 / +0.74</td><td class="ind-mut">0.99 正常 / 0.90 正常</td><td><span class="ind-v yes">有支撑且不挤</span><span class="ind-sub">中上游同步走强、拥挤度正常，是这批里最「干净」的一条</span></td></tr><tr><td class="ind-theme">传媒与影视院线<span class="ind-sub">板块涨幅居首，定性过渡题材</span></td><td class="ind-dir">影视传媒 <b>2 名 / +2.51</b><br>AI短剧 3 名 / +1.75</td><td class="ind-mut">1.80 极热 / 1.53 极热</td><td><span class="ind-v part">最强但最挤</span><span class="ind-sub">强度确实第一，拥挤也第一——你原本「过渡题材」的定性反而更站得住</span></td></tr><tr><td class="ind-theme">商业航天与太空算力<span class="ind-sub">事件密集，只算超跌反弹</span></td><td class="ind-dir">商业航天 30 名 / +0.24<br>超节点 <b>79 名 / −0.75</b></td><td class="ind-mut">0.93 正常 / 0.94 正常</td><td><span class="ind-v no">无强度支撑</span><span class="ind-sub">纯事件驱动，与「只算超跌反弹」的判断一致</span></td></tr><tr><td class="ind-theme">养老托育与教育扩容<span class="ind-sub">财政投资落地，内需政策线</span></td><td class="ind-dir">表内无对应方向<br><span class='ind-mut'>最近：生育婴童 77 名 / −0.58</span></td><td class="ind-mut">1.20 偏热</td><td><span class="ind-v no">无强度支撑</span><span class="ind-sub">政策驱动，资金尚未进入</span></td></tr></tbody></table></div>
+<div class="ind-cap">本节不新增观点，只做交叉核对；强度表是否决/提示层，不是选股器。</div>
 <div class="sec" id="bb0b02c95c" data-section-id="bb0b02c95c">
-<h3 class="sec-h"><button class="fav-btn" data-sid="bb0b02c95c" title="收藏此条分析" onclick="toggleFav(this)">☆</button>个股风险提示</h3>
+<h3 class="sec-h"><button class="fav-btn" data-sid="bb0b02c95c" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">10</span>个股风险提示</h3>
 <div class="bi">英伟达产业链相关标的：黄仁勋婚外情风波持续发酵、董事会启动独立调查，虽表态继续任CEO，但华尔街已开始讨论接班人问题，擒龙先生明确称这是「没爆的雷」，A股算力链情绪面存在外围传导风险。</div>
 <div class="bi">光伏方向：股痴心养心、擒龙先生、从股道金一致否认基本面反转，只认反弹不认反转，追高存在回落风险。</div>
 <div class="bi">玄学抱团方向（扬字辈、东方系）：阿杰、从股道金、擒龙先生一致提示尾盘跳水、审美疲劳，一旦市场诞生主线须规避，卡异动无涨停空间。</div>
