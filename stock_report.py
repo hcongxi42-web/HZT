@@ -213,53 +213,28 @@ def find_today_opinions(opinion_dir=None, date_offset=0, base_date=None):
     return results
 
 
-# 定时任务 → 场次映射。必须按【触发本子的 cron】判定，不能按实际执行时刻：
-# GitHub Actions 定时任务常延迟数小时，22:17 的晚报一旦跨过午夜才执行，
-# 按小时判断就会误判为早报（文件名也写到次日 _am，导致晚报丢失、被早报顶掉）。
-CRON_SESSIONS = {
-    "17 14 * * *": ("晚报", "pm"),   # 北京时间 22:17
-    "17 23 * * *": ("早报", "am"),   # 北京时间次日 07:17
-}
+# 场次：只保留早报。
+# 2026-11 用户决定移除晚报场次——22:17 的定时任务已从 workflow 删除，
+# 页面上的「早报/晚报」切换按钮同步去掉，归档页只列早报。
+# 文件名后缀仍沿用 _am（不改成无后缀），以免历史链接与收藏失效。
+AM_SESSION = ("早报", "am")
 
 
 def get_session_label(now=None, schedule=None):
     """判断本次报告场次，返回 (中文标签, 文件名后缀)。
 
-    优先级：
-      0) REPORT_SESSION=am|pm → 显式指定（手动补发某一场次用；workflow_dispatch 传入）；
-      1) 定时触发 → 按触发用的 cron 精确映射（不受调度延迟影响）；
-      2) 手动触发 / 未知 cron / 本地运行 → 退回按小时判断（原行为）。
-
-    为什么需要 0)：workflow_dispatch 不带 cron，只能按小时判断，于是下午手动
-    触发永远是"晚报"，早报无法手动补发；反过来 15:09 的手动触发会写出一份
-    当日 _pm，把当晚 22:17 的定时晚报按"本场次报告已存在"顶掉。
+    晚报场次已移除，现在恒为早报。保留形参只为不破坏调用方签名。
     """
-    forced = (os.environ.get("REPORT_SESSION") or "").strip().lower()
-    if forced == "am":
-        return ("早报", "am")
-    if forced == "pm":
-        return ("晚报", "pm")
-
-    if schedule is None:
-        schedule = os.environ.get("GITHUB_EVENT_SCHEDULE", "")
-    key = " ".join(str(schedule).split())
-    if key in CRON_SESSIONS:
-        return CRON_SESSIONS[key]
-
-    now = now or beijing_now()
-    return ("早报", "am") if now.hour < 12 else ("晚报", "pm")
+    return AM_SESSION
 
 
 def get_report_time(session_slug, now=None):
     """本次报告【归属的发布时间】。
 
-    晚报纸定为 22:17：若实际执行已跨过午夜（0–11 点），归属时间回退一天，
-    保证晚报写进"当天"的 _pm 文件，而不是次日的 _am 文件。
+    早报在开盘前执行，归属时间就是执行当天，不需要任何回退
+    （旧实现里"跨午夜回退一天"只服务于晚报，已随之移除）。
     """
-    now = now or beijing_now()
-    if session_slug == "pm" and now.hour < 12:
-        return now - timedelta(days=1)
-    return now
+    return now or beijing_now()
 
 
 # ============================================================
@@ -287,35 +262,30 @@ def load_market_holidays():
         return set()
 
 
-def get_skip_reason(quotes=None, session_label="晚报", now=None, holidays=None):
+def get_skip_reason(quotes=None, session_label="早报", now=None, holidays=None):
     """统一判断本次运行是否应跳过（纯逻辑，便于回归测试）。
 
     返回原因字符串；空串表示正常出报。规则自上而下：
-      1) 周六全天不更新；周日仅跳过早报（周日晚报是"周末版"，保留）；
-      2) 命中 holidays.json 的法定休市日 → 早报/晚报都跳过（解决早报拿不到当天行情、
-         无法自证的缺口）；
-      3) 晚报且在**工作日**：行情自带的最新交易日 ≠ 今天 → 判定休市（数据自证，
-         可兜住节假日表漏配的情况）。周末不做此判断，否则周日晚报会被误杀。
-         网络异常导致 trade_date 缺失时不拦截，保证正常出报。
+      1) 周六、周日都不更新（晚报移除后不再有"周末版"）；
+      2) 命中 holidays.json 的法定休市日 → 跳过。
+
+    注意：原「晚报用行情最新交易日自证休市」的兜底已随晚报移除。早报在开盘前
+    执行，行情天然是上一交易日，无法用该规则自证，节假日仍以 holidays.json 为准。
+    quotes / session_label 保留形参只为不破坏调用方签名。
     """
     now = now or beijing_now()
     wd = now.weekday()  # 0=Mon ... 5=Sat 6=Sun
 
     if wd == 5:
         return "周六不更新"
-    if wd == 6 and session_label == "早报":
-        return "周日不更新早报"
+    if wd == 6:
+        return "周日不更新"
 
     today_date = now.strftime("%Y-%m-%d")
     if holidays is None:
         holidays = load_market_holidays()
     if today_date in holidays:
         return f"今日为法定休市日（{today_date}）"
-
-    if session_label == "晚报" and wd < 5 and quotes:
-        trade_date = next((q.get("trade_date") for q in quotes if q.get("trade_date")), "")
-        if trade_date and trade_date != today_date:
-            return f"今日 A 股休市（行情最新交易日 {trade_date} ≠ 今天 {today_date}）"
     return ""
 
 
@@ -1163,7 +1133,7 @@ def call_llm(news_text):
                                          temperature=0.5, max_tokens=12000, section_name="市场分析")
     text = _sanitize_analyst(_cleanup_report(raw))
     # 截断完整性判断：不依赖单一魔法字符串，校验提示词要求的 6 个固定小节是否齐全
-    required_sections = ("## 资金面", "## 主线扫描", "## 跨市场", "## 要闻速览", "## 市场体温", "## 明天怎么看")
+    required_sections = ("## 资金面", "## 主线扫描", "## 跨市场", "## 要闻速览", "## 市场体温", "## 今日的可能情况")
     if truncated and not all(s in text for s in required_sections):
         # 被截断且结构不完整 → 内容残缺，宁缺毋滥
         print("  ⚠️ 盘面分析被截断且结构不完整，返回降级文案")
@@ -1204,7 +1174,7 @@ def format_stock_picks(picks_md):
     disclaimer = (
         "\n\n---\n\n"
         "> 以下分析由 AI 基于当日新闻资讯、UP主观点共识与产业链逻辑推导生成，仅供研究参考，不构成投资建议。\n\n"
-        "## AI选股\n\n"
+        "## 可能的机会\n\n"
     )
     return disclaimer + f"{picks_md}\n"
 
@@ -1424,6 +1394,7 @@ def markdown_to_html(md, mode="default"):
     # 渲染
     import hashlib as _hl
     html_parts = []
+    main_no = 0
     for sec_idx, sec in enumerate(sections):
         sec_title = sec.get("title", "")
         # 生成唯一 section ID（基于标题 hash）
@@ -1433,12 +1404,19 @@ def markdown_to_html(md, mode="default"):
             # 去序号前缀；并剥掉模型惯用的 ☆ 装饰（与收藏按钮 glyph 冲突，且违学术风）
             clean_title = re.sub(r"^[一二三四五六七八九十]+[、．.]?\s*", "", sec["title"])
             clean_title = re.sub(r"^[☆★]+\s*", "", clean_title).strip()
-            clean_title = _esc_html(clean_title)
+            # 主叙述章节编号（01/02…）；UP 主卡片、选股主题等降级为小标题，不编号
+            if clean_title in MAIN_SECTION_TITLES:
+                main_no += 1
+                head_cls = "sec-h"
+                num_html = f'<span class="sec-n">{main_no:02d}</span>'
+            else:
+                head_cls = "sec-h sub"
+                num_html = ""
             html_parts.append(
-                f'<h3 class="sec-h">'
+                f'<h3 class="{head_cls}">'
                 f'<button class="fav-btn" data-sid="{sec_id}" '
                 f'title="收藏此条分析" onclick="toggleFav(this)">☆</button>'
-                f'{clean_title}</h3>'
+                f'{num_html}{_esc_html(clean_title)}</h3>'
             )
         # UP主小节（非共识/分歧）渲染情绪/风格标签 + 一句话操作
         if sec_title and "共识" not in sec_title and "分歧" not in sec_title:
@@ -1480,6 +1458,16 @@ def markdown_to_html(md, mode="default"):
 # ============================================================
 
 _LEAD_KEYS = ("市场体温", "最大共识", "最大分歧", "最大风险", "一句话策略")
+
+# 主叙述章节白名单：命中才编号（01/02…），其余（UP 主卡片、选股主题）降级为小标题。
+# 顺序即编号顺序；某节当天不存在则自动跳过，不会留空号。
+MAIN_SECTION_TITLES = (
+    "资金面", "主线扫描", "跨市场", "要闻速览", "市场体温",
+    "今日的可能情况", "行业强度", "昨日收盘UP主观点", "可能的机会", "个股风险提示",
+)
+
+# 市场体温五档（与 prompts/user_analyst.txt 的口径一致）
+_TEMP_WORDS = ("偏热", "偏暖", "中性", "偏冷", "冰点")
 
 
 def _split_lead(md, title="今日要点"):
@@ -1529,26 +1517,64 @@ def _split_lead(md, title="今日要点"):
     return lead, rest
 
 
-def _render_lead_box(lead_md):
-    """将 '## 今日要点' 区块渲染为学术风置顶摘要框。"""
-    rows = []
+def _render_verdict_band(lead_md):
+    """把「今日要点」5 行渲染成决策带 + 信号格（2026-11 版式）。
+
+    版式：左侧市场体温大字，右侧一句话策略，下方三格放共识 / 分歧 / 风险。
+    体温说明句较长，放在策略下方通栏，不再挤进左栏。
+
+    5 项内容一项不少：温度、体温说明、一句话策略、共识、分歧、风险。
+    全部缺失时返回空串，页面退化为无决策带（不抛错）。
+    """
+    rows, order = {}, []
     for ln in lead_md.split("\n"):
         m = re.match(r"^[-*]\s+\*\*(.+?)\*\*[：:]\s*(.+)$", ln.strip())
         if m:
-            rows.append(
-                f'<div class="lead-row">'
-                f'<span class="lead-k">{_esc_html(m.group(1))}</span>'
-                f'<span class="lead-v">{_highlight_inline(_esc_html(m.group(2).strip()))}</span>'
-                f'</div>'
-            )
+            k = m.group(1).strip()
+            rows[k] = m.group(2).strip()
+            order.append(k)
     if not rows:
         return ""
-    return (
-        '<div class="lead-box">'
-        '<div class="lead-h">今日要点 · DAILY BRIEF</div>'
-        '<div class="lead-body">' + "".join(rows) + '</div>'
-        '</div>'
+
+    # 市场体温：首词是五档之一则提为左侧大字，其余句子作为说明
+    temp_raw = rows.get("市场体温", "")
+    temp_word, temp_note = "", temp_raw
+    for w in _TEMP_WORDS:
+        if temp_raw.startswith(w):
+            temp_word = w
+            temp_note = temp_raw[len(w):].lstrip("。，、.,  ")
+            break
+    if not temp_word and temp_raw:
+        temp_word, temp_note = temp_raw[:2], ""
+
+    strategy = rows.get("一句话策略", "")
+
+    left = (
+        '<div class="vside"><div class="vlab">MARKET TEMP</div>'
+        + (f'<div class="vtemp">{_esc_html(temp_word)}</div>' if temp_word else "")
+        + '</div>'
     )
+    right = ['<div class="vmain">']
+    if strategy:
+        right.append('<div class="vk">一句话策略 · VERDICT</div>')
+        right.append(f'<div class="vact">{_highlight_inline(_esc_html(strategy))}</div>')
+    if temp_note:
+        right.append(
+            f'<div class="vwhy"><span class="vwhy-k">市场体温</span>'
+            f'{_highlight_inline(_esc_html(temp_note))}</div>'
+        )
+    right.append('</div>')
+
+    cells = []
+    for key in ("最大共识", "最大分歧", "最大风险"):
+        if rows.get(key):
+            cells.append(
+                f'<div class="sig"><div class="sig-k">{key}</div>'
+                f'<div class="sig-v">{_highlight_inline(_esc_html(rows[key]))}</div></div>'
+            )
+    signals = f'<div class="signals">{"".join(cells)}</div>' if cells else ""
+
+    return f'<div class="verdict">{left}{"".join(right)}</div>{signals}'
 
 
 def _load_asset(rel_path):
@@ -1598,20 +1624,14 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
                 f'<a class="hl" href="{page_base_url}report_{dslug}.html">'
                 f'{label}</a>'
             )
-        # 日期选择器 + 早报/晚报切换按钮
+        # 日期选择器（晚报场次移除后不再有早报/晚报切换）
         today_str = bj_now.strftime("%Y-%m-%d")
-        am_active = " active" if session_slug == "am" else ""
-        pm_active = " active" if session_slug == "pm" else ""
         history_links_html += (
             f'<span class="hnav-spacer"></span>'
             f'<input type="date" id="historyPicker" class="hl-date" '
             f'value="{today_str}" max="{today_str}" min="2025-01-01" '
             f'title="选择日期查看历史简报">'
             f'<button class="hl-go" onclick="goToDate()">GO</button>'
-            f'<span class="session-toggle">'
-            f'<button class="st-btn{am_active}" id="stAm" onclick="switchSession(\'am\')">早报</button>'
-            f'<button class="st-btn{pm_active}" id="stPm" onclick="switchSession(\'pm\')">晚报</button>'
-            f'</span>'
         )
 
     # ---- 行情条 ----
@@ -1687,26 +1707,39 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
             f'</div>'
         )
 
-    # ---- 报告正文（抽取「今日要点」为置顶摘要）----
+    # ---- 报告正文（抽取「今日要点」为置顶决策带）----
     lead_md, report_rest = _split_lead(report, "今日要点")
-    lead_box_html = _render_lead_box(lead_md) if lead_md else ""
+    lead_box_html = _render_verdict_band(lead_md) if lead_md else ""
     report_html = markdown_to_html(report_rest)
 
     # ---- 目录锚点导航 ----
     import hashlib as _hl
     toc_items = [
-        ("盘面分析与研判", "sec-analysis"),
-        ("主力资金流向", "sec-fund"),
-        ("分时走势", "sec-intraday"),
+        ("盘面分析与研判", "sec-analysis", ""),
+        ("主力资金流向", "sec-fund", ""),
+        ("分时走势", "sec-intraday", ""),
     ]
+    _main_no = 0
     for _m in re.finditer(r"^##\s+(.+)$", report_rest, re.M):
         _t = _m.group(1).strip()
         if _t == "今日要点":
             continue
-        toc_items.append((_t, _hl.md5(_t.encode()).hexdigest()[:10]))
+        # 与 markdown_to_html 同步清洗标题（去序号/☆），保证目录与正文标题一致
+        _toc_title = re.sub(r"^[一二三四五六七八九十]+[、．.]?\s*", "", _t)
+        _toc_title = re.sub(r"^[☆★]+\s*", "", _toc_title).strip()
+        _num = ""
+        if _toc_title in MAIN_SECTION_TITLES:
+            _main_no += 1
+            _num = f"{_main_no:02d}"
+        toc_items.append((_toc_title, _hl.md5(_t.encode()).hexdigest()[:10], _num))
     toc_html = (
         '<nav class="toc"><span class="toc-label">快速跳转</span>'
-        + "".join(f'<a class="toc-link" href="#{_tid}">{_t}</a>' for _t, _tid in toc_items)
+        + "".join(
+            f'<a class="toc-link" href="#{_tid}">'
+            + (f'<b class="toc-n">{_num}</b>' if _num else "")
+            + f'{_esc_html(_t)}</a>'
+            for _t, _tid, _num in toc_items
+        )
         + '</nav>'
     )
     up_src = f" · 综合 {up_count} 位 UP 主观点" if up_count > 0 else ""
@@ -1935,7 +1968,7 @@ def deploy_github_pages(html_content, session_slug="am"):
     docs_dir = os.path.join(_BASE_DIR, "docs")
     os.makedirs(docs_dir, exist_ok=True)
 
-    # 场次文件（早报/晚报独立保存，唯一真实内容副本）
+    # 场次文件（早报唯一真实内容副本，后缀固定 _am）
     session_name = f"report_{today}_{session_slug}.html"
     session_path = os.path.join(docs_dir, session_name)
     with open(session_path, "w", encoding="utf-8") as f:
@@ -1999,6 +2032,10 @@ def generate_archive_page():
         if not session:
             # 无后缀主文件现为跳转桩，不再是独立报告，归档里不单列一行
             continue
+        if session == "pm":
+            # 晚报场次已移除：历史 _pm 文件保留在 docs/ 里（老链接仍可打开），
+            # 但不再进入归档列表，归档只呈现早报。
+            continue
         try:
             year = date_str[:4]
             month = date_str[4:6]
@@ -2014,7 +2051,7 @@ def generate_archive_page():
             "day": day,
             "session": session,
             "filename": fname,
-            "label": "早报" if session == "am" else "晚报",
+            "label": "早报",
         })
 
     if not entries:
@@ -2105,8 +2142,7 @@ def generate_archive_page():
 # ============================================================
 
 def main():
-    # 场次由【触发的 cron】决定（不受 GitHub Actions 调度延迟影响），
-    # 报告归属时间在跨午夜延迟运行时回退一天，避免晚报被写成次日 _am。
+    # 只有早报一个场次：归属时间就是执行当天，不存在跨午夜回退。
     session_label, session_slug = get_session_label()
     report_time = get_report_time(session_slug)
     today_str = report_time.strftime("%Y%m%d")

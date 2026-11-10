@@ -395,24 +395,7 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 }
 .toc-link:hover { color: var(--navy); border-color: var(--navy); }
 
-/* ===== 今日要点置顶摘要框 ===== */
-.lead-box {
-  background: #fff; border: 1px solid var(--rule);
-  border-left: 3px solid var(--brick);
-  padding: 18px 22px 14px; margin-bottom: 8px;
-}
-.lead-h {
-  font-family: var(--serif); font-size: 11px; letter-spacing: 2px;
-  text-transform: uppercase; color: var(--brick); font-weight: 700;
-  margin-bottom: 12px;
-}
-.lead-body { display: flex; flex-direction: column; gap: 8px; }
-.lead-row { display: flex; gap: 14px; align-items: baseline; }
-.lead-k {
-  flex: 0 0 84px; font-family: var(--serif); font-size: 13px;
-  font-weight: 700; color: var(--ink); letter-spacing: 0.5px;
-}
-.lead-v { flex: 1; font-size: 15px; color: var(--ink-2); line-height: 1.7; }
+/* ===== 今日要点：已改版为顶部决策带（见文件末尾「版式层 v2」的 .verdict / .signals） ===== */
 
 /* ===== UP主标签条 / 一句话操作 ===== */
 .op-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
@@ -487,8 +470,6 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
   .toc::-webkit-scrollbar { height: 0; }
   .toc-label { flex: 0 0 auto; }
   .toc-link { flex: 0 0 auto; }
-  .lead-row { flex-direction: column; gap: 2px; }
-  .lead-k { flex: none; }
   .to-top { width: 38px; height: 38px; right: 14px; bottom: 18px; font-size: 18px; }
   .op-action { padding: 7px 12px; }
   .masthead-src, .masthead-by { font-size: 11px; padding: 0 16px; }
@@ -508,4 +489,111 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
     content: attr(data-th); display: block;
     font-size: 11px; color: var(--ink-3); letter-spacing: 0.5px; margin-bottom: 2px;
   }
+}
+
+/* ============================================================
+   版式层 v2 · 决策仪表盘（2026-11 起作为更新模板）
+   ------------------------------------------------------------
+   只覆盖版式，不改内容。几条必须用「两级选择器」才能压住原有规则：
+     .sec-hdr .sec-main / .tbl tbody td / .toc .toc-link / .sec .sec-h
+   原始签名的处理：
+     · .sec 的藏青左竖线、.bi 的灰蓝左竖线 → 清零，回归发丝线与留白
+     · .toc-link 药丸 → 平条
+   ============================================================ */
+
+/* 顶部决策带：左温度大字 + 右一句话策略 */
+.verdict { display: grid; grid-template-columns: 176px 1fr; border: 1px solid var(--ink); margin: 20px 0 0; }
+.vside {
+  border-right: 1px solid var(--ink); padding: 20px 18px; background: var(--wash, #fafaf8);
+  display: flex; flex-direction: column; justify-content: center;
+}
+.vlab { font-family: var(--mono); font-size: 9.5px; letter-spacing: 2px; color: var(--ink-3); }
+.vtemp { font-size: 42px; font-weight: 700; line-height: 1; margin-top: 9px; letter-spacing: 2px; color: var(--navy); }
+.vmain { padding: 20px 22px 18px; }
+.vk { font-family: var(--mono); font-size: 9.5px; letter-spacing: 2px; color: var(--brick); font-weight: 600; margin-bottom: 9px; }
+.vact { font-size: 21px; font-weight: 700; line-height: 1.45; margin-bottom: 10px; }
+.vwhy { font-size: 13.5px; color: var(--ink-2); line-height: 1.75; }
+.vwhy-k {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 1.4px; color: var(--ink-3);
+  margin-right: 9px; border: 1px solid var(--rule); padding: 0 5px; white-space: nowrap;
+}
+
+/* 信号三格 */
+.signals {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--rule); border-top: 0; background: var(--rule-soft); gap: 1px;
+}
+.sig { background: #fff; padding: 12px 15px; }
+.sig-k { font-family: var(--mono); font-size: 9.5px; letter-spacing: 1.4px; color: var(--ink-3); margin-bottom: 5px; }
+.sig-v { font-size: 13.5px; font-weight: 500; line-height: 1.6; color: var(--ink); }
+
+/* 章节：编号 + 标题下划线；去掉原藏青左竖线 */
+.sec { border-left: 0; padding-left: 0; border-top: 0; padding-top: 0; margin-bottom: 6px; }
+.sec .sec-h {
+  display: flex; align-items: baseline; gap: 11px; color: var(--ink);
+  font-size: 18px; font-weight: 700; letter-spacing: .3px;
+  padding: 16px 0 8px; border-bottom: 1px solid var(--ink); margin: 30px 0 14px;
+}
+.sec .sec-h .sec-n {
+  font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--slate, #5b7a99);
+  letter-spacing: 1px; flex: 0 0 auto;
+}
+.sec .sec-h.sub {
+  font-size: 14.5px; font-weight: 600; padding: 13px 0 6px;
+  border-bottom: 1px solid var(--rule); margin: 22px 0 10px; color: var(--ink);
+}
+.sec .sec-h .fav-btn { order: -1; flex: 0 0 auto; align-self: center; }
+
+/* 正文段落：去掉原灰蓝左竖线 */
+.bi { border-left: 0; padding: 0; margin: 0 0 9px; font-size: 14px; line-height: 1.78; color: var(--ink-2); }
+
+/* 高亮：背景色 → 底线 */
+mark { background: none; color: inherit; padding-bottom: 1px; }
+mark.mk-bullish, mark.mk-hot { border-bottom: 2px solid var(--brick); }
+mark.mk-bearish, mark.mk-cool, mark.mk-ice { border-bottom: 2px solid var(--green); }
+mark.mk-neutral, mark.mk-warm { border-bottom: 2px solid #c8bfae; }
+
+/* 表格：去外框、收紧行高 */
+.tbl-wrap { margin: 10px 0 18px; }
+.tbl { font-size: 13px; }
+.tbl thead th {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1px; color: var(--ink-3);
+  font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--ink); background: none;
+}
+.tbl tbody td { padding: 7px 10px; font-size: 13px; }
+
+/* 面板小标题（资金流向 / 分时 / 盘面研判） */
+.sec-hdr { margin: 32px 0 14px; gap: 3px; }
+.sec-hdr .sec-main { font-size: 15px; font-weight: 700; letter-spacing: .2px; }
+.sec-hdr .sec-sub { font-family: var(--mono); font-size: 9.5px; letter-spacing: 1.5px; color: var(--ink-3); }
+
+/* 目录：药丸 → 平条，并带章节编号 */
+.toc { max-width: 1040px; margin: 12px auto 0; padding: 0; gap: 0; flex-wrap: wrap; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.toc .toc-label { display: none; }
+.toc .toc-link {
+  flex: 1 1 auto; border: 0; border-right: 1px solid var(--rule-soft); border-radius: 0;
+  padding: 8px 12px; font-size: 11.5px; color: var(--ink-3); letter-spacing: .4px;
+  text-decoration: none; transition: color .12s, background .12s;
+}
+.toc .toc-link:last-child { border-right: 0; }
+.toc .toc-link:hover { color: var(--ink); background: var(--wash, #fafaf8); }
+.toc-n { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--slate, #5b7a99); margin-right: 6px; }
+
+@media (max-width: 880px) {
+  .verdict { grid-template-columns: 1fr; }
+  .vside { border-right: 0; border-bottom: 1px solid var(--ink); flex-direction: row; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .vtemp { font-size: 32px; margin-top: 0; }
+  .signals { grid-template-columns: 1fr; }
+  .toc .toc-link { flex: 1 1 46%; }
+  .sec .sec-h { font-size: 16px; }
+}
+@media (max-width: 560px) {
+  .vact { font-size: 18px; }
+  .tbl { font-size: 12px; }
+}
+@media print {
+  .toc, .fav-btn { display: none !important; }
+  .verdict, .signals, .tbl { break-inside: avoid; }
+  .sec .sec-h { break-after: avoid; }
+  .tbl thead { display: table-header-group; }
 }

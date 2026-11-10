@@ -201,17 +201,17 @@ class TestDeployOutputs(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_stub_and_archive(self):
-        sr.deploy_github_pages("<html>REAL CONTENT</html>", session_slug="pm")
+        sr.deploy_github_pages("<html>REAL CONTENT</html>", session_slug="am")
         docs = os.path.join(self.tmp, "docs")
         today = sr.beijing_now().strftime("%Y%m%d")
 
         with open(os.path.join(docs, f"report_{today}.html"), encoding="utf-8") as f:
             stub = f.read()
         self.assertIn('http-equiv="refresh"', stub)
-        self.assertIn(f"report_{today}_pm.html", stub)
+        self.assertIn(f"report_{today}_am.html", stub)
         self.assertLess(len(stub), 1200)          # 跳转桩必须极小
 
-        with open(os.path.join(docs, f"report_{today}_pm.html"), encoding="utf-8") as f:
+        with open(os.path.join(docs, f"report_{today}_am.html"), encoding="utf-8") as f:
             self.assertEqual(f.read(), "<html>REAL CONTENT</html>")
         with open(os.path.join(docs, "index.html"), encoding="utf-8") as f:
             self.assertEqual(f.read(), "<html>REAL CONTENT</html>")
@@ -220,7 +220,9 @@ class TestDeployOutputs(unittest.TestCase):
             archive = f.read()
         self.assertNotIn("全天", archive)                       # 跳转桩不单独列行
         self.assertIn("report_20260901_am.html", archive)
-        self.assertIn("report_20260901_pm.html", archive)
+        # 晚报场次已移除：历史 _pm 文件仍在磁盘上（老链接可打开），但不进归档列表
+        self.assertNotIn("report_20260901_pm.html", archive)
+        self.assertTrue(os.path.exists(os.path.join(docs, "report_20260901_pm.html")))
 
         # 历史无后缀文件不被覆盖（老链接仍可打开）
         with open(os.path.join(docs, "report_20260901.html"), encoding="utf-8") as f:
@@ -233,92 +235,38 @@ THU = datetime(2026, 9, 10, 22, 17)   # 周四（工作日）
 THU_AM = datetime(2026, 9, 10, 7, 17)
 
 
-class TestSessionFromSchedule(unittest.TestCase):
-    """场次判定回归。
+class TestSessionIsMorningOnly(unittest.TestCase):
+    """场次判定回归：晚报场次已移除，任何触发方式都只出早报。
 
-    线上现象：22:17 的晚报被 GitHub 调度延迟到次日凌晨才执行，
-    旧实现按"执行小时 < 12"判成早报 → 晚报内容写进次日 _am 文件、
-    当日 _pm 文件缺失、次日早报又顶掉首页，晚报等于丢失。
+    历史记录（修好后又被移除）：22:17 的晚报曾因 GitHub 调度延迟跨午夜执行而被
+    判成早报，晚报内容写进次日 _am；改用 cron 精确映射修好后，2026-11 用户决定
+    把整个晚报场次删除，只保留早报，因此这些判定分支一并下线。
     """
 
-    PM_CRON = "17 14 * * *"
-    AM_CRON = "17 23 * * *"   # UTC，对应北京时间次日 07:17
+    def test_always_morning_regardless_of_time(self):
+        for h in (0, 7, 9, 15, 22, 23):
+            now = datetime(2026, 11, 10, h, 30)
+            self.assertEqual(sr.get_session_label(now, ""), ("早报", "am"))
 
-    def test_pm_cron_stays_evening_even_after_midnight(self):
-        late = datetime(2026, 9, 11, 0, 30)      # 跨过午夜的实际执行时间
-        self.assertEqual(sr.get_session_label(late, self.PM_CRON), ("晚报", "pm"))
+    def test_always_morning_regardless_of_schedule(self):
+        for cron in ("17 23 * * *", "17 14 * * *", "* * * * *", ""):
+            self.assertEqual(sr.get_session_label(None, cron), ("早报", "am"))
 
-    def test_am_cron_is_morning(self):
-        self.assertEqual(sr.get_session_label(datetime(2026, 9, 11, 7, 17), self.AM_CRON), ("早报", "am"))
-
-    def test_schedule_whitespace_tolerated(self):
-        self.assertEqual(sr.get_session_label(None, " 17   14 * * * "), ("晚报", "pm"))
-
-    def test_unknown_schedule_falls_back_to_hour(self):
-        self.assertEqual(sr.get_session_label(datetime(2026, 9, 10, 0, 30), "* * * * *"), ("早报", "am"))
-        self.assertEqual(sr.get_session_label(datetime(2026, 9, 10, 22, 17), "* * * * *"), ("晚报", "pm"))
-
-    def test_manual_run_without_schedule_uses_hour(self):
-        self.assertEqual(sr.get_session_label(datetime(2026, 9, 10, 9, 0), ""), ("早报", "am"))
-        self.assertEqual(sr.get_session_label(datetime(2026, 9, 10, 21, 0), ""), ("晚报", "pm"))
-
-    def test_env_schedule_is_used(self):
-        old = os.environ.get("GITHUB_EVENT_SCHEDULE")
-        os.environ["GITHUB_EVENT_SCHEDULE"] = self.PM_CRON
-        try:
-            self.assertEqual(sr.get_session_label(datetime(2026, 9, 11, 1, 0)), ("晚报", "pm"))
-        finally:
-            if old is None:
-                os.environ.pop("GITHUB_EVENT_SCHEDULE", None)
-            else:
-                os.environ["GITHUB_EVENT_SCHEDULE"] = old
-
-    def test_explicit_session_forces_am_in_the_afternoon(self):
-        """手动补发：15 点触发也能强制出早报。
-
-        线上现象：workflow_dispatch 无 cron，只能按小时判断，下午手动触发一律
-        判成晚报 —— 09:45 的降级早报因此无法手动补发，反而多出一份 15:09 晚报。
-        """
-        self._with_env("REPORT_SESSION", "am", lambda: self.assertEqual(
-            sr.get_session_label(datetime(2026, 10, 15, 15, 9), ""), ("早报", "am")))
-
-    def test_explicit_session_beats_cron_and_hour(self):
-        """显式场次优先级最高：连 cron 映射也要让位。"""
-        self._with_env("REPORT_SESSION", "pm", lambda: self.assertEqual(
-            sr.get_session_label(datetime(2026, 10, 15, 7, 17), self.AM_CRON), ("晚报", "pm")))
-
-    def test_explicit_session_ignores_unknown_value(self):
-        """非 am/pm 的取值（含 schedule 事件下可能出现的空/异常值）一律忽略。"""
-        self._with_env("REPORT_SESSION", "weird", lambda: self.assertEqual(
-            sr.get_session_label(datetime(2026, 10, 15, 15, 9), self.PM_CRON), ("晚报", "pm")))
-
-    @staticmethod
-    def _with_env(key, value, fn):
-        """临时设置环境变量执行断言，结束后恢复（保持与本文件其他用例一致的写法）。"""
-        old = os.environ.get(key)
-        os.environ[key] = value
-        try:
-            fn()
-        finally:
-            if old is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = old
+    def test_suffix_is_still_am(self):
+        """文件名后缀仍用 _am，历史链接与收藏才不会失效。"""
+        self.assertEqual(sr.get_session_label()[1], "am")
 
 
 class TestReportTime(unittest.TestCase):
-    """报告归属时间回归：延迟的晚报必须落在当天 _pm，而不是次日 _am。"""
-
-    def test_late_pm_run_belongs_to_previous_day(self):
-        rt = sr.get_report_time("pm", datetime(2026, 9, 11, 0, 30))
-        self.assertEqual(rt.strftime("%Y-%m-%d"), "2026-09-10")
-
-    def test_on_time_pm_run_same_day(self):
-        rt = sr.get_report_time("pm", datetime(2026, 9, 10, 22, 17))
-        self.assertEqual(rt.strftime("%Y-%m-%d"), "2026-09-10")
+    """报告归属时间：早报在开盘前执行，归属当天，不做任何回退。"""
 
     def test_morning_run_same_day(self):
         rt = sr.get_report_time("am", datetime(2026, 9, 10, 7, 17))
+        self.assertEqual(rt.strftime("%Y-%m-%d"), "2026-09-10")
+
+    def test_afternoon_delay_still_same_day(self):
+        """调度延迟到下午也仍算当天（旧实现里"跨午夜回退"只服务晚报，已移除）。"""
+        rt = sr.get_report_time("am", datetime(2026, 9, 10, 15, 30))
         self.assertEqual(rt.strftime("%Y-%m-%d"), "2026-09-10")
 
 
@@ -352,41 +300,27 @@ class TestOpinionDateBase(unittest.TestCase):
 class TestSkipRules(unittest.TestCase):
     """休市/周末判断回归。
 
-    背景：曾出现过两个问题——① 早报在开盘前拿不到当天行情，无法自证是否休市，
-    节假日仍会出报告；② 若把"行情交易日≠今天"的规则无条件套用，周日晚报会被误杀。
+    晚报移除后：周六、周日都不出报（原先周日有一期"周末版"晚报）；
+    节假日仍以 holidays.json 为准；行情交易日不再参与判断。
     """
 
-    def test_saturday_always_skipped(self):
+    def test_saturday_skipped(self):
         self.assertTrue(sr.get_skip_reason(None, "早报", SAT, set()))
-        self.assertTrue(sr.get_skip_reason(None, "晚报", SAT, set()))
 
-    def test_sunday_am_skipped_pm_kept(self):
+    def test_sunday_skipped(self):
+        """晚报移除后不再有"周末版"，周日一律跳过。"""
         self.assertTrue(sr.get_skip_reason(None, "早报", SUN, set()))
-        # 周日晚报是"周末版"，必须保留（回归：旧实现会因行情交易日≠今天而误杀）
-        self.assertEqual(sr.get_skip_reason([{"trade_date": "2026-09-11"}], "晚报", SUN, set()), "")
 
-    def test_holiday_table_blocks_both_sessions(self):
+    def test_holiday_table_blocks_report(self):
         holidays = {"2026-10-01"}
         morning = sr.get_skip_reason(None, "早报", datetime(2026, 10, 1, 7, 17), holidays)
-        evening = sr.get_skip_reason(None, "晚报", datetime(2026, 10, 1, 22, 17), holidays)
         self.assertIn("法定休市日", morning)
-        self.assertIn("法定休市日", evening)
 
-    def test_weekday_evening_stale_trade_date_skipped(self):
-        reason = sr.get_skip_reason([{"trade_date": "2026-09-09"}], "晚报", THU, set())
-        self.assertIn("休市", reason)
-
-    def test_weekday_evening_fresh_trade_date_ok(self):
-        self.assertEqual(sr.get_skip_reason([{"trade_date": "2026-09-10"}], "晚报", THU, set()), "")
-
-    def test_missing_trade_date_does_not_block(self):
-        """网络异常导致 trade_date 缺失时不得拦截，否则会漏发正常报告。"""
-        self.assertEqual(sr.get_skip_reason([{"trade_date": ""}], "晚报", THU, set()), "")
-        self.assertEqual(sr.get_skip_reason([], "晚报", THU, set()), "")
-
-    def test_morning_not_governed_by_trade_date(self):
-        """早报开盘前行情天然是上一交易日 → 不得据此拦截。"""
+    def test_trade_date_no_longer_blocks(self):
+        """原"行情交易日≠今天即休市"的兜底随晚报移除，早报不该被它拦截。"""
         self.assertEqual(sr.get_skip_reason([{"trade_date": "2026-09-09"}], "早报", THU_AM, set()), "")
+        self.assertEqual(sr.get_skip_reason([{"trade_date": ""}], "早报", THU_AM, set()), "")
+        self.assertEqual(sr.get_skip_reason([], "早报", THU_AM, set()), "")
 
     def test_normal_weekday_runs(self):
         self.assertEqual(sr.get_skip_reason([{"trade_date": "2026-09-10"}], "早报", THU_AM, set()), "")

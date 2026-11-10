@@ -17,20 +17,10 @@ function initMBConfig() {
   CURRENT_SESSION = cfg.session_slug || '';
 }
 
-// ── 早报 / 晚报 切换 ──
-function switchSession(session) {
-  if (session === CURRENT_SESSION) return;
-  CURRENT_SESSION = session;
-  var amBtn = document.getElementById('stAm');
-  var pmBtn = document.getElementById('stPm');
-  if (amBtn) amBtn.classList.toggle('active', session === 'am');
-  if (pmBtn) pmBtn.classList.toggle('active', session === 'pm');
-  var picker = document.getElementById('historyPicker');
-  if (picker && picker.value) {
-    var p = picker.value.split('-');
-    window.location.href = PAGE_BASE_URL + 'report_' + p[0] + p[1] + p[2] + '_' + session + '.html';
-  }
-}
+// ── 场次切换 ──
+// 晚报场次已移除，页面上不再有「早报/晚报」按钮。这里保留一个空实现，
+// 只为让历史页面（其按钮仍在 HTML 里）点击时不抛 ReferenceError。
+function switchSession() {}
 
 function goToDate() {
   var d = document.getElementById('historyPicker').value;
