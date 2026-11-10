@@ -520,8 +520,8 @@ mark { padding:0 2px; border-radius:0; font-size:inherit; font-weight:600; backg
 
 /* ── 行业强度（新增板块，ind- 前缀避免污染原样式） ── */
 .ind-kicker{font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;color:var(--ink-3);letter-spacing:.4px;margin:0 0 10px}
-.ind-link{font-size:13px;color:var(--brick);margin:0 0 14px;font-weight:600}
-.ind-link a{color:var(--brick);text-decoration:underline;text-underline-offset:2px;font-weight:600}
+.ind-link{font-size:inherit;font-weight:400;color:var(--brick);margin-left:auto;text-align:right;line-height:1.4}
+.ind-link a{color:var(--brick);text-decoration:underline;text-underline-offset:2px;font-weight:400}
 .ind-link a:hover{color:#7a2f2f}
 .ind-verdict{border-left:3px solid var(--brick);background:#fdf8f7;padding:10px 14px;margin:0 0 16px;font-size:14px;line-height:1.7;color:var(--ink)}
 .ind-verdict b{color:var(--brick)}
@@ -645,6 +645,9 @@ mark.mk-bearish{border-bottom-color:var(--green)}
   .signals{grid-template-columns:1fr}
   .tbl{font-size:12px}
   .vact{font-size:18px}
+  /* 标题右侧的跳转链接在窄屏换行到下一行，避免挤压标题 */
+  .sec .sec-h{flex-wrap:wrap}
+  .ind-link{display:block;margin-left:0;text-align:left;margin-top:3px}
 }
 @media print{
   body{font-size:10.5pt;line-height:1.55}
@@ -751,9 +754,8 @@ mark.mk-bearish{border-bottom-color:var(--green)}
 <div class="bi">情景三（20%）：CPI放缓且黄仁勋风波平息，外围再冲一波，A股放量突破，成交额重回万亿上方，AI硬件与机器人双主线共振，传媒让位。属于乐观情形，需要成交量配合才成立。</div>
 </div>
 <div class="sec" id="indstrength" data-section-id="indstrength">
-<h3 class="sec-h"><button class="fav-btn" data-sid="indstrength" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">07</span>行业强度</h3>
+<h3 class="sec-h"><button class="fav-btn" data-sid="indstrength" title="收藏此条分析" onclick="toggleFav(this)">☆</button><span class="sec-n">07</span>行业强度<span class="ind-link">具体强度表格可直接跳转：<a href="https://hcongxi42-web.github.io/HZT/industry_20261109.html" target="_blank" rel="noopener">方向强度表 2026-11-09 →</a></span></h3>
 <div class="ind-kicker">昨日收盘 · 92 个方向 · 4,607 只成分 · 窗口 11-03 → 11-09（5 个交易日）· 源 industry_20261109</div>
-<div class="ind-link">具体强度表格可直接跳转：<a href="https://hcongxi42-web.github.io/HZT/industry_20261109.html" target="_blank" rel="noopener">方向强度表 2026-11-09 →</a></div>
 <div class="ind-verdict"><b>普涨修复，不是结构进攻。</b>92 个方向里 84 个 5 日绝对为正、基准 +2.46%，但拥挤极热已达 10 个、偏热 18 个——钱在往少数方向挤。传媒内容组 7 条方向里 6 条拥挤在 1.3 以上，进攻端已经很挤。</div>
 <div class="ind-kpi">
 <div><div class="k">基准 5 日</div><div class="v ind-pos">+2.46%</div><div class="n">涨 3 / 跌 2 日</div></div>
