@@ -1577,6 +1577,240 @@ def _render_verdict_band(lead_md):
     return f'<div class="verdict">{left}{"".join(right)}</div>{signals}'
 
 
+# ============================================================
+#  行业强度（产业强度日报）整合
+# ------------------------------------------------------------
+# 数据源：docs/industry_YYYYMMDD.html —— 用户每晚从外部传入。
+# 取【昨日】那一份（与 UP 主观点同一套 date_offset=-1 口径）。
+# 严格不沿用更早的日期：宁可本节缺席，也不把旧数据当今天的用。
+# ============================================================
+
+INDUSTRY_TOKEN = "%%INDUSTRY%%"
+INDUSTRY_DIR = os.path.join(_BASE_DIR, "docs")
+
+
+def industry_page_path(base_date):
+    """返回昨日强度表路径；文件不存在返回 None。"""
+    if base_date is None:
+        base_date = beijing_now() - timedelta(days=1)
+    path = os.path.join(INDUSTRY_DIR, f"industry_{base_date.strftime('%Y%m%d')}.html")
+    return path if os.path.exists(path) else None
+
+
+def _td_value(match):
+    """取 td 的干净值：优先 data-v，退回去标签。"""
+    v = re.search(r'data-v="([^"]*)"', match.group(1))
+    return v.group(1) if v else re.sub(r"<[^>]+>", "", match.group(2)).strip()
+
+
+def _crowd_band(v):
+    """拥挤档位（阈值由原表反推：<1.06 正常、1.06–1.27 偏热、>1.27 极热）。"""
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return ""
+    if x > 1.27:
+        return "极热"
+    if x >= 1.06:
+        return "偏热"
+    return "正常"
+
+
+def parse_industry_page(path):
+    """解析方向强度表，返回结构化 dict；解析失败返回 None。"""
+    try:
+        with open(path, encoding="utf-8") as f:
+            html = f.read()
+    except OSError:
+        return None
+
+    data = {"source": os.path.basename(path)}
+
+    # KPI：原页面 6 格，直接沿用其中的数字，不重算
+    data["kpi"] = [
+        (re.sub(r"\s+", " ", k).strip(), v.strip(), s.strip())
+        for k, v, s in re.findall(
+            r'<span class="k">(.*?)</span><span class="v">(.*?)</span><span class="s">(.*?)</span>',
+            html, re.S)
+    ]
+
+    m = re.search(r"(\d+)\s*条方向", html)
+    data["n_dir"] = m.group(1) if m else ""
+    m = re.search(r"([\d,]+)\s*只成分", html)
+    data["n_stock"] = m.group(1) if m else ""
+    m = re.search(r"窗口\s*(\d{4}-\d{2}-\d{2})\s*至\s*(\d{4}-\d{2}-\d{2})", html)
+    data["window"] = f"{m.group(1)} → {m.group(2)}" if m else ""
+
+    tables = []
+    for tb in re.findall(r"<table.*?</table>", html, re.S):
+        rows = []
+        for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", tb, re.S):
+            cells = [_td_value(m) for m in re.finditer(r"<td([^>]*)>(.*?)</td>", tr, re.S)]
+            if len(cells) >= 9:
+                rows.append(cells)
+        tables.append(rows)
+
+    data["jumps"] = tables[0] if len(tables) > 0 else []    # 跳升候选
+    data["dirs"] = tables[1] if len(tables) > 1 else []     # 全方向横截面
+    data["groups"] = tables[2] if len(tables) > 2 else []   # 聚合组
+
+    if not data["dirs"]:
+        return None
+    return data
+
+
+def _ind_row(cells, cls_map):
+    """按 (取值, 样式类) 列表拼一行。"""
+    return "<tr>" + "".join(
+        f'<td class="{cls}">{val}</td>' if cls else f"<td>{val}</td>"
+        for val, cls in zip(cells, cls_map)
+    ) + "</tr>"
+
+
+def _sign_cls(text):
+    """带符号数字着色：正红负绿（中国习惯）。"""
+    t = str(text).strip()
+    if t.startswith("+") or t[:1] in "＋":
+        return "ind-pos"
+    if t.startswith("−") or t.startswith("-"):
+        return "ind-neg"
+    return ""
+
+
+def _fmt_num(v, digits=2, signed=True):
+    """数值格式化：2.3486 → +2.35；负数用 U+2212（与页面口径一致）。"""
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return str(v)
+    if x == 0:
+        return "0"
+    s = f"{x:+.{digits}f}" if signed else f"{x:.{digits}f}"
+    return s.replace("-", "−")
+
+
+def _split_crowd(text):
+    """表 1 的拥挤列是「0.93正常」这种合并文本，拆成 (数值, 档位)。"""
+    m = re.match(r"^\s*([\d.]+)\s*(极热|偏热|正常|偏冷|极冷)?", str(text))
+    if not m:
+        return str(text), ""
+    val = m.group(1)
+    return val, (m.group(2) or _crowd_band(val))
+
+
+def _crowd_html(text_or_val):
+    """拥挤单元格：数值 + 档位小标签。"""
+    val, band = _split_crowd(text_or_val)
+    val = _fmt_num(val, 2, signed=False)
+    if not band:
+        return val
+    cls = "hot" if band in ("极热", "偏热") else "ok"
+    return f'{val} <span class="ind-tag {cls}">{band}</span>'
+
+
+def render_industry_section(data):
+    """把结构化数据渲染成报告内的一节（不含 h3，h3 由 markdown 管线生成）。"""
+    if not data:
+        return ""
+
+    kicker = " · ".join(x for x in [
+        "昨日收盘",
+        f'{data["n_dir"]} 个方向' if data["n_dir"] else "",
+        f'{data["n_stock"]} 只成分' if data["n_stock"] else "",
+        f'窗口 {data["window"]}' if data["window"] else "",
+        f'源 {data["source"]}',
+    ] if x)
+
+    parts = [f'<div class="ind-kicker">{_esc_html(kicker)}</div>']
+
+    if data["kpi"]:
+        cells = "".join(
+            f'<div><div class="k">{_esc_html(k)}</div>'
+            f'<div class="v">{_highlight_inline(_esc_html(v))}</div>'
+            f'<div class="n">{_esc_html(s)}</div></div>'
+            for k, v, s in data["kpi"]
+        )
+        parts.append(f'<div class="ind-kpi">{cells}</div>')
+
+    # ── 强度前列 + 末尾对照（表 2 有 data-v，取原始数值后统一格式化）──
+    dirs = data["dirs"]
+    if dirs:
+        def dir_rows(rows):
+            out = []
+            for r in rows:
+                out.append(_ind_row(
+                    [r[0], r[1], r[2], _fmt_num(r[3]), _fmt_num(r[5]),
+                     _crowd_html(r[14] if len(r) > 14 else ""),
+                     _fmt_num(r[7], 0), r[12], r[15] if len(r) > 15 else ""],
+                    ["ind-n ind-mut", "ind-name", "ind-mut",
+                     f"ind-n {_sign_cls(_fmt_num(r[3]))}",
+                     f"ind-n {_sign_cls(_fmt_num(r[5]))}",
+                     "ind-n", f"ind-n {_sign_cls(_fmt_num(r[7], 0))}",
+                     "", "ind-n ind-mut"],
+                ))
+            return "".join(out)
+
+        parts.append('<div class="ind-h">强度前列 · 含末尾 5 条对照</div>')
+        parts.append(
+            '<div class="tbl-wrap"><table class="tbl"><thead><tr>'
+            '<th style="text-align:left">#</th><th style="text-align:left">方向</th>'
+            '<th style="text-align:left">聚合组</th><th style="text-align:right">z5</th>'
+            '<th style="text-align:right">超额%</th><th style="text-align:right">拥挤</th>'
+            '<th style="text-align:right">Δ3</th><th style="text-align:left">标签</th>'
+            '<th style="text-align:right">成分</th></tr></thead><tbody>'
+            + dir_rows(dirs[:10])
+            + '<tr><td colspan="9" class="ind-sep"></td></tr>'
+            + dir_rows(dirs[-5:])
+            + "</tbody></table></div>"
+        )
+        parts.append('<div class="ind-cap">Δ3＝3 日前名次减今日名次，正数＝名次在往前挤。'
+                     '拥挤 &gt;1.27 极热、1.06–1.27 偏热。成分 &lt;25 只时单票即占 4pt，读数本身不稳。</div>')
+
+    # ── 跳升候选（表 1 是纯文本单元格，直接用原文）──
+    jumps = data["jumps"]
+    if jumps:
+        rows = "".join(_ind_row(
+            [r[1].lstrip("▸"), r[2], r[3], r[4], r[5], _crowd_html(r[7]), r[8]],
+            ["ind-name", f"ind-n {_sign_cls(r[2])}", f"ind-n {_sign_cls(r[3])}",
+             f"ind-n {_sign_cls(r[4])}", "ind-n", "ind-n", "ind-n ind-mut"],
+        ) for r in jumps)
+        parts.append('<div class="ind-h">跳升候选（Δ3 前 5）</div>')
+        parts.append(
+            '<div class="tbl-wrap"><table class="tbl"><thead><tr>'
+            '<th style="text-align:left">方向</th><th style="text-align:right">Δ3</th>'
+            '<th style="text-align:right">5 日%</th><th style="text-align:right">z5</th>'
+            '<th style="text-align:right">全表名次</th><th style="text-align:right">拥挤</th>'
+            '<th style="text-align:right">成分</th></tr></thead><tbody>' + rows + "</tbody></table></div>"
+        )
+        parts.append('<div class="ind-cap">Δ3 只看名次变化，不叠 z5、不看拥挤——它回答的是「谁在往上挤」，不是「谁最强」。</div>')
+
+    # ── 聚合组（表 3 列序：# / 组名(含条数) / 5日% / z5 / 超额% / 名次 / 近4日 / Δ3 / 最强 / 最弱 / 极差 / 拥挤 / 领涨）──
+    groups = data["groups"][:6]
+    if groups:
+        rows = "".join(_ind_row(
+            [r[1].lstrip("▸"),
+             _fmt_num(r[2], 1), _fmt_num(r[3]), _fmt_num(r[4]),
+             f'{r[8]} / {r[9]}', r[10], _crowd_html(r[11])],
+            ["ind-name", f"ind-n {_sign_cls(_fmt_num(r[2], 1))}",
+             f"ind-n {_sign_cls(_fmt_num(r[3]))}", f"ind-n {_sign_cls(_fmt_num(r[4]))}",
+             "", "ind-n", "ind-n"],
+        ) for r in groups)
+        parts.append('<div class="ind-h">聚合组（前 6）</div>')
+        parts.append(
+            '<div class="tbl-wrap"><table class="tbl"><thead><tr>'
+            '<th style="text-align:left">聚合组</th><th style="text-align:right">5 日%</th>'
+            '<th style="text-align:right">z5</th><th style="text-align:right">超额%</th>'
+            '<th style="text-align:left">最强 / 最弱</th><th style="text-align:right">组内极差</th>'
+            '<th style="text-align:right">拥挤</th></tr></thead><tbody>' + rows + "</tbody></table></div>"
+        )
+        parts.append('<div class="ind-cap">组内极差大＝这个组不能当一条线买，里面在剧烈分化。</div>')
+
+    parts.append('<div class="ind-cap">口径：均占＝成分里收盘站上 MA5/13/50/120 的只数占比，'
+                 '是占比不是涨跌幅，不能与 z5 换算；四条线同向抬升才算趋势，120 日均占 &lt;30 一律只算短线修复。</div>')
+
+    return "\n".join(parts)
+
+
 def _load_asset(rel_path):
     """读取 docs/ 下的静态资源（style.css / script.js），用于内联进报告。
 
@@ -1593,7 +1827,8 @@ def _load_asset(rel_path):
 def generate_html_report(report, quotes, news_list, page_url="", page_base_url="",
                          fund_flow=None, session_label="早报", session_slug="am",
                          opinion_html="", opinion_title="今日收盘UP主观点",
-                         style_css=None, script_js=None, up_count=0, report_time=None):
+                         style_css=None, script_js=None, up_count=0, report_time=None,
+                         industry_html="", industry_link=""):
     """生成 Bloomberg Terminal 风格 HTML 详情页。
 
     report_time 为报告【归属日期】（延迟运行时可能是昨天），未传则取当前时间。
@@ -1711,6 +1946,20 @@ def generate_html_report(report, quotes, news_list, page_url="", page_base_url="
     lead_md, report_rest = _split_lead(report, "今日要点")
     lead_box_html = _render_verdict_band(lead_md) if lead_md else ""
     report_html = markdown_to_html(report_rest)
+
+    # ---- 行业强度：占位符替换为原生 HTML（KPI 栅格用 markdown 表达不了）----
+    if industry_html:
+        for _token in (f'<p class="para">{INDUSTRY_TOKEN}</p>', INDUSTRY_TOKEN):
+            if _token in report_html:
+                report_html = report_html.replace(_token, industry_html, 1)
+                break
+        # 跳转链接挂在「行业强度」标题右侧（与该标题同字号），语义上属于标题
+        if industry_link and "行业强度</h3>" in report_html:
+            report_html = report_html.replace(
+                "行业强度</h3>",
+                f'行业强度<span class="ind-link">{industry_link}</span></h3>',
+                1,
+            )
 
     # ---- 目录锚点导航 ----
     import hashlib as _hl
@@ -2215,6 +2464,28 @@ def main():
     print("\n▸ 生成 AI 市场分析...")
     report, analyst_status = call_llm(news_text)
 
+    # 3b. 行业强度（昨日口径，与 UP 主观点同一套 date_offset=-1 逻辑）
+    #     严格不沿用更早的日期：宁可本节缺席，也不把旧数据当今天的用。
+    print("\n▸ 读取昨日行业强度表...")
+    ind_date = report_time - timedelta(days=1)
+    ind_date_str = ind_date.strftime("%Y%m%d")
+    industry_html, industry_link = "", ""
+    ind_status, ind_note = "无文件", f"缺 industry_{ind_date_str}.html"
+    ind_path = industry_page_path(ind_date)
+    if ind_path:
+        ind_data = parse_industry_page(ind_path)
+        if ind_data:
+            industry_html = render_industry_section(ind_data)
+            ind_status = "正常"
+            ind_note = f'{ind_data["n_dir"]} 个方向 · {ind_data["source"]}'
+            report += f"\n\n## 行业强度\n\n{INDUSTRY_TOKEN}\n"
+            print(f"  ✓ {ind_data['source']}：{ind_data['n_dir']} 个方向 / {ind_data['n_stock']} 只成分")
+        else:
+            ind_status = "解析失败"
+            print(f"  ⚠ {os.path.basename(ind_path)} 解析失败，本节跳过")
+    else:
+        print(f"  ⚠ 未找到 industry_{ind_date_str}.html，本节跳过")
+
     # 4. 财经观点蒸馏 + 信息差 — 先扫描UP主文件（选股需用到观点上下文）
     if session_label == "早报":
         opinion_title = "昨日收盘UP主观点"
@@ -2329,9 +2600,17 @@ def main():
     # 8. HTML
     print("\n▸ 生成详情页...")
     page_url = f"{page_base_url}report_{today_str}.html"
+    if industry_html:
+        # 跳到【本期对应的那一天】的强度表，不用 industry.html（那是最新期跳转桩，日期会错位）
+        industry_link = (
+            '具体强度表格可直接跳转：'
+            f'<a href="{page_base_url}industry_{ind_date_str}.html" target="_blank" rel="noopener">'
+            f'方向强度表 {ind_date.strftime("%Y-%m-%d")} →</a>'
+        )
     html = generate_html_report(report, quotes, news_list, page_url, page_base_url,
                                 fund_flow, session_label=session_label, session_slug=session_slug,
-                                up_count=len(opinion_files), report_time=report_time)
+                                up_count=len(opinion_files), report_time=report_time,
+                                industry_html=industry_html, industry_link=industry_link)
     page_url = deploy_github_pages(html, session_slug=session_slug)
 
     # 7. 保存 Markdown
@@ -2381,6 +2660,7 @@ def main():
         ("盘面分析", "正常" if analyst_status == "ok" else "降级（未发布草稿）", ""),
         ("UP主观点", opinion_status, f"匹配 {len(opinion_files)} 位" if opinion_files else "无文件"),
         ("信息差", info_status, f"匹配 {len(info_files)} 条" if info_files else "无文件"),
+        ("行业强度", ind_status, ind_note),
         ("AI选股", picks_status, ""),
         ("产出", f"report_{today_str}_{session_slug}.html + index.html", page_url),
     ])

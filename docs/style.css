@@ -597,3 +597,53 @@ mark.mk-neutral, mark.mk-warm { border-bottom: 2px solid #c8bfae; }
   .sec .sec-h { break-after: avoid; }
   .tbl thead { display: table-header-group; }
 }
+
+/* ============================================================
+   行业强度板块（docs/industry_YYYYMMDD.html 的日报侧呈现）
+   ------------------------------------------------------------
+   由 stock_report.render_industry_section() 产出；ind- 前缀避免与既有规则冲突。
+   数据全部来自强度表原页面，这里只负责排版。
+   ============================================================ */
+.ind-kicker {
+  font-family: var(--mono); font-size: 10.5px; color: var(--ink-3);
+  letter-spacing: .4px; margin: 0 0 10px; line-height: 1.6;
+}
+.ind-link { font-size: inherit; font-weight: 400; color: var(--brick); margin-left: auto; text-align: right; line-height: 1.4; }
+.ind-link a { color: var(--brick); text-decoration: underline; text-underline-offset: 2px; font-weight: 400; }
+.ind-link a:hover { color: #7a2f2f; }
+
+.ind-kpi {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
+  background: var(--rule-soft); border: 1px solid var(--rule-soft); margin: 0 0 18px;
+}
+.ind-kpi > div { background: #fff; padding: 9px 12px; }
+.ind-kpi .k { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); letter-spacing: .5px; }
+.ind-kpi .v { font-family: var(--mono); font-size: 16px; margin-top: 2px; color: var(--ink); }
+.ind-kpi .n { font-size: 11px; color: var(--ink-3); margin-top: 1px; line-height: 1.45; }
+
+.ind-h { font-size: 13px; font-weight: 600; margin: 18px 0 5px; color: var(--ink); }
+.ind-n { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.ind-name { font-weight: 600; }
+.ind-mut { color: var(--ink-3); }
+.ind-pos { color: var(--brick); }
+.ind-neg { color: var(--green); }
+.ind-sep { padding: 4px 0; border-bottom: 1px solid var(--rule); }
+.ind-tag {
+  display: inline-block; font-size: 10.5px; padding: 0 5px; border: 1px solid var(--rule);
+  border-radius: 2px; color: var(--ink-2); line-height: 1.5;
+}
+.ind-tag.hot { border-color: #d9b3b3; color: var(--brick); background: #fdf3f3; }
+.ind-tag.ok { border-color: var(--rule-soft); color: var(--ink-3); }
+.ind-cap {
+  font-family: var(--mono); font-size: 10.5px; color: var(--ink-3);
+  margin: 4px 0 0; line-height: 1.65;
+}
+
+@media (max-width: 880px) {
+  .ind-kpi { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 560px) {
+  .ind-kpi { grid-template-columns: repeat(2, 1fr); }
+  .ind-link { display: block; margin-left: 0; text-align: left; margin-top: 3px; }
+  .sec .sec-h { flex-wrap: wrap; }
+}
