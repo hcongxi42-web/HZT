@@ -311,6 +311,17 @@ class TestSkipRules(unittest.TestCase):
         """晚报移除后不再有"周末版"，周日一律跳过。"""
         self.assertTrue(sr.get_skip_reason(None, "早报", SUN, set()))
 
+    def test_weekend_skip_is_label_independent(self):
+        """周六周日是否跳过不再取决于场次标签。
+
+        晚报时代此处曾写作 `if wd == 6 and session_label == "早报"`，周日会漏出
+        一期"周末版"晚报。晚报移除后判断必须与 session_label 无关。
+        """
+        for label in ("早报", "晚报", "", "任意"):
+            self.assertTrue(sr.get_skip_reason(None, label, SAT, set()), f"周六未跳过（label={label!r}）")
+            self.assertTrue(sr.get_skip_reason(None, label, SUN, set()), f"周日未跳过（label={label!r}）")
+        self.assertEqual(sr.get_skip_reason(None, "晚报", THU_AM, set()), "")
+
     def test_holiday_table_blocks_report(self):
         holidays = {"2026-10-01"}
         morning = sr.get_skip_reason(None, "早报", datetime(2026, 10, 1, 7, 17), holidays)

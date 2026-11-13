@@ -2403,7 +2403,7 @@ def main():
     print(f"[{actual_now}] 开始生成每日市场情报（{session_label} · 报告日期 {report_time.strftime('%Y-%m-%d')}）...{delay_note}")
     print()
 
-    # 周末 / 法定休市日判断（周六全天、周日早报、节假日表命中 → 跳过）；按归属日期判断
+    # 周末 / 法定休市日判断（周六、周日全天都不出；节假日表命中 → 跳过）；按归属日期判断
     early_reason = get_skip_reason(None, session_label, now=report_time)
     if early_reason:
         _abort_run(early_reason)

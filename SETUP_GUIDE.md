@@ -89,15 +89,15 @@ python stock_report.py
 
 工作流文件：`.github/workflows/daily_stock_report.yml`
 
-- **自动触发**：北京时间 `07:17`（对应 UTC `23:17` 前一天），
-  由 Python 内部判断交易日，非交易日跳过提交。
+- **自动触发**：仅**周一至周五**，北京时间 `07:17`（UTC `23:17`，cron `0-4` 即 UTC 周日至周四）。
+  周六、周日不触发；工作日再由 Python 判断是否为法定休市日，非交易日跳过提交。
 - **手动触发**：在 Actions 页面点击 `Run workflow`（workflow_dispatch）。
   只有早报一个场次，手动触发即出早报。
 - **部署**：报告 HTML 提交回仓库后，自动上传并部署到 GitHub Pages。
 
 > 2026-11 起**晚报场次已移除**：22:17 的定时任务、页面上的「早报/晚报」切换、
-> 归档页的晚报条目一并下线，只保留早报。历史 `_pm.html` 文件仍在 `docs/` 里，
-> 老链接可打开，只是不再生成、也不再进归档列表。
+> 归档页的晚报条目一并下线，只保留早报。历史 `_pm.html` 文件已从 `docs/` 删除
+> （仍可在 git 历史中找回），`report_YYYYMMDD.html` 无后缀跳转桩与 `_am` 后缀保持不变。
 
 首次使用需在仓库 `Settings → Pages` 确认 Pages 源为 `GitHub Actions`。
 
