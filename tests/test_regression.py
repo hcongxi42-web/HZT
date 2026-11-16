@@ -297,6 +297,56 @@ class TestOpinionDateBase(unittest.TestCase):
         self.assertEqual(len(self._find(self.tmp, datetime(2026, 9, 11, 0, 30))), 0)
 
 
+class TestPrevTradingDay(unittest.TestCase):
+    """上一交易日推导回归。
+
+    2026-11-16（周一）实况：早报里没有行业强度。原因是取数写作
+    `report_time - timedelta(days=1)` → 拿到周日，而强度表从不在周日发布。
+    行业强度是【按交易日】发布的，周一必须回到上周五。
+    """
+
+    def test_monday_points_to_friday(self):
+        self.assertEqual(sr.prev_trading_day(datetime(2026, 11, 16, 7, 17)).strftime("%Y-%m-%d"), "2026-11-13")
+
+    def test_weekday_points_to_previous_weekday(self):
+        self.assertEqual(sr.prev_trading_day(datetime(2026, 11, 17, 7, 17)).strftime("%Y-%m-%d"), "2026-11-16")
+
+    def test_saturday_and_sunday_point_to_friday(self):
+        self.assertEqual(sr.prev_trading_day(datetime(2026, 11, 14, 7, 17)).strftime("%Y-%m-%d"), "2026-11-13")
+        self.assertEqual(sr.prev_trading_day(datetime(2026, 11, 15, 7, 17)).strftime("%Y-%m-%d"), "2026-11-13")
+
+    def test_after_long_holiday(self):
+        """2026 国庆 10-01～10-07 全休，10-08（周四）的上一交易日是 09-30（周三）。"""
+        self.assertEqual(sr.prev_trading_day(datetime(2026, 10, 8, 7, 17)).strftime("%Y-%m-%d"), "2026-09-30")
+
+    def test_industry_page_path_skips_weekend(self):
+        """周一取数要命中周五的强度表，不是周日的（周日不存在）。"""
+        tmp = tempfile.mkdtemp()
+        old = sr.INDUSTRY_DIR
+        sr.INDUSTRY_DIR = tmp
+        try:
+            for d in ("20261112", "20261113"):
+                open(os.path.join(tmp, f"industry_{d}.html"), "w", encoding="utf-8").write("<html></html>")
+            p = sr.industry_page_path(datetime(2026, 11, 16, 7, 17))
+            self.assertIsNotNone(p)
+            self.assertIn("industry_20261113.html", p)
+        finally:
+            sr.INDUSTRY_DIR = old
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_industry_page_path_does_not_fall_back_further(self):
+        """周五的表缺失时只能报缺失，不得退到周四——那会把旧数据当新的用。"""
+        tmp = tempfile.mkdtemp()
+        old = sr.INDUSTRY_DIR
+        sr.INDUSTRY_DIR = tmp
+        try:
+            open(os.path.join(tmp, "industry_20261112.html"), "w", encoding="utf-8").write("<html></html>")
+            self.assertIsNone(sr.industry_page_path(datetime(2026, 11, 16, 7, 17)))
+        finally:
+            sr.INDUSTRY_DIR = old
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 class TestSkipRules(unittest.TestCase):
     """休市/周末判断回归。
 

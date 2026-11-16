@@ -289,6 +289,25 @@ def get_skip_reason(quotes=None, session_label="早报", now=None, holidays=None
     return ""
 
 
+def prev_trading_day(base_date, holidays=None):
+    """返回 base_date 之前最近的一个交易日（跳过周六周日与法定休市日）。
+
+    为什么需要它：早报的"昨日"口径在周一和节后是失效的——周一的前一天是周日，
+    周日不存在强度表，于是周一的早报整节缺席（2026-11-16 的实际故障）。
+
+    只回退到【上一个交易日】为止，不继续往前找"有数据的某一天"：
+    数据缺失就应当报缺失，不能把上周的数据当成昨天的用。
+    """
+    if holidays is None:
+        holidays = load_market_holidays()
+    d = base_date - timedelta(days=1)
+    for _ in range(30):          # 30 天足够跨过春节等长假
+        if d.weekday() < 5 and d.strftime("%Y-%m-%d") not in holidays:
+            return d
+        d -= timedelta(days=1)
+    return base_date - timedelta(days=1)
+
+
 def write_run_summary(rows, title="本次运行体检单"):
     """输出运行摘要：stdout + GitHub Actions 运行页摘要（GITHUB_STEP_SUMMARY）。
 
@@ -1581,7 +1600,7 @@ def _render_verdict_band(lead_md):
 #  行业强度（产业强度日报）整合
 # ------------------------------------------------------------
 # 数据源：docs/industry_YYYYMMDD.html —— 用户每晚从外部传入。
-# 取【昨日】那一份（与 UP 主观点同一套 date_offset=-1 口径）。
+# 取【上一交易日】那一份：工作日的前一天即昨日，周一取上周五，节后取节前最后一日。
 # 严格不沿用更早的日期：宁可本节缺席，也不把旧数据当今天的用。
 # ============================================================
 
@@ -1589,11 +1608,19 @@ INDUSTRY_TOKEN = "%%INDUSTRY%%"
 INDUSTRY_DIR = os.path.join(_BASE_DIR, "docs")
 
 
-def industry_page_path(base_date):
-    """返回昨日强度表路径；文件不存在返回 None。"""
-    if base_date is None:
-        base_date = beijing_now() - timedelta(days=1)
-    path = os.path.join(INDUSTRY_DIR, f"industry_{base_date.strftime('%Y%m%d')}.html")
+def industry_target_date(base_date=None):
+    """行业强度表对应的日期：base_date 之前最近的一个交易日。"""
+    return prev_trading_day(base_date or beijing_now())
+
+
+def industry_page_path(base_date=None):
+    """返回上一交易日强度表路径；文件不存在返回 None。
+
+    注意：base_date 是【报告归属日】，不是强度表日期。周一时两者差 3 天——
+    用 -1 天直接取会拿到周日，而强度表从不在周日发布。
+    """
+    target = industry_target_date(base_date)
+    path = os.path.join(INDUSTRY_DIR, f"industry_{target.strftime('%Y%m%d')}.html")
     return path if os.path.exists(path) else None
 
 
@@ -1713,8 +1740,15 @@ def render_industry_section(data):
     if not data:
         return ""
 
+    # 口径行：日期写实际数据的交易日（周一为上周五），不写"昨日"，否则周一会误导
+    src = data["source"].replace("industry_", "").replace(".html", "")
+    if len(src) == 8 and src.isdigit():
+        date_label = f"{int(src[4:6])}月{int(src[6:8])}日收盘"
+    else:
+        date_label = "上一交易日收盘"
+
     kicker = " · ".join(x for x in [
-        "昨日收盘",
+        date_label,
         f'{data["n_dir"]} 个方向' if data["n_dir"] else "",
         f'{data["n_stock"]} 只成分' if data["n_stock"] else "",
         f'窗口 {data["window"]}' if data["window"] else "",
@@ -2464,14 +2498,15 @@ def main():
     print("\n▸ 生成 AI 市场分析...")
     report, analyst_status = call_llm(news_text)
 
-    # 3b. 行业强度（昨日口径，与 UP 主观点同一套 date_offset=-1 逻辑）
+    # 3b. 行业强度（上一交易日口径）
+    #     工作日＝昨日；周一＝上周五；节后＝节前最后一个交易日。
     #     严格不沿用更早的日期：宁可本节缺席，也不把旧数据当今天的用。
-    print("\n▸ 读取昨日行业强度表...")
-    ind_date = report_time - timedelta(days=1)
+    ind_date = industry_target_date(report_time)
     ind_date_str = ind_date.strftime("%Y%m%d")
+    print(f"\n▸ 读取行业强度表（上一交易日 {ind_date.strftime('%Y-%m-%d')}）...")
     industry_html, industry_link = "", ""
     ind_status, ind_note = "无文件", f"缺 industry_{ind_date_str}.html"
-    ind_path = industry_page_path(ind_date)
+    ind_path = industry_page_path(report_time)
     if ind_path:
         ind_data = parse_industry_page(ind_path)
         if ind_data:
